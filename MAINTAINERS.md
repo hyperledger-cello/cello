@@ -6,6 +6,7 @@
 | Yang Feng | fengyangsy | fengyang.09186@h3c.com |
 | Yuanmao Zhu | zhuyuanmao | yuanmao@ualberta.ca |
 | Xichen Pan | xichen1 | xichen.pan@gmail.com  |
+| Haibo Yang | YoungHypo | haiboyang@umail.ucsb.edu  |
 
 ## Release Managers
 
