@@ -256,3 +256,6 @@ deno.lock
 # test postman
 tests/postman/env.json
 tests/postman/junitResult.xml
+
+# Postgres
+pgdata/

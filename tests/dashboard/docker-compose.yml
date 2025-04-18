@@ -1,8 +1,8 @@
 version: '3.2'
 services:
   test-dashboard:
-    image: node:14.18
+    image: node:20.15
     volumes:
       - $ROOT_PATH/src/dashboard:/dashboard
     working_dir: /dashboard
-    command: bash -c "npm i && npm run lint"
+    command: bash -c "yarn && yarn lint"
