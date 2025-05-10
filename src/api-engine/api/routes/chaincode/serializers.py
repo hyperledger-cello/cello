@@ -63,8 +63,8 @@ class ChainCodeApproveForMyOrgBody(serializers.Serializer):
     chaincode_name = serializers.CharField(max_length=128, required=True)
     chaincode_version = serializers.CharField(max_length=128, required=True)
     policy = serializers.CharField(max_length=128, required=True)
-    orderer_url = serializers.CharField(max_length=128, required=True)
     sequence = serializers.IntegerField(min_value=1, required=True)
+    init_flag = serializers.BooleanField(required=True)
 
 
 class ChainCodeCommitBody(ChainCodeApproveForMyOrgBody):
