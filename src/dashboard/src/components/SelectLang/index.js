@@ -9,6 +9,7 @@ import styles from './index.less';
 class SelectLang extends PureComponent {
   changeLang = ({ key }) => {
     setLocale(key);
+    localStorage.setItem('umi_locale', key);
   };
 
   render() {

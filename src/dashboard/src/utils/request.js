@@ -1,61 +1,49 @@
-import React from 'react';
 import { extend } from 'umi-request';
 import { notification } from 'antd';
-import { history } from 'umi';
+import { history, formatMessage } from 'umi';
 import { stringify } from 'qs';
 
-const codeMessage = {
-  200: '服务器成功返回请求的数据。',
-  201: '新建或修改数据成功。',
-  202: '一个请求已经进入后台排队（异步任务）。',
-  204: '删除数据成功。',
-  400: '发出的请求有错误，服务器没有进行新建或修改数据的操作。',
-  401: '用户没有权限（令牌、用户名、密码错误）。',
-  403: '用户得到授权，但是访问是被禁止的。',
-  404: '发出的请求针对的是不存在的记录，服务器没有进行操作。',
-  406: '请求的格式不可得。',
-  410: '请求的资源被永久删除，且不会再得到的。',
-  422: '当创建一个对象时，发生一个验证错误。',
-  500: '服务器发生错误，请检查服务器。',
-  502: '网关错误。',
-  503: '服务不可用，服务器暂时过载或维护。',
-  504: '网关超时。',
-};
-
 /**
- * 异常处理程序
+ * Error handler
  */
 const errorHandler = error => {
   const { response, data } = error;
-  const errortext = (
-    <>
-      {codeMessage[response.status] || response.statusText} <br />
-      {data && data.msg && Array.isArray(data.msg) && data.msg.length > 0 && data.msg[0]}
-    </>
-  );
-  const { status, url } = response;
-  let verifyUserFail = false;
 
+  if (!response) {
+    notification.error({
+      message: formatMessage({
+        id: 'error.network',
+        defaultMessage: 'Network Error',
+      }),
+    });
+    return;
+  }
+
+  const { status, url } = response;
+
+  // Handle specific error cases
   if (status === 400) {
     const api = url.split('/').pop();
-
     if (api === 'login') {
       notification.error({
-        message: '用户名或密码错误。',
+        message: formatMessage({
+          id: 'error.login.invalidCredentials',
+          defaultMessage: 'Invalid username or password.',
+        }),
+        description: url,
       });
       return;
     }
-
-    if (api === 'token-verify') {
-      verifyUserFail = true;
-    }
   }
 
-  if (status === 401 || verifyUserFail) {
+  if (status === 401) {
     notification.error({
-      message: '未登录或登录已过期，请重新登录。',
+      message: formatMessage({
+        id: 'error.login.expired',
+        defaultMessage: 'Not logged in or session expired. Please log in again.',
+      }),
+      description: url,
     });
-
     history.replace({
       pathname: '/user/login',
       search: stringify({
@@ -69,26 +57,41 @@ const errorHandler = error => {
     const api = url.split('/').pop();
     if (api === 'register') {
       notification.error({
-        message: '邮箱地址或组织名已存在。',
+        message: formatMessage({
+          id: 'error.register.duplicate',
+          defaultMessage: 'Email address or organization name already exists.',
+        }),
+        description: url,
       });
       return;
     }
   }
 
-  notification.error({
-    message: `请求错误 ${status}: ${url}`,
-    description: errortext,
+  // Generic error handling
+  const errorMessage = formatMessage({
+    id: `error.request.${status}`,
+    defaultMessage: `Request error (${status})`,
   });
-  // environment should not be used
+
+  const detailMessage =
+    data?.detail ||
+    data?.msg ||
+    formatMessage({
+      id: 'error.request.generic',
+      defaultMessage: 'An error occurred while processing your request.',
+    });
+
+  notification.error({
+    message: errorMessage,
+    description: `${url}\n${detailMessage}`,
+  });
+
+  // Handle navigation for specific error codes
   if (status === 403) {
     history.push('/exception/403');
-    return;
-  }
-  if (status <= 504 && status >= 500) {
+  } else if (status >= 500 && status <= 504) {
     history.push('/exception/500');
-    return;
-  }
-  if (status >= 404 && status < 422) {
+  } else if (status >= 404 && status < 422) {
     history.push('/exception/404');
   }
 };
@@ -101,11 +104,9 @@ const request = extend({
 request.interceptors.request.use(async (url, options) => {
   const token = window.localStorage.getItem('cello-token');
   if (url.indexOf('api/v1/login') < 0 && url.indexOf('api/v1/register') < 0 && token) {
-    // 如果有token 就走token逻辑
     const headers = {
       Authorization: `JWT ${token}`,
     };
-
     return {
       url,
       options: { ...options, headers },

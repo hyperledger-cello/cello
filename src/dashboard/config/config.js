@@ -11,9 +11,9 @@ export default {
   antd: {},
   locale: {
     default: 'en-US',
-    antd: false,
-    title: false,
-    baseNavigator: true,
+    antd: true,
+    title: true,
+    baseNavigator: false,
     baseSeparator: '-',
   },
   pwa: false,

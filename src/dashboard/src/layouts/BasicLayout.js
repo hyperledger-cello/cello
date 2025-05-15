@@ -1,10 +1,10 @@
 /*
  SPDX-License-Identifier: Apache-2.0
 */
-import React from 'react';
+import React, { Component } from 'react';
 import { Layout } from 'antd';
 import DocumentTitle from 'react-document-title';
-import { connect } from 'umi';
+import { connect, setLocale, getLocale } from 'umi';
 import { ContainerQuery } from 'react-container-query';
 import classNames from 'classnames';
 import Media from 'react-media';
@@ -46,7 +46,7 @@ const query = {
   },
 };
 
-class BasicLayout extends React.Component {
+class BasicLayout extends Component {
   componentDidMount() {
     const {
       dispatch,
@@ -62,6 +62,17 @@ class BasicLayout extends React.Component {
       type: 'menu/getMenuData',
       payload: { routes, path, authority },
     });
+
+    // Initialize language from localStorage or default to English
+    const savedLocale = localStorage.getItem('umi_locale');
+    const currentLocale = getLocale();
+
+    if (savedLocale && savedLocale !== currentLocale) {
+      setLocale(savedLocale);
+    } else if (!savedLocale) {
+      setLocale('en-US');
+      localStorage.setItem('umi_locale', 'en-US');
+    }
   }
 
   getContext() {
