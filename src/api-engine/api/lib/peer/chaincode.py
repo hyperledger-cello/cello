@@ -63,9 +63,15 @@ class ChainCode(Command):
         """
 
         try:
-            res = subprocess.Popen("{} lifecycle chaincode queryinstalled --output json --connTimeout {}"
-                                   .format(self.peer, timeout), shell=True,
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            command = [
+                self.peer,
+                "lifecycle", "chaincode", "queryinstalled",
+                "--output", "json",
+                "--connTimeout", timeout
+            ]
+            LOG.info(" ".join(command))
+            res = subprocess.Popen(command, shell=False,
+                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             stdout, stderr = res.communicate()
             return_code = res.returncode
@@ -106,8 +112,8 @@ class ChainCode(Command):
             raise Exception(err_msg)
         return res_return
 
-    def lifecycle_approve_for_my_org(self, orderer_url, orderer_tls_rootcert, channel_name, cc_name,
-                                     chaincode_version, policy, sequence=1):
+    def lifecycle_approve_for_my_org(self, orderer_url, channel_name, cc_name,
+                                     chaincode_version, sequence, policy, init_flag):
         """
         The administrator can use the peer lifecycle chaincode approveformyorg subcommand to approve the chain code on
         behalf of the organization.
@@ -116,8 +122,9 @@ class ChainCode(Command):
         :param channel_name: channel name
         :param cc_name: chaincode name
         :param chaincode_version: chaincode version
-        :param policy: chaincode policy
         :param sequence: The channel chain code defines the serial number. The default value is 1
+        :param policy: chaincode policy
+        :param init_flag: if the chaincode is first init.
         :return:
         """
         try:
@@ -131,18 +138,43 @@ class ChainCode(Command):
             if package_id == "":
                 return 1, "not exist the chaincode, please check chaincode_name and chaincode_version"
 
+            command = []
             if os.getenv("CORE_PEER_TLS_ENABLED") == "false" or os.getenv("CORE_PEER_TLS_ENABLED") is None:
-                res = subprocess.Popen("{} lifecycle chaincode approveformyorg -o {} - --channelID {} --name {} "
-                                       "--version {} --init-required --package-id {} --sequence {} --signature-policy {}"
-                                       .format(self.peer, orderer_url, channel_name, cc_name, chaincode_version, package_id,
-                                               sequence, policy), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                command = [
+                    self.peer,
+                    "lifecycle", "chaincode", "approveformyorg",
+                    "-o", orderer_url,
+                    "--channelID", channel_name,
+                    "--name", cc_name,
+                    "--version", chaincode_version,
+                    "--package-id", package_id,
+                    "--sequence", str(sequence)
+                ]
             else:
-                res = subprocess.Popen("{} lifecycle chaincode approveformyorg -o {} --tls --cafile {} --channelID {} "
-                                       "--name {} --version {} --init-required --package-id {} --sequence {} "
-                                       "--signature-policy {}"
-                                       .format(self.peer, orderer_url, orderer_tls_rootcert, channel_name,
-                                               cc_name, chaincode_version, package_id, sequence, policy), shell=True,
-                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                ORDERER_CA = os.getenv("ORDERER_CA")
+                command = [
+                    self.peer,
+                    "lifecycle", "chaincode", "approveformyorg",
+                    "-o", orderer_url,
+                    "--ordererTLSHostnameOverride", orderer_url.split(":")[0],
+                    "--channelID", channel_name,
+                    "--name", cc_name,
+                    "--version", chaincode_version,
+                    "--package-id", package_id,
+                    "--sequence", str(sequence),
+                    "--tls",
+                    "--cafile", ORDERER_CA
+                ]
+            
+            if init_flag:
+                command.append("--init-required")
+            if policy:
+                command.append("--signature-policy")
+                command.append(policy)
+
+            LOG.info(" ".join(command))
+            res = subprocess.Popen(command, shell=False,
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = res.communicate()
             return_code = res.returncode
 

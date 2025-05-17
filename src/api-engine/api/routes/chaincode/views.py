@@ -328,26 +328,18 @@ class ChainCodeViewSet(viewsets.ViewSet):
             try:
                 channel_name = serializer.validated_data.get("channel_name")
                 chaincode_name = serializer.validated_data.get("chaincode_name")
-                chaincode_version = serializer.validated_data.get(
-                    "chaincode_version")
-                policy = serializer.validated_data.get("policy")
-                # Perhaps the orderer's port is best stored in the database
-                orderer_url = serializer.validated_data.get("orderer_url")
+                chaincode_version = serializer.validated_data.get("chaincode_version")
+                policy = serializer.validated_data.get("policy", "")
                 sequence = serializer.validated_data.get("sequence")
+                init_flag = serializer.validated_data.get("init_flag", False)
 
                 org = request.user.organization
                 qs = Node.objects.filter(type="orderer", organization=org)
                 if not qs.exists():
                     raise ResourceNotFound
                 orderer_node = qs.first()
+                orderer_url = orderer_node.name + "." + org.name.split(".", 1)[1] + ":" + str(7050)
 
-                orderer_tls_dir = "{}/{}/crypto-config/ordererOrganizations/{}/orderers/{}/msp/tlscacerts" \
-                                  .format(CELLO_HOME, org.name, org.name.split(".", 1)[1], orderer_node.name + "." +
-                                          org.name.split(".", 1)[1])
-                orderer_tls_root_cert = ""
-                for _, _, files in os.walk(orderer_tls_dir):
-                    orderer_tls_root_cert = orderer_tls_dir + "/" + files[0]
-                    break
                 qs = Node.objects.filter(type="peer", organization=org)
                 if not qs.exists():
                     raise ResourceNotFound
@@ -355,8 +347,8 @@ class ChainCodeViewSet(viewsets.ViewSet):
                 envs = init_env_vars(peer_node, org)
 
                 peer_channel_cli = PeerChainCode(**envs)
-                code, content = peer_channel_cli.lifecycle_approve_for_my_org(orderer_url, orderer_tls_root_cert, channel_name,
-                                                                              chaincode_name, chaincode_version, policy, sequence)
+                code, content = peer_channel_cli.lifecycle_approve_for_my_org(orderer_url, channel_name,
+                                                                              chaincode_name, chaincode_version, sequence, policy, init_flag)
                 if code != 0:
                     return Response(err(" lifecycle_approve_for_my_org failed. err: " + content), status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
