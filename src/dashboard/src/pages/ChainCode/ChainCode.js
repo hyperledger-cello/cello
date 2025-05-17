@@ -123,6 +123,25 @@ class ChainCode extends PureComponent {
     });
   };
 
+  handleApprove = (values, callback) => {
+    const { dispatch } = this.props;
+
+    const payload = {
+      channel_name: values.channel,
+      chaincode_name: values.name,
+      chaincode_version: values.version,
+      sequence: parseInt(values.sequence, 10),
+      policy: values.policy,
+      init_flag: !!values.initFlag,
+    };
+
+    dispatch({
+      type: 'chainCode/approveChainCode',
+      payload,
+      callback,
+    });
+  };
+
   handleUpload = (values, callback) => {
     const { dispatch } = this.props;
     const formData = new FormData();
@@ -194,8 +213,13 @@ class ChainCode extends PureComponent {
       approveModalVisible,
       handleApproveModalVisible: this.handleApproveModalVisible,
       fetchChainCodes: this.fetchChainCodes,
+      handleApprove: this.handleApprove,
       approving,
       selectedRows: [],
+      initFlagChange: e => {
+        // this can be used to handle the initFlag change, currently only for demo
+        console.log('initFlag changed:', e.target.checked);
+      },
       intl,
     };
 

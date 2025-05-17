@@ -104,14 +104,22 @@ const ApproveForm = props => {
       onOk={onSubmit}
       onCancel={() => handleApproveModalVisible(false)}
     >
-      <Form onFinish={onFinish} form={form} preserve={false}>
+      <Form
+        onFinish={onFinish}
+        form={form}
+        preserve={false}
+        initialValues={{
+          policy: '',
+          initFlag: false,
+        }}
+      >
         <FormItem
           {...formItemLayout}
           label={intl.formatMessage({
             id: 'app.chainCode.form.approve.channel',
             defaultMessage: 'Please select channel',
           })}
-          name="channels"
+          name="channel"
           rules={[
             {
               required: true,
@@ -123,7 +131,6 @@ const ApproveForm = props => {
           ]}
         >
           <Select
-            mode="multiple"
             options={channels}
             tagRender={tagRender}
             dropdownClassName={styles.dropdownClassName}
@@ -150,6 +157,69 @@ const ApproveForm = props => {
             placeholder={intl.formatMessage({
               id: 'app.chainCode.form.approve.name',
               defaultMessage: 'Name',
+            })}
+          />
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label={intl.formatMessage({
+            id: 'app.chainCode.form.approve.version',
+            defaultMessage: 'Version',
+          })}
+          name="version"
+          rules={[
+            {
+              required: true,
+              message: intl.formatMessage({
+                id: 'app.chainCode.form.approve.version.required',
+                defaultMessage: 'Please input version',
+              }),
+            },
+          ]}
+        >
+          <Input
+            placeholder={intl.formatMessage({
+              id: 'app.chainCode.form.approve.version.placeholder',
+              defaultMessage: 'Version',
+            })}
+          />
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label={intl.formatMessage({
+            id: 'app.chainCode.form.approve.sequence',
+            defaultMessage: 'Sequence',
+          })}
+          name="sequence"
+          rules={[
+            {
+              required: true,
+              message: intl.formatMessage({
+                id: 'app.chainCode.form.approve.sequence.required',
+                defaultMessage: 'Please input sequence',
+              }),
+            },
+          ]}
+        >
+          <Input
+            placeholder={intl.formatMessage({
+              id: 'app.chainCode.form.approve.sequence.placeholder',
+              defaultMessage: 'Sequence',
+            })}
+          />
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label={intl.formatMessage({
+            id: 'app.chainCode.form.approve.endorsement_policy',
+            defaultMessage: 'Endorsement Policy',
+          })}
+          name="policy"
+        >
+          <Input
+            placeholder={intl.formatMessage({
+              id: 'app.chainCode.form.approve.policy.placeholder',
+              defaultMessage: 'Policy (optional)',
             })}
           />
         </FormItem>
