@@ -55,7 +55,7 @@ class FileViewSet(viewsets.ViewSet):
             per_page = serializer.validated_data.get("per_page")
 
             if organization is not None and not request.user.is_operator:
-                raise PermissionDenied
+                raise PermissionDenied("Non-Operator Request Denied")
             query_filter = {}
             if name:
                 query_filter.update({"name__icontains": name})

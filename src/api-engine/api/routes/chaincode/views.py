@@ -70,6 +70,7 @@ class ChainCodeViewSet(viewsets.ViewSet):
             chaincode.save()
 
         except Exception as e:
+            LOG.exception("Could not read Chaincode Package")
             raise e
 
     @swagger_auto_schema(
@@ -208,6 +209,7 @@ class ChainCodeViewSet(viewsets.ViewSet):
                     threading.Thread(target=self._read_cc_pkg,
                                         args=(uuid, file.name, ccpackage_path)).start()
                 except Exception as e:
+                    LOG.exception("Failed Threading")
                     raise e
 
                 return Response(
@@ -239,7 +241,7 @@ class ChainCodeViewSet(viewsets.ViewSet):
             org = request.user.organization
             qs = Node.objects.filter(type="peer", organization=org)
             if not qs.exists():
-                raise ResourceNotFound
+                raise ResourceNotFound("Peer Does Not Exist")
             peer_node = qs.first()
 
             envs = init_env_vars(peer_node, org)
@@ -267,7 +269,7 @@ class ChainCodeViewSet(viewsets.ViewSet):
             org = request.user.organization
             qs = Node.objects.filter(type="peer", organization=org)
             if not qs.exists():
-                raise ResourceNotFound
+                raise ResourceNotFound("Peer Does Not Exist")
             peer_node = qs.first()
             envs = init_env_vars(peer_node, org)
 
@@ -297,7 +299,7 @@ class ChainCodeViewSet(viewsets.ViewSet):
             org = request.user.organization
             qs = Node.objects.filter(type="peer", organization=org)
             if not qs.exists():
-                raise ResourceNotFound
+                raise ResourceNotFound("Peer Does Not Exist")
             peer_node = qs.first()
             envs = init_env_vars(peer_node, org)
 
@@ -336,13 +338,13 @@ class ChainCodeViewSet(viewsets.ViewSet):
                 org = request.user.organization
                 qs = Node.objects.filter(type="orderer", organization=org)
                 if not qs.exists():
-                    raise ResourceNotFound
+                    raise ResourceNotFound("Orderer Does Not Exist")
                 orderer_node = qs.first()
                 orderer_url = orderer_node.name + "." + org.name.split(".", 1)[1] + ":" + str(7050)
 
                 qs = Node.objects.filter(type="peer", organization=org)
                 if not qs.exists():
-                    raise ResourceNotFound
+                    raise ResourceNotFound("Peer Does Not Exist")
                 peer_node = qs.first()
                 envs = init_env_vars(peer_node, org)
 
@@ -371,7 +373,7 @@ class ChainCodeViewSet(viewsets.ViewSet):
             org = request.user.organization
             qs = Node.objects.filter(type="peer", organization=org)
             if not qs.exists():
-                raise ResourceNotFound
+                raise ResourceNotFound("Peer Does Not Exist")
             peer_node = qs.first()
             envs = init_env_vars(peer_node, org)
 
@@ -414,7 +416,7 @@ class ChainCodeViewSet(viewsets.ViewSet):
                 org = request.user.organization
                 qs = Node.objects.filter(type="orderer", organization=org)
                 if not qs.exists():
-                    raise ResourceNotFound
+                    raise ResourceNotFound("Orderer Does Not Exist")
                 orderer_node = qs.first()
 
                 orderer_tls_dir = "{}/{}/crypto-config/ordererOrganizations/{}/orderers/{}/msp/tlscacerts" \
@@ -428,7 +430,7 @@ class ChainCodeViewSet(viewsets.ViewSet):
 
                 qs = Node.objects.filter(type="peer", organization=org)
                 if not qs.exists():
-                    raise ResourceNotFound
+                    raise ResourceNotFound("Peer Does Not Exist")
                 peer_node = qs.first()
                 envs = init_env_vars(peer_node, org)
 
@@ -470,7 +472,7 @@ class ChainCodeViewSet(viewsets.ViewSet):
                 org = request.user.organization
                 qs = Node.objects.filter(type="orderer", organization=org)
                 if not qs.exists():
-                    raise ResourceNotFound
+                    raise ResourceNotFound("Orderer Does Not Exist")
                 orderer_node = qs.first()
 
                 orderer_tls_dir = "{}/{}/crypto-config/ordererOrganizations/{}/orderers/{}/msp/tlscacerts" \
@@ -483,7 +485,7 @@ class ChainCodeViewSet(viewsets.ViewSet):
 
                 qs = Node.objects.filter(type="peer", organization=org)
                 if not qs.exists():
-                    raise ResourceNotFound
+                    raise ResourceNotFound("Peer Does Not Exist")
                 peer_node = qs.first()
                 envs = init_env_vars(peer_node, org)
 
@@ -530,7 +532,7 @@ class ChainCodeViewSet(viewsets.ViewSet):
             org = request.user.organization
             qs = Node.objects.filter(type="peer", organization=org)
             if not qs.exists():
-                raise ResourceNotFound
+                raise ResourceNotFound("Peer Does Not Exist")
             peer_node = qs.first()
             envs = init_env_vars(peer_node, org)
             peer_channel_cli = PeerChainCode(**envs)
@@ -539,6 +541,7 @@ class ChainCodeViewSet(viewsets.ViewSet):
             if code != 0:
                 return Response(err("query committed failed."), status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
+            LOG.exception("Could Not Commit Query")
             return Response(
                 err(e.args), status=status.HTTP_400_BAD_REQUEST
             )
