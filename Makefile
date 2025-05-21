@@ -29,10 +29,24 @@ YELLOW := $(shell tput -Txterm setaf 3)
 RESET  := $(shell tput -Txterm sgr0)
 ARCH   := $(shell uname -m)
 
-# set the arm64 ARCH to amd64 for compatibility reason
+# Handle architecture detection and platform settings
 ifeq ($(ARCH), arm64)
-    ARCH := amd64
+    DOCKER_PLATFORM := linux/arm64
+    # Use ARM64 specific base images if available, fallback to multi-arch
+    DOCKER_BASE_arm64 := python:3.8-slim
+else ifeq ($(ARCH), x86_64)
+    DOCKER_PLATFORM := linux/amd64
+    DOCKER_BASE_amd64 := python:3.8-slim
+else
+    $(error "Architecture \"$(ARCH)\" is unsupported")
 endif
+
+# Set the base image based on architecture
+DOCKER_BASE := $(DOCKER_BASE_$(ARCH))
+BASE_VERSION ?= $(ARCH)-$(VERSION)
+
+# Add platform-specific build args
+DOCKER_BUILD_ARGS := --platform $(DOCKER_PLATFORM)
 
 #Set the source of PIP in docker agent image
 PIP=pip.conf.bak
@@ -71,10 +85,6 @@ LOCAL_STORAGE_PATH=/opt/cello
 COMMON_DOCKER_IMAGES = api-engine nginx dashboard
 AGENT_DOCKER_IMAGES = ansible kubernetes
 DUMMY = .$(IMG_TAG)
-
-ifeq ($(DOCKER_BASE), )
-	$(error "Architecture \"$(ARCH)\" is unsupported")
-endif
 
 # Frontend needed
 SLASH:=/
@@ -216,19 +226,16 @@ stop-docker-compose:
 images: api-engine docker-rest-agent fabric dashboard
 
 api-engine: 
-	docker build -t hyperledger/cello-api-engine:latest -f build_image/docker/common/api-engine/Dockerfile.in ./ --platform linux/$(ARCH)
+	docker build $(DOCKER_BUILD_ARGS) -t hyperledger/cello-api-engine:latest -f build_image/docker/common/api-engine/Dockerfile.in ./
 	
 docker-rest-agent:
-	docker build -t hyperledger/cello-agent-docker:latest -f build_image/docker/agent/docker-rest-agent/Dockerfile.in ./ --build-arg pip=$(PIP) --platform linux/$(ARCH)
+	docker build $(DOCKER_BUILD_ARGS) -t hyperledger/cello-agent-docker:latest -f build_image/docker/agent/docker-rest-agent/Dockerfile.in ./ --build-arg pip=$(PIP)
 
 fabric:
-	docker build -t hyperledger/fabric:2.5.10 -f build_image/docker/cello-hlf/Dockerfile build_image/docker/cello-hlf/
+	docker build $(DOCKER_BUILD_ARGS) -t hyperledger/fabric:2.5.10 -f build_image/docker/cello-hlf/Dockerfile build_image/docker/cello-hlf/
 
 dashboard:
-	docker build -t hyperledger/cello-dashboard:latest -f build_image/docker/common/dashboard/Dockerfile.in ./
-
-
-
+	docker build $(DOCKER_BUILD_ARGS) -t hyperledger/cello-dashboard:latest -f build_image/docker/common/dashboard/Dockerfile.in ./
 
 .PHONY: \
 	all \
