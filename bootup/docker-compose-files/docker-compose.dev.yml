@@ -14,7 +14,7 @@ services:
     image: hyperledger/cello-dashboard
     container_name: cello-dashboard
     ports:
-      - "${DASHBOARD_SERVICE_PORT}:8081"
+      - "${DASHBOARD_SERVICE_PORT:-8081}:8081"
     networks:
       - cello-net
     depends_on:
@@ -32,7 +32,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ${CELLO_STORAGE_PATH:-/opt/cello}/pgdata:/var/lib/postgresql/data
+      - cello-postgres-data:/var/lib/postgresql/data
     networks:
       - cello-net
 
@@ -58,7 +58,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ${CELLO_STORAGE_PATH:-/opt/cello}:/opt/cello
+      - cello-api-engine-data:/opt/cello
     networks:
       - cello-net
     depends_on:
@@ -77,7 +77,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - DOCKER_URL=unix://var/run/docker.sock
-      - STORAGE_PATH=${CELLO_STORAGE_PATH:-/opt/cello}/hyperledger
+      - STORAGE_PATH=/opt/cello/hyperledger
     networks:
       - cello-net
 
@@ -86,7 +86,7 @@ networks:
     name: cello-net
 
 volumes:
-  cello-api-engine:
-  cello-postgres:
+  cello-postgres-data:
+  cello-api-engine-data:
   cello-dashboard:
   cello-docker-agent:

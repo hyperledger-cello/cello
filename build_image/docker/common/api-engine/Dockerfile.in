@@ -1,8 +1,19 @@
-FROM python:3.8
+FROM python:3.8-slim
 
-# Install software
+# Install software including PostgreSQL development packages and pkg-config for pygraphviz
 RUN apt-get update \
-	&& apt-get install -y gettext-base graphviz libgraphviz-dev vim \
+	&& apt-get install -y \
+		gettext-base \
+		graphviz \
+		libgraphviz-dev \
+		pkg-config \
+		vim \
+		curl \
+		postgresql \
+		postgresql-client \
+		libpq-dev \
+		gcc \
+		python3-dev \
 	&& apt-get autoclean \
 	&& apt-get clean \
 	&& apt-get autoremove && rm -rf /var/cache/apt/
@@ -11,14 +22,23 @@ RUN apt-get update \
 WORKDIR /var/www/server
 
 # Install compiled code tools from Artifactory and copy it to opt folder.
-RUN curl -L --retry 5 --retry-delay 3 "https://github.com/hyperledger/fabric/releases/download/v2.5.10/hyperledger-fabric-linux-amd64-2.5.10.tar.gz" | tar xz -C /opt/
+# Use platform-specific Fabric binary
+ARG TARGETARCH
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+		curl -L --retry 5 --retry-delay 3 "https://github.com/hyperledger/fabric/releases/download/v2.5.10/hyperledger-fabric-linux-arm64-2.5.10.tar.gz" | tar xz -C /opt/; \
+	else \
+		curl -L --retry 5 --retry-delay 3 "https://github.com/hyperledger/fabric/releases/download/v2.5.10/hyperledger-fabric-linux-amd64-2.5.10.tar.gz" | tar xz -C /opt/; \
+	fi
 
 # Copy source code to the working dir
 COPY src/api-engine ./
 COPY template/node  /opt/node
 
 # Install python dependencies
-RUN	pip3 install -r requirements.txt
+# First upgrade pip to latest version
+RUN pip3 install --no-cache-dir --upgrade pip && \
+	pip3 install --no-cache-dir psycopg2-binary==2.8.4 && \
+	pip3 install --no-cache-dir -r requirements.txt
 
 # Add uwsgi configuration file
 COPY build_image/docker/common/api-engine/server.ini /etc/uwsgi/apps-enabled/
