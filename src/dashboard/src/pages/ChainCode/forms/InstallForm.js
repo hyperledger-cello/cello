@@ -1,3 +1,6 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ */
 import React, { useState, useEffect } from 'react';
 import { injectIntl, useIntl } from 'umi';
 import { Modal, message, Select, Form, Tag, Input } from 'antd';
@@ -23,7 +26,15 @@ const InstallForm = props => {
   useEffect(() => {
     async function fecthData() {
       const response = await listNode();
-      setNodes(response.data.data.map(node => ({ label: node.name, value: node.id })));
+      // Filter out orderer nodes, only allow peer nodes for chaincode installation
+      setNodes(
+        response.data.data
+          .filter(node => node.type === 'peer')
+          .map(node => ({
+            label: node.name,
+            value: node.id,
+          }))
+      );
     }
     fecthData();
   }, []);
