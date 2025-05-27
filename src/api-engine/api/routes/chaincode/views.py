@@ -1,12 +1,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
+import os
+import json
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-import os
-import tempfile, shutil, tarfile, json
+import tempfile, shutil, tarfile
 
 from drf_yasg.utils import swagger_auto_schema
 from api.config import FABRIC_CHAINCODE_STORE
@@ -28,7 +29,8 @@ from api.routes.chaincode.serializers import (
     ChainCodeIDSerializer,
     ChainCodeCommitBody,
     ChainCodeApproveForMyOrgBody,
-    ChaincodeListResponse
+    ChaincodeListResponse,
+    ChainCodeInvokeBody
 )
 from api.common import ok, err
 import threading
@@ -548,3 +550,70 @@ class ChainCodeViewSet(viewsets.ViewSet):
         return Response(
             ok(chaincodes_commited), status=status.HTTP_200_OK
         )
+
+    @swagger_auto_schema(
+        method="post",
+        request_body=ChainCodeInvokeBody,
+        responses=with_common_response(
+            {status.HTTP_200_OK: ChainCodeIDSerializer}
+        ),
+    )
+    @action(detail=False, methods=['post'])
+    def invoke(self, request):
+        """Invoke chaincode."""
+        serializer = ChainCodeInvokeBody(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            try:
+                channel_name = serializer.validated_data.get("channel_name")
+                chaincode_name = serializer.validated_data.get("chaincode_name")
+                args = serializer.validated_data.get("args")
+                init = serializer.validated_data.get("init", False)
+
+                org = request.user.organization
+                # Get orderer node for TLS cert
+                qs = Node.objects.filter(type="orderer", organization=org)
+                if not qs.exists():
+                    raise ResourceNotFound
+                orderer_node = qs.first()
+                orderer_url = orderer_node.name + "." + org.name.split(".", 1)[1] + ":" + str(7050)
+
+                orderer_tls_dir = "{}/{}/crypto-config/ordererOrganizations/{}/orderers/{}/msp/tlscacerts" \
+                    .format(CELLO_HOME, org.name, org.name.split(".", 1)[1], orderer_node.name + "." +
+                            org.name.split(".", 1)[1])
+                orderer_tls_root_cert = ""
+                for _, _, files in os.walk(orderer_tls_dir):
+                    orderer_tls_root_cert = orderer_tls_dir + "/" + files[0]
+                    break
+
+                # Get peer node for invoke
+                qs = Node.objects.filter(type="peer", organization=org)
+                if not qs.exists():
+                    raise ResourceNotFound
+                peer_node = qs.first()
+                envs = init_env_vars(peer_node, org)
+
+                peer_channel_cli = PeerChainCode(**envs)
+                # Convert args list to JSON string for invoke
+                args_json = json.dumps({"Args": args})
+                code, content = peer_channel_cli.invoke(
+                    orderer_url, 
+                    orderer_tls_root_cert,
+                    channel_name,
+                    chaincode_name,
+                    args_json,
+                    init
+                )
+                if code != 0:
+                    return Response(
+                        err(f"Chaincode invoke failed: {content}"), 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                return Response(
+                    ok("Chaincode invoke successful"), 
+                    status=status.HTTP_200_OK
+                )
+            except Exception as e:
+                return Response(
+                    err(str(e)), 
+                    status=status.HTTP_400_BAD_REQUEST
+                )

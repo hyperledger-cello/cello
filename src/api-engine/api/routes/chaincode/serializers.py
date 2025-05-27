@@ -69,3 +69,18 @@ class ChainCodeApproveForMyOrgBody(serializers.Serializer):
 
 class ChainCodeCommitBody(ChainCodeApproveForMyOrgBody):
     peer_list = serializers.ListField(allow_empty=False, required=True)
+
+
+class ChainCodeInvokeBody(serializers.Serializer):
+    """Chaincode invoke body."""
+    channel_name = serializers.CharField(help_text="Channel name")
+    chaincode_name = serializers.CharField(help_text="Chaincode name")
+    args = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="Arguments for chaincode invoke"
+    )
+    init = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="Whether to initialize the chaincode"
+    )

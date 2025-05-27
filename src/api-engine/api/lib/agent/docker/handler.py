@@ -32,29 +32,68 @@ class DockerAgent(AgentBase):
         :return: container ID
         :rtype: string
         """
+        LOG.info(f"DockerAgent.create called for node: {info.get('name')}")
+        LOG.info(f"DockerAgent.create - Agent URL: {self._urls}/api/v1/nodes")
         try:
             port_map = {str(port.internal): str(port.external) for port in info.get("ports")}
+            LOG.info(f"DockerAgent.create - Ports: {port_map}")
+
+            # Determine image and command based on node type
+            node_type = info.get("type")
+            node_name = info.get("name")
+            img = None
+            cmd = None
+
+            if node_type == "peer":
+                img = info.get("image", "hyperledger/fabric-peer")
+                cmd = 'peer node start'
+            elif node_type == "orderer":
+                img = info.get("image", "hyperledger/fabric-orderer")
+                cmd = 'orderer'
+            elif node_type == "ca":
+                img = info.get("image", "hyperledger/fabric-ca")
+                ca_admin_user = info.get('ca_admin_user', 'admin')
+                ca_admin_pass = info.get('ca_admin_pass', 'adminpw')
+                cmd = f'fabric-ca-server start -b {ca_admin_user}:{ca_admin_pass}'
+            else:
+                LOG.error(f"Unknown node type: {node_type} in DockerAgent.create")
+                raise ValueError(f"Unknown node type: {node_type}")
+            
+            # Use image from info if available, otherwise default
+            img = info.get("image", img)
+            # Use command from info if available, otherwise default
+            cmd = info.get("command", cmd)
+
+            LOG.info(f"DockerAgent.create - Image: {img}, Command: {cmd}")
 
             data = {
-                'msp': info.get("msp")[2:-1],
-                'tls': info.get("tls")[2:-1],
-                'peer_config_file': info.get("config_file")[2:-1],
-                'orderer_config_file': info.get("config_file")[2:-1],
-                'img': 'hyperledger/fabric:2.5.10',
-                'cmd': 'bash /tmp/init.sh "peer node start"' if info.get("type") == "peer" else 'bash /tmp/init.sh "orderer"',
-                'name': info.get("name"),
-                'type': info.get("type"),
+                'msp': info.get("msp")[2:-1] if info.get("msp") else None,
+                'tls': info.get("tls")[2:-1] if info.get("tls") else None,
+                'config_file': info.get("config_file")[2:-1] if info.get("config_file") else None,
+                'img': img,
+                'cmd': cmd,
+                'name': node_name,
+                'type': node_type,
                 'port_map': port_map.__repr__(),
                 'action': 'create'
             }
+            LOG.info(f"DockerAgent.create - Data to send to agent: {data}")
 
             response = post('{}/api/v1/nodes'.format(self._urls), data=data)
+            LOG.info(f"DockerAgent.create - Agent response status: {response.status_code}")
+            LOG.info(f"DockerAgent.create - Agent response text: {response.text}")
 
             if response.status_code == 200:
                 txt = json.loads(response.text)
-                return txt['data']['id']
+                if txt.get('code') == 'OK' and txt.get('data', {}).get('id'):
+                    LOG.info(f"DockerAgent.create - Successfully created node, container ID: {txt['data']['id']}")
+                    return txt['data']['id']
+                else:
+                    LOG.error(f"DockerAgent.create - Agent returned OK status but error in response body: {response.text}")
+                    raise Exception(f"Agent error: {txt.get('msg', 'Unknown agent error')}")
             else:
-                return None
+                LOG.error(f"DockerAgent.create - Agent returned error status {response.status_code}: {response.text}")
+                raise Exception(f"Agent HTTP error {response.status_code}: {response.reason}")
         except Exception as e:
             LOG.exception("DockerAgent Not Created")
             raise e

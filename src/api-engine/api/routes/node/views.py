@@ -7,6 +7,7 @@ import shutil
 import os
 import threading
 import yaml
+import sys
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
@@ -18,7 +19,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 
-from api.common.enums import AgentOperation
+from api.common.enums import AgentOperation, Operation
 from api.exceptions import CustomError, NoResource, ResourceExists, ResourceInUse
 from api.exceptions import ResourceNotFound
 from api.models import (
@@ -521,42 +522,130 @@ class NodeViewSet(viewsets.ViewSet):
     @action(methods=["post"], detail=True, url_path="operations")
     def operate(self, request, pk=None):
         """
-        Operate Node
+        Operate node
 
-        Do some operation on node, start/stop/restart
+        :param request: operate type
+        :param pk: node id
+        :return:
         """
-        try:
-            serializer = NodeOperationSerializer(data=request.data)
-            if serializer.is_valid(raise_exception=True):
-                action = serializer.validated_data.get("action")
-                infos = self._agent_params(pk)
-                agent = AgentHandler(infos)
-                node_qs = Node.objects.filter(id=pk)
-                node_status = infos.get("status")
+        print("NodeViewSet.operate CALLED", file=sys.stderr)
+        serializer = NodeOperationSerializer(data=request.data)
+        if serializer.is_valid():
+            print("NodeViewSet.operate: SERIALIZER IS VALID", file=sys.stderr)
+            action = serializer.validated_data.get("action")
+            try:
+                node = Node.objects.get(
+                    id=pk, organization=request.user.organization
+                )
+                print(f"NodeViewSet.operate: Node object retrieved: {node.name}", file=sys.stderr)
+                node_info_for_agent_handler = {
+                    "id": str(node.id),
+                    "name": node.name,
+                    "urls": node.agent.urls,
+                    "container_name": node.cid,
+                    "agent_type": node.agent.type.lower(),
+                    "network_type": node.network_type,
+                    "network_version": node.network_version,
+                    "type": node.type
+                }
+                agent_handler = AgentHandler(node=node_info_for_agent_handler)
 
-                if action == "start" and node_status == "paused":
-                    node_qs.update(status="restarting")
-                    res = True if agent.start() else False
-                    if res:
-                        node_qs.update(status="running")
-                    return Response(
-                        ok({"restart": res}), status=status.HTTP_201_CREATED
-                    )
-                elif action == "stop" and node_status == "running":
-                    res = True if agent.stop() else False
-                    if res:
-                        node_qs.update(status="paused")
-                    return Response(
-                        ok({"stop": res}), status=status.HTTP_201_CREATED
-                    )
+                if action == AgentOperation.Start.value:
+                    if not node.cid:
+                        print(f"NodeViewSet.operate: Node {node.name} (ID: {node.id}) has no container ID. Attempting to create first.", file=sys.stderr)
+                        
+                        ports_qs = Port.objects.filter(node=node)
+                        
+                        image = node.image
+                        command = node.command
+                        ca_admin_user = None
+                        ca_admin_pass = None
+
+                        if node.type == "ca":
+                            if not image: image = f"hyperledger/fabric-ca:{node.network_version or 'latest'}"
+                            if node.ca:
+                                ca_admin_user = node.ca.admin_name
+                                ca_admin_pass = node.ca.admin_password
+                            if not command: command = f"fabric-ca-server start -b {ca_admin_user or 'admin'}:{ca_admin_pass or 'adminpw'}" 
+                        elif node.type == "peer":
+                            if not image: image = f"hyperledger/fabric-peer:{node.network_version or 'latest'}"
+                            if not command: command = "peer node start"
+                        elif node.type == "orderer":
+                            if not image: image = f"hyperledger/fabric-orderer:{node.network_version or 'latest'}"
+                            if not command: command = "orderer"
+                        
+                        create_info = {
+                            "id": str(node.id),
+                            "name": node.name,
+                            "type": node.type,
+                            "msp": node.msp, 
+                            "tls": node.tls, 
+                            "config_file": node.config_file,
+                            "ports": ports_qs,
+                            "image": image, 
+                            "command": command,
+                            "ca_admin_user": ca_admin_user, 
+                            "ca_admin_pass": ca_admin_pass, 
+                            "network_version": node.network_version, 
+                        }
+                        
+                        try:
+                            container_id = agent_handler.create(create_info) 
+                            if container_id:
+                                node.cid = container_id
+                                node.status = "running"
+                                node.save(update_fields=['cid', 'status'])
+                                print(f"NodeViewSet.operate: Successfully created and started node {node.name}, container ID: {container_id}", file=sys.stderr)
+                            else:
+                                print(f"NodeViewSet.operate: Failed to create container for node {node.name} via agent_handler.create (no container_id returned).", file=sys.stderr)
+                                raise CustomError({"message": "Failed to create node via agent (no container_id returned)."})
+                        except Exception as e:
+                            print(f"NodeViewSet.operate: Exception during agent_handler.create for node {node.name}: {e}", exc_info=True, file=sys.stderr)
+                            node.status = "error" 
+                            node.save(update_fields=['status'])
+                            raise CustomError({"message": f"Error creating node: {str(e)}"})
+                    else: 
+                        print(f"NodeViewSet.operate: Node {node.name} (ID: {node.id}, CID: {node.cid}) exists. Attempting to start.", file=sys.stderr)
+                        try:
+                            agent_handler.start() 
+                            node.status = "running" 
+                            node.save(update_fields=['status'])
+                            print(f"NodeViewSet.operate: Successfully sent start command for existing node {node.name} (CID: {node.cid})", file=sys.stderr)
+                        except Exception as e:
+                            print(f"NodeViewSet.operate: Exception during agent_handler.start for node {node.name} (CID: {node.cid}): {e}", exc_info=True, file=sys.stderr)
+                            node.status = "error" 
+                            node.save(update_fields=['status'])
+                            raise CustomError({"message": f"Error starting existing node: {str(e)}"})
+                elif action == AgentOperation.Stop.value:
+                    agent_handler.stop()
+                    node.status = "paused"
+                    node.save()
+                elif action == AgentOperation.Restart.value:
+                    if not node.cid:
+                        print(f"NodeViewSet.operate: Restart called on node {node.name} with no container ID. Create it first.", file=sys.stderr)
+                        raise CustomError({"message": "Cannot restart a node that was not created."})
+                    agent_handler.restart()
+                    node.status = "running"
+                    node.save()
                 else:
-                    return Response(
-                        ok({"error": "invalid operation"}), status=status.HTTP_201_CREATED
-                    )
-        except Exception as e:
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+                    raise CustomError({"message": f"Unsupported action: {action}"})
+
+                return Response(ok("Accepted"), status=status.HTTP_202_ACCEPTED)
+            except ObjectDoesNotExist:
+                return Response(err("Node Not Found"), status=status.HTTP_404_NOT_FOUND)
+            except ResourceExists:
+                return Response(err("Node already exists"), status=status.HTTP_409_CONFLICT)
+            except CustomError as e:
+                return Response(err(e.detail), status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                print(f"NodeViewSet.operate: Generic exception in NodeViewSet.operate for action {action} on node {pk}: {e}", exc_info=True, file=sys.stderr)
+                return Response(
+                    err(str(e)), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        else:
+            print(f"NodeViewSet.operate: SERIALIZER FAILED. Errors: {serializer.errors}", file=sys.stderr)
+            LOG.error(f"NodeOperationSerializer FAILED validation. Errors: {serializer.errors}")
+            return Response(err(serializer.errors), status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
         responses=with_common_response(
@@ -593,23 +682,23 @@ class NodeViewSet(viewsets.ViewSet):
                     # try to stop/delete container 3 times
                     # TODO: optimize the retry logic
                     for i in range(3):
-                        LOG.info(
-                            "Retry to stop/delete container %d time(s).", i + 1)
+                        print(
+                            "Retry to stop/delete container %d time(s).", i + 1, file=sys.stderr)
                         try:
                             response = agent.stop()
                             if response is not True:
-                                LOG.error(
-                                    "Failed when agent stops/deletes container: %s", response)
+                                print(
+                                    "Retry to stop/delete container: Failed when agent stops/deletes container: %s", response, file=sys.stderr)
                                 continue
                             response = agent.delete()
                             if response is not True:
-                                LOG.error(
-                                    "Failed when agent stops/deletes container: %s", response)
+                                print(
+                                    "Retry to stop/delete container: Failed when agent stops/deletes container: %s", response, file=sys.stderr)
                                 continue
                             res = True
                         except Exception as e:
-                            LOG.error(
-                                "Exception when agent stops/deletes container: %s", e)
+                            print(
+                                "Retry to stop/delete container: Exception when agent stops/deletes container: %s", e, file=sys.stderr)
                             continue
                         break
                 if res:
