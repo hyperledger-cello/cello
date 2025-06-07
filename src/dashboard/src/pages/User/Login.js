@@ -95,7 +95,7 @@ class LoginPage extends Component {
               />
               <Password
                 name="password"
-                placeholder={`${intl.formatMessage({ id: 'app.login.password' })}: password`}
+                placeholder={`${intl.formatMessage({ id: 'app.login.password' })}`}
                 rules={[
                   {
                     required: true,
