@@ -26,3 +26,10 @@ export async function approveChainCode(params) {
     data: params,
   });
 }
+
+export async function commitChainCode(params) {
+  return request('/api/v1/chaincodes/commit', {
+    method: 'POST',
+    data: params,
+  });
+}

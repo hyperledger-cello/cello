@@ -118,7 +118,6 @@ class ChainCode(Command):
         The administrator can use the peer lifecycle chaincode approveformyorg subcommand to approve the chain code on
         behalf of the organization.
         :param orderer_url: orderer accessable url
-        :param orderer_tls_rootcert: orderer tls certificate
         :param channel_name: channel name
         :param cc_name: chaincode name
         :param chaincode_version: chaincode version
@@ -215,96 +214,113 @@ class ChainCode(Command):
 
         return return_code, chaincodes_info
 
-    def lifecycle_check_commit_readiness(self, orderer_url, orderer_tls_rootcert, channel_name, cc_name, cc_version,
-                                         policy, sequence=1):
+    def lifecycle_check_commit_readiness(self, channel_name, cc_name, cc_version, sequence=1):
         """
-
-        :param orderer_url:orderer accessable url
-        :param orderer_tls_rootcert:orderer tls certificate
         :param channel_name:channel name
         :param cc_name: chaincode name
         :param cc_version: chaincode version
-        :param policy:chaincode policy
         :param sequence:The channel chain code defines the serial number. The default value is 1
         :return:
         """
         try:
+            ORDERER_CA = os.getenv("ORDERER_CA")
+            command = []
             if os.getenv("CORE_PEER_TLS_ENABLED") == "false" or os.getenv("CORE_PEER_TLS_ENABLED") is None:
-                res = subprocess.Popen("{} lifecycle chaincode checkcommitreadiness --output json "
-                                       " --channelID {}  --name {} --version {} --init-required --sequence {} "
-                                       "--signature-policy {}"
-                                       .format(self.peer, channel_name, cc_name, cc_version, sequence, policy),
-                                       shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                stdout, stderr = res.communicate()
-                return_code = res.returncode
-                if return_code == 0:
-                    content = str(stdout, encoding="utf-8")
-                    chaincodes_info = json.loads(content)
-                    return return_code, chaincodes_info
-                else:
-                    stderr = str(stderr, encoding="utf-8")
-                    return return_code, stderr
+                command = [
+                    self.peer,
+                    "lifecycle", "chaincode", "checkcommitreadiness",
+                    "--channelID", channel_name,
+                    "--name", cc_name,
+                    "--version", cc_version,
+                    "--sequence", str(sequence),
+                    "--output", "json",
+                ]
             else:
-                res = subprocess.Popen("{} lifecycle chaincode checkcommitreadiness --output json "
-                                       "-o {} --tls --cafile {} --channelID {}  --name {} --version {} "
-                                       "--signature-policy {} --init-required --sequence {}"
-                                       .format(self.peer, orderer_url, orderer_tls_rootcert, channel_name, cc_name,
-                                               cc_version, policy, sequence),
-                                       shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                stdout, stderr = res.communicate()
-                return_code = res.returncode
-                if return_code == 0:
-                    content = str(stdout, encoding="utf-8")
-                    chaincodes_info = json.loads(content)
-                    return return_code, chaincodes_info
-                else:
-                    stderr = str(stderr, encoding="utf-8")
-                    return return_code, stderr
+                command = [
+                    self.peer,
+                    "lifecycle", "chaincode", "checkcommitreadiness",
+                    "--channelID", channel_name,
+                    "--name", cc_name,
+                    "--version", cc_version,
+                    "--sequence", str(sequence),
+                    "--tls",
+                    "--cafile", ORDERER_CA,
+                    "--output", "json",
+                ]
+            
+            LOG.info(" ".join(command))
+
+            res = subprocess.Popen(command, shell=False,
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = res.communicate()
+            return_code = res.returncode
+            if return_code == 0:
+                content = str(stdout, encoding="utf-8")
+                chaincodes_info = json.loads(content)
+                return return_code, chaincodes_info
+            else:
+                stderr = str(stderr, encoding="utf-8")
+                return return_code, stderr
         except Exception as e:
-            err_msg = "lifecycle_check_commit_readiness failed for {}!".format(
-                e)
+            err_msg = "lifecycle_check_commit_readiness failed for {}!".format(e)
             raise Exception(err_msg)
 
-    def lifecycle_commit(self, orderer_url, orderer_tls_rootcert, channel_name, cc_name, chaincode_version,
-                         policy, peerlist, peer_root_certs, sequency=1):
+    def lifecycle_commit(self, orderer_url, channel_name, cc_name, chaincode_version, sequence, policy, peer_list=[], peer_root_certs=[], init_flag=False):
         """
         The administrator can submit the chain code definition to the specified channel by using the peer lifecycle
         chain code commit subcommand
         :param orderer_url: orderer accessable url
-        :param orderer_tls_rootcert:orderer tls certificate
         :param channel_name:channel name
         :param cc_name:chaincode name
         :param chaincode_version:chaincode version
+        :param sequence:The channel chain code defines the serial number. The default value is 1
         :param policy:chaincode policy
-        :param peerlist: the list of peerAddress
+        :param peer_list: the list of peerAddress
         :param peer_root_certs: the list of peer_root_certs, the orderer should be same as peerlist's.
-        :param sequency:The channel chain code defines the serial number. The default value is 1
+        :param init_flag:if the chaincode is first init.
         :return:
         """
         try:
-            peer_addresses_format = " --peerAddresses {} --tlsRootCertFiles {}"
-            command_str_with_tls = "{} lifecycle chaincode commit -o {} --tls --cafile {} " \
-                                   "--channelID {} --name {} --version {} --init-required --sequence {} " \
-                                   "--signature-policy {}"
-            command_str_without_tls = "{} lifecycle chaincode commit -o {} --channelID {} --name {} " \
-                                      "--version {} --init-required --sequence {} --signature-policy {}"
-
-            peer_addressed = []
-            for i in range(len(peerlist)):
-                peer_addressed.append(peerlist[i])
-                peer_addressed.append(peer_root_certs[i])
+            command = []
             if os.getenv("CORE_PEER_TLS_ENABLED") == "false" or os.getenv("CORE_PEER_TLS_ENABLED") is None:
-                for i in range(len(peerlist)):
-                    command_str_without_tls = command_str_without_tls + peer_addresses_format
-                res = os.system(command_str_without_tls.format(self.peer, orderer_url, channel_name, cc_name,
-                                chaincode_version, sequency, policy, *peer_addressed))      # --collections-config {}
+                command = [
+                    self.peer,
+                    "lifecycle", "chaincode", "commit",
+                    "-o", orderer_url,
+                    "--channelID", channel_name,
+                    "--name", cc_name,
+                    "--version", chaincode_version,
+                    "--sequence", str(sequence),
+                ]
             else:
-                for i in range(len(peerlist)):
-                    command_str_with_tls = command_str_with_tls + peer_addresses_format
+                ORDERER_CA = os.getenv("ORDERER_CA")
+                command = [
+                    self.peer,
+                    "lifecycle", "chaincode", "commit",
+                    "-o", orderer_url,
+                    "--ordererTLSHostnameOverride", orderer_url.split(":")[0],
+                    "--channelID", channel_name,
+                    "--name", cc_name,
+                    "--version", chaincode_version,
+                    "--sequence", str(sequence),
+                    "--tls",
+                    "--cafile", ORDERER_CA,
+                ]
 
-                res = os.system(command_str_with_tls.format(self.peer, orderer_url, orderer_tls_rootcert, channel_name,
-                                cc_name, chaincode_version, sequency, policy, *peer_addressed))
-
+            for i in range(len(peer_list)):
+                command.append("--peerAddresses")
+                command.append(peer_list[i])
+                command.append("--tlsRootCertFiles")
+                command.append(peer_root_certs[i])
+            
+            if init_flag:
+                command.append("--init-required")
+            if policy:
+                command.append("--signature-policy")
+                command.append(policy)
+            
+            LOG.info(" ".join(command))
+            res = os.system(" ".join(command))
             res = res >> 8
             return res
 
@@ -320,10 +336,16 @@ class ChainCode(Command):
         :return: chaincodes info has commited in channel of the cc_name
         """
         try:
-            res = subprocess.Popen("{} lifecycle chaincode querycommitted --channelID {} "
-                                   "--output json --name {}".format(
-                                       self.peer, channel_name, cc_name),
-                                   shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            command = [
+                self.peer,
+                "lifecycle", "chaincode", "querycommitted",
+                "--channelID", channel_name,
+                "--output", "json",
+                "--name", cc_name,
+            ]
+            LOG.info(" ".join(command))
+            res = subprocess.Popen(command, shell=False,
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = res.communicate()
             return_code = res.returncode
             if return_code == 0:
