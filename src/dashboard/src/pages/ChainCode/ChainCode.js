@@ -142,6 +142,25 @@ class ChainCode extends PureComponent {
     });
   };
 
+  handleCommit = (values, callback) => {
+    const { dispatch } = this.props;
+
+    const payload = {
+      channel_name: values.channel,
+      chaincode_name: values.name,
+      chaincode_version: values.version,
+      sequence: parseInt(values.sequence, 10),
+      policy: values.policy,
+      init_flag: !!values.initFlag,
+    };
+
+    dispatch({
+      type: 'chainCode/commitChainCode',
+      payload,
+      callback,
+    });
+  };
+
   handleUpload = (values, callback) => {
     const { dispatch } = this.props;
     const formData = new FormData();
@@ -226,9 +245,9 @@ class ChainCode extends PureComponent {
     const commitFormProps = {
       commitModalVisible,
       handleCommitModalVisible: this.handleCommitModalVisible,
+      handleCommit: this.handleCommit,
       fetchChainCodes: this.fetchChainCodes,
       committing,
-      selectedRows: [],
       intl,
     };
 

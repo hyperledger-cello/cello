@@ -113,7 +113,7 @@ class OrganizationViewSet(viewsets.ViewSet):
             except ObjectDoesNotExist:
                 pass
             else:
-                raise ResourceExists
+                raise ResourceExists("Organization Exists")
 
             CryptoConfig(name).create(peernum, orderernum)
             CryptoGen(name).generate()
@@ -198,6 +198,7 @@ class OrganizationViewSet(viewsets.ViewSet):
             with open("{}{}".format(dir_node, cname), "rb") as f_cfg:
                 cfg = base64.b64encode(f_cfg.read())
         except Exception as e:
+            LOG.exception("Conversion Failed: CFG from Zip To Byte")
             raise e
 
         return msp, tls, cfg
@@ -255,6 +256,7 @@ class OrganizationViewSet(viewsets.ViewSet):
             with open("{}tls.zip".format(dir_org), "rb") as f_tls:
                 tls = base64.b64encode(f_tls.read())
         except Exception as e:
+            LOG.exception("Conversion Failed: Zip To Byte")
             raise e
 
         return msp, tls
@@ -276,7 +278,7 @@ class OrganizationViewSet(viewsets.ViewSet):
         try:
             organization = Organization.objects.get(id=pk)
             if organization.network:
-                raise ResourceInUse
+                raise ResourceInUse("Organization In Use")
 
             # user_count = UserProfile.objects.filter(
             #     organization=organization
@@ -288,7 +290,7 @@ class OrganizationViewSet(viewsets.ViewSet):
                 shutil.rmtree(path, True)
             organization.delete()
         except ObjectDoesNotExist:
-            raise ResourceNotFound
+            raise ResourceNotFound("Organization Not Found")
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -309,7 +311,7 @@ class OrganizationViewSet(viewsets.ViewSet):
         try:
             organization = Organization.objects.get(id=pk)
         except ObjectDoesNotExist:
-            raise ResourceNotFound
+            raise ResourceNotFound("Organization Not Found")
         else:
             response = OrganizationResponse(data=organization.__dict__)
             if response.is_valid(raise_exception=True):
@@ -348,7 +350,7 @@ class OrganizationViewSet(viewsets.ViewSet):
             try:
                 organization = Organization.objects.get(id=pk)
             except ObjectDoesNotExist:
-                raise ResourceNotFound
+                raise ResourceNotFound("Organization Not Found")
             page = serializer.validated_data.get("page")
             per_page = serializer.validated_data.get("per_page")
             name = serializer.validated_data.get("name")
@@ -383,9 +385,9 @@ class OrganizationViewSet(viewsets.ViewSet):
                 organization = Organization.objects.get(id=pk)
                 user = UserProfile.objects.get(id=user_id)
                 if user.organization:
-                    raise ResourceInUse
+                    raise ResourceInUse("Organization In Use")
             except ObjectDoesNotExist:
-                raise ResourceNotFound
+                raise ResourceNotFound("Organization Not Found")
             else:
                 user.organization = organization
                 user.save()
@@ -440,7 +442,7 @@ class OrganizationViewSet(viewsets.ViewSet):
         try:
             user = UserProfile.objects.get(id=user_id, organization__id=pk)
         except ObjectDoesNotExist:
-            raise ResourceNotFound
+            raise ResourceNotFound("User Not Found")
         else:
             user.organization = None
             user.save()

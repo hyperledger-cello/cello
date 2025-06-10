@@ -27,7 +27,7 @@ class NodeHandler(object):
             ports = Port.objects.filter(node=node)
             ports = {str(item.internal): item.external for item in ports}
         except ObjectDoesNotExist:
-            raise ObjectDoesNotExist
+            raise ObjectDoesNotExist("Node Does Not Exist")
 
         self._node = node
         self._network_type = node.network_type

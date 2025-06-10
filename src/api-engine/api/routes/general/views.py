@@ -121,6 +121,7 @@ class RegisterViewSet(viewsets.ViewSet):
             with open("{}tls.zip".format(dir_org), "rb") as f_tls:
                 tls = base64.b64encode(f_tls.read())
         except Exception as e:
+            LOG.exception("Conversion Failed")
             raise e
 
         return msp, tls
@@ -169,7 +170,7 @@ class CelloTokenVerifyView(TokenVerifyView):
                         status=200,
                     )
             except TokenError:
-                LOG.warn("invalid token error")
+                LOG.exception("invalid token error")
                 return Response(
                     data=err(msg="invalid token"),
                     status=401

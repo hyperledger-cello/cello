@@ -3,6 +3,7 @@ import {
   uploadChainCode,
   installChainCode,
   approveChainCode,
+  commitChainCode,
 } from '@/services/chaincode';
 
 export default {
@@ -49,6 +50,12 @@ export default {
     },
     *approveChainCode({ payload, callback }, { call }) {
       const response = yield call(approveChainCode, payload);
+      if (callback) {
+        callback(response);
+      }
+    },
+    *commitChainCode({ payload, callback }, { call }) {
+      const response = yield call(commitChainCode, payload);
       if (callback) {
         callback(response);
       }

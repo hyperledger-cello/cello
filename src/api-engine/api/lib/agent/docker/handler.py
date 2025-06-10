@@ -56,6 +56,7 @@ class DockerAgent(AgentBase):
             else:
                 return None
         except Exception as e:
+            LOG.exception("DockerAgent Not Created")
             raise e
 
     def delete(self, *args, **kwargs):
@@ -66,6 +67,7 @@ class DockerAgent(AgentBase):
             else:
                 raise response.reason
         except Exception as e:
+            LOG.exception("DockerAgent Not Deleted")
             raise e
 
     def start(self, *args, **kwargs):
@@ -76,6 +78,7 @@ class DockerAgent(AgentBase):
             else:
                 raise response.reason
         except Exception as e:
+            LOG.exception("DockerAgent Not Started")
             raise e
 
     def restart(self, *args, **kwargs):
@@ -86,6 +89,7 @@ class DockerAgent(AgentBase):
             else:
                 raise response.reason
         except Exception as e:
+            LOG.exception("DockerAgent Not Restarted")
             raise e
 
     def stop(self, *args, **kwargs):
@@ -96,6 +100,7 @@ class DockerAgent(AgentBase):
             else:
                 raise response.reason
         except Exception as e:
+            LOG.exception("DockerAgent Not Stopped")
             raise e
 
     def get(self, *args, **kwargs):
@@ -106,6 +111,7 @@ class DockerAgent(AgentBase):
             else:
                 raise response.reason
         except Exception as e:
+            LOG.exception("DockerAgent Not Found")
             raise e
 
     def update_config(self, config_file, node_type):
@@ -123,4 +129,5 @@ class DockerAgent(AgentBase):
             else:
                 raise response.reason
         except Exception as e:
+            LOG.exception("Config Update Failed")
             raise e

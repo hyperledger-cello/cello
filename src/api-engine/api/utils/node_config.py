@@ -63,7 +63,7 @@ class NodeConfig:
             with open(dst, 'w+') as f:
                 yaml.dump(cfg, f)
         except Exception as e:
-            raise e
+            raise Exception("Configuration File Not Generated") from e
 
     def __from_dst(self, node, node_type):
         """
