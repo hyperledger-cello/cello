@@ -553,9 +553,9 @@ class NodeViewSet(viewsets.ViewSet):
                 if action == AgentOperation.Start.value:
                     if not node.cid:
                         print(f"NodeViewSet.operate: Node {node.name} (ID: {node.id}) has no container ID. Attempting to create first.", file=sys.stderr)
-                        
+
                         ports_qs = Port.objects.filter(node=node)
-                        
+
                         image = node.image
                         command = node.command
                         ca_admin_user = None
@@ -566,31 +566,31 @@ class NodeViewSet(viewsets.ViewSet):
                             if node.ca:
                                 ca_admin_user = node.ca.admin_name
                                 ca_admin_pass = node.ca.admin_password
-                            if not command: command = f"fabric-ca-server start -b {ca_admin_user or 'admin'}:{ca_admin_pass or 'adminpw'}" 
+                            if not command: command = f"fabric-ca-server start -b {ca_admin_user or 'admin'}:{ca_admin_pass or 'adminpw'}"
                         elif node.type == "peer":
                             if not image: image = f"hyperledger/fabric-peer:{node.network_version or 'latest'}"
                             if not command: command = "peer node start"
                         elif node.type == "orderer":
                             if not image: image = f"hyperledger/fabric-orderer:{node.network_version or 'latest'}"
                             if not command: command = "orderer"
-                        
+
                         create_info = {
                             "id": str(node.id),
                             "name": node.name,
                             "type": node.type,
-                            "msp": node.msp, 
-                            "tls": node.tls, 
+                            "msp": node.msp,
+                            "tls": node.tls,
                             "config_file": node.config_file,
                             "ports": ports_qs,
-                            "image": image, 
+                            "image": image,
                             "command": command,
-                            "ca_admin_user": ca_admin_user, 
-                            "ca_admin_pass": ca_admin_pass, 
-                            "network_version": node.network_version, 
+                            "ca_admin_user": ca_admin_user,
+                            "ca_admin_pass": ca_admin_pass,
+                            "network_version": node.network_version,
                         }
-                        
+
                         try:
-                            container_id = agent_handler.create(create_info) 
+                            container_id = agent_handler.create(create_info)
                             if container_id:
                                 node.cid = container_id
                                 node.status = "running"
@@ -601,19 +601,19 @@ class NodeViewSet(viewsets.ViewSet):
                                 raise CustomError({"message": "Failed to create node via agent (no container_id returned)."})
                         except Exception as e:
                             print(f"NodeViewSet.operate: Exception during agent_handler.create for node {node.name}: {e}", exc_info=True, file=sys.stderr)
-                            node.status = "error" 
+                            node.status = "error"
                             node.save(update_fields=['status'])
                             raise CustomError({"message": f"Error creating node: {str(e)}"})
-                    else: 
+                    else:
                         print(f"NodeViewSet.operate: Node {node.name} (ID: {node.id}, CID: {node.cid}) exists. Attempting to start.", file=sys.stderr)
                         try:
-                            agent_handler.start() 
-                            node.status = "running" 
+                            agent_handler.start()
+                            node.status = "running"
                             node.save(update_fields=['status'])
                             print(f"NodeViewSet.operate: Successfully sent start command for existing node {node.name} (CID: {node.cid})", file=sys.stderr)
                         except Exception as e:
                             print(f"NodeViewSet.operate: Exception during agent_handler.start for node {node.name} (CID: {node.cid}): {e}", exc_info=True, file=sys.stderr)
-                            node.status = "error" 
+                            node.status = "error"
                             node.save(update_fields=['status'])
                             raise CustomError({"message": f"Error starting existing node: {str(e)}"})
                 elif action == AgentOperation.Stop.value:

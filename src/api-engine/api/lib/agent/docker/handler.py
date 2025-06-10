@@ -58,7 +58,7 @@ class DockerAgent(AgentBase):
             else:
                 LOG.error(f"Unknown node type: {node_type} in DockerAgent.create")
                 raise ValueError(f"Unknown node type: {node_type}")
-            
+
             # Use image from info if available, otherwise default
             img = info.get("image", img)
             # Use command from info if available, otherwise default

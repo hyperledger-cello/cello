@@ -248,7 +248,7 @@ class ChainCode(Command):
                     "--cafile", ORDERER_CA,
                     "--output", "json",
                 ]
-            
+
             LOG.info(" ".join(command))
 
             res = subprocess.Popen(command, shell=False,
@@ -313,13 +313,13 @@ class ChainCode(Command):
                 command.append(peer_list[i])
                 command.append("--tlsRootCertFiles")
                 command.append(peer_root_certs[i])
-            
+
             if init_flag:
                 command.append("--init-required")
             if policy:
                 command.append("--signature-policy")
                 command.append(policy)
-            
+
             LOG.info(" ".join(command))
             res = os.system(" ".join(command))
             res = res >> 8
