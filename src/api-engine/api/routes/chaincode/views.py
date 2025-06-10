@@ -32,8 +32,8 @@ from api.routes.chaincode.serializers import (
     ChainCodeIDSerializer,
     ChainCodeCommitBody,
     ChainCodeApproveForMyOrgBody,
-    ChaincodeListResponse,
-    ChainCodeInvokeBody
+    ChainCodeInvokeBody,
+    ChaincodeListResponse
 )
 from api.common import ok, err
 import threading
@@ -641,12 +641,14 @@ class ChainCodeViewSet(viewsets.ViewSet):
         method="post",
         request_body=ChainCodeInvokeBody,
         responses=with_common_response(
-            {status.HTTP_200_OK: ChainCodeIDSerializer}
+            {status.HTTP_200_OK: "Chaincode invocation successful"}
         ),
     )
     @action(detail=False, methods=['post'])
     def invoke(self, request):
-        """Invoke chaincode."""
+        """
+        Invoke chaincode on the network
+        """
         serializer = ChainCodeInvokeBody(data=request.data)
         if serializer.is_valid(raise_exception=True):
             try:
@@ -656,50 +658,54 @@ class ChainCodeViewSet(viewsets.ViewSet):
                 init = serializer.validated_data.get("init", False)
 
                 org = request.user.organization
-                # Get orderer node for TLS cert
-                qs = Node.objects.filter(type="orderer", organization=org)
-                if not qs.exists():
-                    raise ResourceNotFound
-                orderer_node = qs.first()
-                orderer_url = orderer_node.name + "." + org.name.split(".", 1)[1] + ":" + str(7050)
-
-                orderer_tls_dir = "{}/{}/crypto-config/ordererOrganizations/{}/orderers/{}/msp/tlscacerts" \
-                    .format(CELLO_HOME, org.name, org.name.split(".", 1)[1], orderer_node.name + "." +
-                            org.name.split(".", 1)[1])
-                orderer_tls_root_cert = ""
-                for _, _, files in os.walk(orderer_tls_dir):
-                    orderer_tls_root_cert = orderer_tls_dir + "/" + files[0]
-                    break
-
-                # Get peer node for invoke
                 qs = Node.objects.filter(type="peer", organization=org)
                 if not qs.exists():
-                    raise ResourceNotFound
+                    raise ResourceNotFound("No peer nodes found for organization")
+                
                 peer_node = qs.first()
                 envs = init_env_vars(peer_node, org)
 
-                peer_channel_cli = PeerChainCode(**envs)
-                # Convert args list to JSON string for invoke
-                args_json = json.dumps({"Args": args})
-                code, content = peer_channel_cli.invoke(
-                    orderer_url, 
-                    orderer_tls_root_cert,
-                    channel_name,
-                    chaincode_name,
-                    args_json,
-                    init
+                # Get orderer information
+                orderer_qs = Node.objects.filter(type="orderer", organization=org)
+                if not orderer_qs.exists():
+                    raise ResourceNotFound("No orderer nodes found for organization")
+                
+                orderer_node = orderer_qs.first()
+                orderer_url = f"{orderer_node.name}.{org.name.split('.', 1)[1]}:7050"
+
+                # Get orderer TLS certificate
+                orderer_tls_dir = f"{CELLO_HOME}/{org.name}/crypto-config/ordererOrganizations/{org.name.split('.', 1)[1]}/orderers/{orderer_node.name}.{org.name.split('.', 1)[1]}/msp/tlscacerts"
+                orderer_tls_root_cert = ""
+                for _, _, files in os.walk(orderer_tls_dir):
+                    if files:
+                        orderer_tls_root_cert = os.path.join(orderer_tls_dir, files[0])
+                        break
+
+                # Initialize chaincode client
+                peer_chaincode_cli = PeerChainCode(**envs)
+                
+                # Convert args to JSON format if they aren't already
+                json_args = json.dumps(args) if not isinstance(args, str) else args
+
+                # Invoke chaincode
+                return_code, result = peer_chaincode_cli.invoke(
+                    orderer_url, orderer_tls_root_cert, channel_name, 
+                    chaincode_name, json_args, init
                 )
-                if code != 0:
+
+                if return_code != 0:
                     return Response(
-                        err(f"Chaincode invoke failed: {content}"), 
+                        err(f"Chaincode invocation failed: {result}"), 
                         status=status.HTTP_400_BAD_REQUEST
                     )
+
                 return Response(
-                    ok("Chaincode invoke successful"), 
+                    ok({"result": result, "message": "Chaincode invocation successful"}), 
                     status=status.HTTP_200_OK
                 )
+
             except Exception as e:
                 return Response(
-                    err(str(e)), 
+                    err(f"Chaincode invocation failed: {str(e)}"), 
                     status=status.HTTP_400_BAD_REQUEST
                 )
