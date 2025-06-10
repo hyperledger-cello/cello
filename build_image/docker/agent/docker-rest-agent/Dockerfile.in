@@ -1,14 +1,28 @@
-FROM python:3.8
+FROM python:3.8-slim
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    python3-dev \
+    libev-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and pip config
 COPY src/agent/docker-rest-agent/requirements.txt /
-ARG pip=pip.conf.bak
+ARG pip=pip.conf
 COPY src/agent/docker-rest-agent/pip.conf /root/.pip/$pip
 
-RUN pip install -r /requirements.txt
-RUN mkdir -p /var/www/server
+# Install Python dependencies with pinned gevent version
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir "gevent==22.10.2" && \
+    pip install --no-cache-dir -r /requirements.txt
 
-COPY src/agent/docker-rest-agent/server.py /var/www/server
-COPY src/agent/docker-rest-agent/gunicorn.conf.py  /var/www/server
+# Create server directory and copy files
+RUN mkdir -p /var/www/server
+COPY src/agent/docker-rest-agent/server.py /var/www/server/
+COPY src/agent/docker-rest-agent/gunicorn.conf.py /var/www/server/
 
 WORKDIR /var/www/server
 
-CMD ["gunicorn", "server:app", "-c", "./gunicorn.conf.py"]
+# Run the server
+CMD ["gunicorn", "--config", "gunicorn.conf.py", "server:app"]
