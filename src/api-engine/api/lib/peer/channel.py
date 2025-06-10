@@ -47,13 +47,13 @@ class Channel(Command):
                 ]
 
             LOG.info(" ".join(command))
-            
+
             res = subprocess.run(command, check=True)
 
         except subprocess.CalledProcessError as e:
             err_msg = "create channel failed for {}!".format(e)
             raise Exception(err_msg+str(e))
-        
+
         except Exception as e:
             err_msg = "create channel failed for {}!".format(e)
             raise Exception(err_msg)

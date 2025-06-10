@@ -439,7 +439,7 @@ def set_anchor_peer(name, org, anchor_peer, ordering_node):
     """
     org_msp = '{}'.format(org.name.split(".", 1)[0].capitalize())
     channel_artifacts_path = "{}/{}".format(CELLO_HOME, org.network.name)
-    
+
     # Fetch the channel block from the orderer
     peer_channel_fetch(name, org, anchor_peer, ordering_node)
 
@@ -449,7 +449,7 @@ def set_anchor_peer(name, org, anchor_peer, ordering_node):
         type="common.Block",
         output="{}/config_block.json".format(channel_artifacts_path),
     )
-    
+
     # Get the config data from the block
     json_filter(
         input="{}/config_block.json".format(channel_artifacts_path),
