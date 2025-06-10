@@ -162,11 +162,11 @@ def to_dict(data):
 def json_filter(input, output, expression):
     """
     Process JSON data using path expression similar to jq
-    
+
     Args:
         input (str): JSON data or file path to JSON
         output (str): Path expression like ".data.data[0].payload.data.config"
-    
+
     Returns:
         dict: Processed JSON data
     """
@@ -176,11 +176,11 @@ def json_filter(input, output, expression):
             data = json.load(f)
     else:
         data = input
-        
+
     # parse the path expression
     path_parts = expression.strip('.').split('.')
     result = data
-    
+
     for part in path_parts:
         # handle array index, like data[0]
         if '[' in part and ']' in part:
@@ -189,7 +189,7 @@ def json_filter(input, output, expression):
             result = result[array_name][index]
         else:
             result = result[part]
-            
+
     with open(output, 'w', encoding='utf-8') as f:
         json.dump(result, f, sort_keys=False, indent=4)
 
@@ -210,25 +210,25 @@ def json_add_anchor_peer(input, output, anchor_peer_config, org_msp):
             data = json.load(f)
     else:
         data = input
-        
+
     if "groups" not in data["channel_group"]:
         data["channel_group"]["groups"] = {}
     if "Application" not in data["channel_group"]["groups"]:
         data["channel_group"]["groups"]["Application"] = {"groups": {}}
     if org_msp not in data["channel_group"]["groups"]["Application"]["groups"]:
         data["channel_group"]["groups"]["Application"]["groups"][org_msp] = {"values": {}}
-        
+
     data["channel_group"]["groups"]["Application"]["groups"][org_msp]["values"].update(anchor_peer_config)
-            
+
     with open(output, 'w', encoding='utf-8') as f:
         json.dump(data, f, sort_keys=False, indent=4)
-    
+
     LOG.info("jq '.channel_group.groups.Application.groups.Org1MSP.values += ... ' {} -> {}".format(input, output))
 
 def json_create_envelope(input, output, channel):
     """
     Create a config update envelope structure
-    
+
     Args:
         input (str): Path to the config update JSON file
         output (str): Path to save the envelope JSON
@@ -238,7 +238,7 @@ def json_create_envelope(input, output, channel):
         # Read the config update file
         with open(input, 'r', encoding='utf-8') as f:
             config_update = json.load(f)
-            
+
         # Create the envelope structure
         envelope = {
             "payload": {
@@ -253,13 +253,13 @@ def json_create_envelope(input, output, channel):
                 }
             }
         }
-        
+
         # Write the envelope to output file
         with open(output, 'w', encoding='utf-8') as f:
             json.dump(envelope, f, sort_keys=False, indent=4)
-            
+
         LOG.info("echo 'payload ... ' | jq . > {}".format(output))
-            
+
     except Exception as e:
         LOG.error("Failed to create config update envelope: {}".format(str(e)))
         raise
