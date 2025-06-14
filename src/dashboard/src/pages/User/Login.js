@@ -122,6 +122,12 @@ class LoginPage extends Component {
               {!registering &&
                 registerMsg !== '' &&
                 this.renderMessage({ type: success ? 'success' : 'error', message: registerMsg })}
+              <Alert
+                message={intl.formatMessage({ id: 'app.register.info' })}
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
               <Tooltip
                 title={intl.formatMessage({ id: 'app.register.orgName.example' })}
                 placement="bottomLeft"

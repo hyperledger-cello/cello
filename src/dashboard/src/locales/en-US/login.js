@@ -12,6 +12,8 @@ export default {
   'app.login.login': 'Login',
   'app.login.email': 'E-mail',
   'app.register.register': 'Register',
+  'app.register.info':
+    'This registration form is only for setting up a new organization and its first administrator. If your organization already exists, please ask your administrator to create your account.',
   'app.register.orgName': 'Organization name',
   'app.register.passwordAgain': 'Enter the password again',
   'app.register.success': 'The organization and user register success!',

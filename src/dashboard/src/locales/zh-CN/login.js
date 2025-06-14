@@ -12,6 +12,8 @@ export default {
   'app.login.login': '登录',
   'app.login.email': 'E-mail',
   'app.register.register': '注册',
+  'app.register.info':
+    '此注册功能仅用于创建新组织及其首位管理员账号。如果您的组织已完成注册，请联系组织管理员为您创建个人账号。',
   'app.register.orgName': '组织名',
   'app.register.passwordAgain': '再次输入密码',
   'app.register.success': '组织和用户注册成功',
