@@ -81,9 +81,19 @@ const errorHandler = error => {
       defaultMessage: 'An error occurred while processing your request.',
     });
 
+  const safeDetailMessage = (obj => {
+    if (typeof obj === 'string') {
+      return obj;
+    } else if (typeof obj === 'object') {
+      return JSON.stringify(obj);
+    } else {
+      return String(obj);
+    }
+  })(detailMessage);
+
   notification.error({
     message: errorMessage,
-    description: `${url}\n${detailMessage}`,
+    description: `${url}\n${safeDetailMessage}`,
   });
 
   // Handle navigation for specific error codes
