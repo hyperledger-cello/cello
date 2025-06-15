@@ -10,7 +10,7 @@ envsubst < ${RAW_LOCAL_SETTINGS} > ${LOCAL_SETTINGS}
 
 holdup -t 120 tcp://${DB_HOST}:${DB_PORT};
 if [[ "$RUN_MODE" == "server" ]]; then
-  python manage.py makemigrations && python manage.py migrate;
+  python manage.py migrate;
   python manage.py create_user \
     --username ${API_ENGINE_ADMIN_USERNAME:-admin} \
     --password ${API_ENGINE_ADMIN_PASSWORD:-pass} \
