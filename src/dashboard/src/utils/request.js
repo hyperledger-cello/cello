@@ -22,8 +22,9 @@ const errorHandler = error => {
   const { status, url } = response;
 
   // Handle specific error cases
-  if (status === 400) {
+  if (status === 401) {
     const api = url.split('/').pop();
+
     if (api === 'login') {
       notification.error({
         message: formatMessage({
@@ -34,9 +35,7 @@ const errorHandler = error => {
       });
       return;
     }
-  }
 
-  if (status === 401) {
     notification.error({
       message: formatMessage({
         id: 'error.login.expired',
