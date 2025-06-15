@@ -3,7 +3,7 @@
 */
 import React, { Component } from 'react';
 import { Layout } from 'antd';
-import DocumentTitle from 'react-document-title';
+import { Helmet } from 'react-helmet';
 import { connect, setLocale, getLocale } from 'umi';
 import { ContainerQuery } from 'react-container-query';
 import classNames from 'classnames';
@@ -161,17 +161,19 @@ class BasicLayout extends Component {
       </Layout>
     );
     return (
-      <React.Fragment>
-        <DocumentTitle title={getPageTitle(pathname, breadcrumbNameMap)}>
-          <ContainerQuery query={query}>
-            {params => (
-              <Context.Provider value={this.getContext()}>
-                <div className={classNames(params)}>{layout}</div>
-              </Context.Provider>
-            )}
-          </ContainerQuery>
-        </DocumentTitle>
-      </React.Fragment>
+      <>
+        <Helmet>
+          <title>{getPageTitle(pathname, breadcrumbNameMap)}</title>
+        </Helmet>
+
+        <ContainerQuery query={query}>
+          {params => (
+            <Context.Provider value={this.getContext()}>
+              <div className={classNames(params)}>{layout}</div>
+            </Context.Provider>
+          )}
+        </ContainerQuery>
+      </>
     );
   }
 }
