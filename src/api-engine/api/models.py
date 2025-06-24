@@ -117,6 +117,7 @@ class UserProfile(AbstractUser):
     organization = models.ForeignKey(
         Organization, null=True, on_delete=models.CASCADE, related_name="users",
     )
+    created_at = models.DateTimeField(auto_now_add=True)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
