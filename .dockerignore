@@ -5,6 +5,5 @@ Dockerfile*
 *~
 screenshots
 **/node_modules
-**/yarn.lock
 **/.temp
 **/__pycache__
