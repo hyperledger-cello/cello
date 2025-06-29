@@ -45,6 +45,7 @@ class AgentHandler(object):
             else:
                 return None
         except Exception as e:
+            LOG.error("Agent Not Created", exc_info=True)
             raise e
 
     def delete(self):
@@ -71,5 +72,5 @@ class AgentHandler(object):
         try:
             return self._agent.get()
         except Exception as e:
-            LOG.error(e)
+            LOG.error("Agent Not Found: %s", e, exc_info=True)
             return False

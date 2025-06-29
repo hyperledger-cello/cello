@@ -188,6 +188,7 @@ class ChannelViewSet(viewsets.ViewSet):
             return Response(ok(response.data), status=status.HTTP_200_OK)
 
         except ObjectDoesNotExist:
+            LOG.exception("channel not found")
             raise ResourceNotFound
 
     @swagger_auto_schema(
@@ -217,7 +218,7 @@ class ChannelViewSet(viewsets.ViewSet):
                 try:
                     config = data["config"]["channel_group"]["groups"][org_type]["groups"][msp_id]
                 except KeyError:
-                    LOG.error("config file not found")
+                    LOG.exception("config file not found")
                     raise ResourceNotFound
 
                 try:
@@ -226,7 +227,7 @@ class ChannelViewSet(viewsets.ViewSet):
                         LOG.info("load current config success")
                         current_config = json.load(f)
                 except FileNotFoundError:
-                    LOG.error("current config file not found")
+                    LOG.exception("current config file not found")
                     raise ResourceNotFound
 
                 # Create a new org
@@ -314,6 +315,7 @@ class ChannelViewSet(viewsets.ViewSet):
                 LOG.info("new_org save success")
                 return Response(ok(None), status=status.HTTP_202_ACCEPTED)
             except ObjectDoesNotExist:
+                LOG.exception("channel not found")
                 raise ResourceNotFound
 
     @swagger_auto_schema(
@@ -361,6 +363,7 @@ class ChannelViewSet(viewsets.ViewSet):
             )
             return Response(data=data, status=status.HTTP_200_OK)
         except ObjectDoesNotExist:
+            LOG.exception("channel org not found")
             raise ResourceNotFound
 
 def validate_nodes(nodes):

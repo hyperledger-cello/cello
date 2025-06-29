@@ -9,7 +9,7 @@ const FormItem = Form.Item;
 const ApproveForm = props => {
   const [form] = Form.useForm();
   const intl = useIntl();
-  const [channels, setChannels] = useState();
+  const [channels, setChannels] = useState([]);
   const {
     approveModalVisible,
     handleApprove,
@@ -20,11 +20,15 @@ const ApproveForm = props => {
   } = props;
 
   useEffect(() => {
-    async function fecthData() {
+    async function fetchData() {
       const response = await listChannel();
-      setChannels(response.data.data);
+      const newChannels = Object.keys(response.data.data).map(item => ({
+        label: response.data.data[item].name,
+        value: response.data.data[item].name,
+      }));
+      setChannels(newChannels);
     }
-    fecthData();
+    fetchData();
   }, []);
 
   const approveCallback = response => {
@@ -100,7 +104,15 @@ const ApproveForm = props => {
       onOk={onSubmit}
       onCancel={() => handleApproveModalVisible(false)}
     >
-      <Form onFinish={onFinish} form={form} preserve={false}>
+      <Form
+        onFinish={onFinish}
+        form={form}
+        preserve={false}
+        initialValues={{
+          policy: '',
+          initFlag: false,
+        }}
+      >
         <FormItem
           {...formItemLayout}
           label={intl.formatMessage({
@@ -119,10 +131,8 @@ const ApproveForm = props => {
           ]}
         >
           <Select
-            mode="multiple"
-            options={channels} // dummyChannels changed
+            options={channels}
             tagRender={tagRender}
-            defaultValue={[]}
             dropdownClassName={styles.dropdownClassName}
           />
         </FormItem>
@@ -147,6 +157,69 @@ const ApproveForm = props => {
             placeholder={intl.formatMessage({
               id: 'app.chainCode.form.approve.name',
               defaultMessage: 'Name',
+            })}
+          />
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label={intl.formatMessage({
+            id: 'app.chainCode.form.approve.version',
+            defaultMessage: 'Version',
+          })}
+          name="version"
+          rules={[
+            {
+              required: true,
+              message: intl.formatMessage({
+                id: 'app.chainCode.form.approve.version.required',
+                defaultMessage: 'Please input version',
+              }),
+            },
+          ]}
+        >
+          <Input
+            placeholder={intl.formatMessage({
+              id: 'app.chainCode.form.approve.version.placeholder',
+              defaultMessage: 'Version',
+            })}
+          />
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label={intl.formatMessage({
+            id: 'app.chainCode.form.approve.sequence',
+            defaultMessage: 'Sequence',
+          })}
+          name="sequence"
+          rules={[
+            {
+              required: true,
+              message: intl.formatMessage({
+                id: 'app.chainCode.form.approve.sequence.required',
+                defaultMessage: 'Please input sequence',
+              }),
+            },
+          ]}
+        >
+          <Input
+            placeholder={intl.formatMessage({
+              id: 'app.chainCode.form.approve.sequence.placeholder',
+              defaultMessage: 'Sequence',
+            })}
+          />
+        </FormItem>
+        <FormItem
+          {...formItemLayout}
+          label={intl.formatMessage({
+            id: 'app.chainCode.form.approve.endorsement_policy',
+            defaultMessage: 'Endorsement Policy',
+          })}
+          name="policy"
+        >
+          <Input
+            placeholder={intl.formatMessage({
+              id: 'app.chainCode.form.approve.policy.placeholder',
+              defaultMessage: 'Policy (optional)',
             })}
           />
         </FormItem>

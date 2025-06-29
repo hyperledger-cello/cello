@@ -67,7 +67,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = ("id", "username", "role", "organization")
+        fields = ("id", "username", "role", "organization", "created_at")
         extra_kwargs = {
             "id": {"read_only": False},
             "username": {"validators": []},

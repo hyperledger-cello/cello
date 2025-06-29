@@ -205,7 +205,7 @@ class AgentViewSet(viewsets.ViewSet):
             if agent.type == HostType.Kubernetes.name.lower():
                 k8s_config = KubernetesConfig.objects.get(agent=agent)
         except ObjectDoesNotExist:
-            raise ResourceNotFound
+            raise ResourceNotFound("Agent not found")
         else:
             data = agent.__dict__
             if k8s_config:
@@ -234,7 +234,7 @@ class AgentViewSet(viewsets.ViewSet):
                 # organization = request.user.organization
                 try:
                     if Agent.objects.get(name=name):
-                        raise ResourceExists
+                        raise ResourceExists("Agent Exists")
                 except ObjectDoesNotExist:
                     pass
                 Agent.objects.filter(id=pk).update(name=name)
@@ -266,7 +266,7 @@ class AgentViewSet(viewsets.ViewSet):
                 try:
                     agent = Agent.objects.get(id=pk)
                 except ObjectDoesNotExist:
-                    raise ResourceNotFound
+                    raise ResourceNotFound("Agent not found")
                 else:
                     if name:
                         agent.name = name
@@ -308,10 +308,10 @@ class AgentViewSet(viewsets.ViewSet):
                 else:
                     raise CustomError("User can't delete agent！")
             except ObjectDoesNotExist:
-                raise ResourceNotFound
+                raise ResourceNotFound("Agent not found")
             else:
                 if agent.node.count():
-                    raise ResourceInUse
+                    raise ResourceInUse("Agent in use")
                 agent.delete()
 
                 return Response(ok(None), status=status.HTTP_202_ACCEPTED)
@@ -357,7 +357,7 @@ class AgentViewSet(viewsets.ViewSet):
                     schedulable=True,
                 ).order_by("capacity")
                 if len(agents) == 0:
-                    raise NoResource
+                    raise NoResource("No Agent")
 
                 agent = agents[0]
                 agent.organization = request.user.organization
@@ -371,6 +371,7 @@ class AgentViewSet(viewsets.ViewSet):
         except NoResource as e:
             raise e
         except Exception as e:
+            LOG.exception("Agent Not Applied")
             return Response(
                 err(e.args), status=status.HTTP_400_BAD_REQUEST
             )
@@ -399,7 +400,7 @@ class AgentViewSet(viewsets.ViewSet):
                         id=pk, organization=request.user.organization
                     )
             except ObjectDoesNotExist:
-                raise ResourceNotFound
+                raise ResourceNotFound("Agent not found")
             else:
                 agent.organization = None
                 agent.save()

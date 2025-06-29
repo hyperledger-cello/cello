@@ -53,6 +53,7 @@ class NetworkViewSet(viewsets.ViewSet):
                 block = base64.b64encode(f_block.read())
             return block
         except Exception as e:
+            LOG.exception("Genesis to Base64 Failed")
             raise e
 
     @swagger_auto_schema(
@@ -138,6 +139,7 @@ class NetworkViewSet(viewsets.ViewSet):
             info["ports"] = ports
             return info
         except Exception as e:
+            LOG.exception("Could Not Get Params")
             raise e
 
     def _start_node(self, pk):
@@ -156,6 +158,7 @@ class NetworkViewSet(viewsets.ViewSet):
             else:
                 raise ResourceNotFound(detail="Container Not Built")
         except Exception as e:
+            LOG.exception("Node Not Started")
             raise e
 
     @swagger_auto_schema(
@@ -199,6 +202,7 @@ class NetworkViewSet(viewsets.ViewSet):
                         threading.Thread(target=self._start_node,
                                          args=(node.id,)).start()
                     except Exception as e:
+                        LOG.exception("Network Not Created")
                         raise e
 
                 response = NetworkIDSerializer(data=network.__dict__)
@@ -207,6 +211,7 @@ class NetworkViewSet(viewsets.ViewSet):
                         ok(response.validated_data), status=status.HTTP_201_CREATED
                     )
         except ResourceExists as e:
+            LOG.exception("Network Exists")
             raise e
         except Exception as e:
             return Response(

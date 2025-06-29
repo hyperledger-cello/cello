@@ -151,7 +151,7 @@ class NodeViewSet(viewsets.ViewSet):
                 ca__type=FabricCAServerType.TLS.value,
             ).count()
             if exist_ca_server > 0:
-                raise ResourceExists
+                raise ResourceExists("CA Exists")
         hosts = ca.get("hosts", [])
         if admin_name:
             ca_body.update({"admin_name": admin_name})
@@ -285,9 +285,9 @@ class NodeViewSet(viewsets.ViewSet):
                     nodes = Node.objects.filter(
                         name=node_name, organization=organization, type=node_type)
                     if nodes:
-                        raise ResourceExists
+                        raise ResourceExists("Node Exists")
                 else:
-                    raise NoResource
+                    raise NoResource("Node Does Not Exist")
                 urls = "{}.{}".format(node_name, organization.name)
                 nodes = {
                     "type": node_type,
@@ -316,6 +316,7 @@ class NodeViewSet(viewsets.ViewSet):
                         threading.Thread(
                             target=self._start_node, args=(node.id,)).start()
                     except Exception as e:
+                        LOG.exception("Thread Failed")
                         raise e
 
                 response = NodeIDSerializer(data=node.__dict__)
@@ -394,6 +395,7 @@ class NodeViewSet(viewsets.ViewSet):
             with open("{}{}".format(dir_node, cname), "rb") as f_cfg:
                 cfg = base64.b64encode(f_cfg.read())
         except Exception as e:
+            LOG.exception("Failed Conversion: CFG From Zip To Byte")
             raise e
 
         return msp, tls, cfg
@@ -461,16 +463,16 @@ class NodeViewSet(viewsets.ViewSet):
             node = Node.objects.get(id=pk)
             org = node.organization
             if org is None:
-                raise ResourceNotFound
+                raise ResourceNotFound("Organization Not Found")
             network = org.network
             if network is None:
-                raise ResourceNotFound
+                raise ResourceNotFound("Network Not Found")
             agent = org.agent.get()
             if agent is None:
-                raise ResourceNotFound
+                raise ResourceNotFound("Agent Not Found")
             ports = Port.objects.filter(node=node)
             if ports is None:
-                raise ResourceNotFound
+                raise ResourceNotFound("Port Not Found")
 
             info = {}
             org_name = org.name if node.type == "peer" else org.name.split(".", 1)[
@@ -489,6 +491,7 @@ class NodeViewSet(viewsets.ViewSet):
             info["ports"] = ports
             return info
         except Exception as e:
+            LOG.exception("Failed To Get Node Params")
             raise e
 
     def _start_node(self, pk):
@@ -505,8 +508,9 @@ class NodeViewSet(viewsets.ViewSet):
             if cid:
                 node_qs.update(cid=cid, status="running")
             else:
-                raise ResourceNotFound
+                raise ResourceNotFound("Node Not Found")
         except Exception as e:
+            LOG.exception("Could Not Start Node")
             raise e
 
     @swagger_auto_schema(
@@ -580,7 +584,7 @@ class NodeViewSet(viewsets.ViewSet):
                     orderer_cnt = Node.objects.filter(
                         type="orderer", organization__network=node.organization.network).count()
                     if orderer_cnt == 1:
-                        raise ResourceInUse
+                        raise ResourceInUse("Orderer In Use")
                 res = False
                 # if agent not exist or no continer is created for node, do not try to stop/delete container
                 if not agent_exist or not node.cid:
@@ -623,11 +627,12 @@ class NodeViewSet(viewsets.ViewSet):
                 else:
                     return Response(ok({"delete": False}), status=status.HTTP_202_ACCEPTED)
             except ObjectDoesNotExist:
-                raise ResourceNotFound
+                raise ResourceNotFound("Node Not Found")
             return Response(ok({"delete": True}), status=status.HTTP_202_ACCEPTED)
         except (ResourceNotFound, ResourceInUse) as e:
             raise e
         except Exception as e:
+            LOG.exception("Node Not Deleted")
             return Response(
                 err(e.args), status=status.HTTP_400_BAD_REQUEST
             )
@@ -651,7 +656,7 @@ class NodeViewSet(viewsets.ViewSet):
                 try:
                     node = Node.objects.get(id=pk)
                 except ObjectDoesNotExist:
-                    raise ResourceNotFound
+                    raise ResourceNotFound("Node Not Found")
 
                 node.status = node_status
                 node.save()
@@ -715,7 +720,7 @@ class NodeViewSet(viewsets.ViewSet):
                     id=pk, organization=request.user.organization
                 )
             except ObjectDoesNotExist:
-                raise ResourceNotFound
+                raise ResourceNotFound("Node Not Found")
             else:
                 # Set file url of node, we only need node status for now
                 # if node.file:
@@ -759,7 +764,7 @@ class NodeViewSet(viewsets.ViewSet):
                     id=pk, organization=organization
                 )
             except ObjectDoesNotExist:
-                raise ResourceNotFound
+                raise ResourceNotFound("Node Not Found")
             # Get file locations based on node type
             if node.type == "peer":
                 dir_node = "{}/{}/crypto-config/peerOrganizations/{}/peers/{}/" \
@@ -785,6 +790,7 @@ class NodeViewSet(viewsets.ViewSet):
                     cname)
                 return response
             except Exception as e:
+                LOG.exception("Config File Not Found")
                 raise e
         elif request.method == "POST":
             # Update yaml, zip files, and the database field
@@ -812,6 +818,7 @@ class NodeViewSet(viewsets.ViewSet):
                 agent.update_config(cfg, node.type)
                 return Response(status=status.HTTP_202_ACCEPTED)
             except Exception as e:
+                LOG.exception("Update Failed")
                 raise e
 
     @action(methods=["post"], detail=True, url_path="block", url_name="block")
@@ -828,7 +835,7 @@ class NodeViewSet(viewsets.ViewSet):
                     id=pk, organization=organization
                 )
             except ObjectDoesNotExist:
-                raise ResourceNotFound
+                raise ResourceNotFound("Node Not Found")
             envs = init_env_vars(node, organization)
             block_path = "{}/{}/crypto-config/peerOrganizations/{}/peers/{}/{}.block" \
                 .format(CELLO_HOME, org, org, node.name + "." + org, "channel")
@@ -862,9 +869,9 @@ class NodeViewSet(viewsets.ViewSet):
                     node=node, name=name
                 ).count()
                 if user_count > 0:
-                    raise ResourceExists
+                    raise ResourceExists("Users Exist")
             except ObjectDoesNotExist:
-                raise ResourceNotFound
+                raise ResourceNotFound("Users Not Found")
 
             node_user = NodeUser(
                 name=name,
@@ -977,13 +984,14 @@ class NodeViewSet(viewsets.ViewSet):
                 try:
                     node_user = NodeUser.objects.get(id=user_pk, node__id=pk)
                 except ObjectDoesNotExist:
-                    raise ResourceNotFound
+                    raise ResourceNotFound("Node User Not Found")
 
                 node_user.status = serializer.validated_data.get("status")
                 node_user.save()
 
                 return Response(status=status.HTTP_202_ACCEPTED)
         except Exception as e:
+            LOG.exception("Patch Failed")
             return Response(
                 err(e.args), status=status.HTTP_400_BAD_REQUEST
             )

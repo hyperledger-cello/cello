@@ -218,7 +218,6 @@ yarn-error.log
 
 /coverage
 .idea
-yarn.lock
 package-lock.json
 *bak
 .vscode
@@ -256,3 +255,6 @@ deno.lock
 # test postman
 tests/postman/env.json
 tests/postman/junitResult.xml
+
+# Postgres
+pgdata/

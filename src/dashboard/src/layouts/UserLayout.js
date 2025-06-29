@@ -1,7 +1,7 @@
-import React, { Component, Fragment } from 'react';
+import { Component, Fragment } from 'react';
 import { Link, connect } from 'umi';
+import { Helmet } from 'react-helmet';
 import GlobalFooter from '@/components/GlobalFooter';
-import DocumentTitle from 'react-document-title';
 import SelectLang from '@/components/SelectLang';
 import getPageTitle from '@/utils/getPageTitle';
 import styles from './UserLayout.less';
@@ -29,7 +29,10 @@ class UserLayout extends Component {
       breadcrumbNameMap,
     } = this.props;
     return (
-      <DocumentTitle title={getPageTitle(pathname, breadcrumbNameMap)}>
+      <>
+        <Helmet>
+          <title>{getPageTitle(pathname, breadcrumbNameMap)}</title>
+        </Helmet>
         <div className={styles.container}>
           <div className={styles.lang}>
             <SelectLang />
@@ -47,7 +50,7 @@ class UserLayout extends Component {
           </div>
           <GlobalFooter links={links} copyright={copyright} />
         </div>
-      </DocumentTitle>
+      </>
     );
   }
 }
