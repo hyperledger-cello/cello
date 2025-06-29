@@ -30,8 +30,9 @@ class ChainCodePackageBody(serializers.Serializer):
 
     @staticmethod
     def extension_for_file(file):
-            extension = file.name.endswith('.tar.gz')
-            return extension
+        extension = file.name.endswith('.tar.gz')
+        return extension
+
 
 class ChainCodeNetworkSerializer(serializers.Serializer):
     id = serializers.UUIDField(help_text="Network ID")
@@ -68,4 +69,19 @@ class ChainCodeApproveForMyOrgBody(serializers.Serializer):
 
 
 class ChainCodeCommitBody(ChainCodeApproveForMyOrgBody):
-    pass
+    peer_list = serializers.ListField(allow_empty=False, required=True)
+
+
+class ChainCodeInvokeBody(serializers.Serializer):
+    """Chaincode invoke body."""
+    channel_name = serializers.CharField(help_text="Channel name")
+    chaincode_name = serializers.CharField(help_text="Chaincode name")
+    args = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="Arguments for chaincode invoke"
+    )
+    init = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="Whether to initialize the chaincode"
+    )

@@ -10,6 +10,7 @@ import logging
 
 LOG = logging.getLogger(__name__)
 
+
 class ChainCode(Command):
     def __init__(self, version=FABRIC_VERSION, peer=FABRIC_TOOL, **kwargs):
         self.peer = peer + "/peer"
@@ -71,7 +72,7 @@ class ChainCode(Command):
             ]
             LOG.info(" ".join(command))
             res = subprocess.Popen(command, shell=False,
-                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
             stdout, stderr = res.communicate()
             return_code = res.returncode
@@ -164,7 +165,7 @@ class ChainCode(Command):
                     "--tls",
                     "--cafile", ORDERER_CA
                 ]
-            
+
             if init_flag:
                 command.append("--init-required")
             if policy:
@@ -247,7 +248,7 @@ class ChainCode(Command):
                     "--cafile", ORDERER_CA,
                     "--output", "json",
                 ]
-            
+
             LOG.info(" ".join(command))
 
             res = subprocess.Popen(command, shell=False,
@@ -312,13 +313,13 @@ class ChainCode(Command):
                 command.append(peer_list[i])
                 command.append("--tlsRootCertFiles")
                 command.append(peer_root_certs[i])
-            
+
             if init_flag:
                 command.append("--init-required")
             if policy:
                 command.append("--signature-policy")
                 command.append(policy)
-            
+
             LOG.info(" ".join(command))
             res = os.system(" ".join(command))
             res = res >> 8
