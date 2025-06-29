@@ -19,7 +19,12 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 
 from api.common.enums import AgentOperation
-from api.exceptions import CustomError, NoResource, ResourceExists, ResourceInUse
+from api.exceptions import (
+    CustomError,
+    NoResource,
+    ResourceExists,
+    ResourceInUse,
+)
 from api.exceptions import ResourceNotFound
 from api.models import (
     Node,
@@ -52,11 +57,7 @@ from api.tasks import operate_node
 from api.utils.common import with_common_response
 from api.lib.pki import CryptoGen, CryptoConfig
 from api.utils import zip_dir, zip_file
-from api.config import (
-    CELLO_HOME,
-    FABRIC_NODE,
-    PRODUCTION_NODE
-)
+from api.config import CELLO_HOME, FABRIC_NODE, PRODUCTION_NODE
 from api.utils.node_config import NodeConfig
 from api.lib.agent import AgentHandler
 from api.lib.peer.channel import Channel as PeerChannel
@@ -68,7 +69,9 @@ LOG = logging.getLogger(__name__)
 
 
 class NodeViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated, ]
+    permission_classes = [
+        IsAuthenticated,
+    ]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     # Only operator can update node info
@@ -128,12 +131,13 @@ class NodeViewSet(viewsets.ViewSet):
                 p = Paginator(nodes, per_page)
                 nodes = p.page(page)
                 response = NodeListSerializer(
-                    {"total": p.count, "data": nodes})
-                return Response(data=ok(response.data), status=status.HTTP_200_OK)
+                    {"total": p.count, "data": nodes}
+                )
+                return Response(
+                    data=ok(response.data), status=status.HTTP_200_OK
+                )
         except Exception as e:
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
     def _save_fabric_ca(self, request, ca=None):
         if ca is None:
@@ -283,21 +287,22 @@ class NodeViewSet(viewsets.ViewSet):
                 agent = organization.agent.get()
                 if agent:
                     nodes = Node.objects.filter(
-                        name=node_name, organization=organization, type=node_type)
+                        name=node_name,
+                        organization=organization,
+                        type=node_type,
+                    )
                     if nodes:
                         raise ResourceExists("Node Exists")
                 else:
                     raise NoResource("Node Does Not Exist")
                 urls = "{}.{}".format(node_name, organization.name)
-                nodes = {
-                    "type": node_type,
-                    "Specs": [node_name]
-                }
+                nodes = {"type": node_type, "Specs": [node_name]}
                 CryptoConfig(organization.name).update(nodes)
                 CryptoGen(organization.name).extend()
                 self._generate_config(node_type, organization.name, node_name)
                 msp, tls, cfg = self._conversion_msp_tls_cfg(
-                    node_type, organization.name, node_name)
+                    node_type, organization.name, node_name
+                )
                 node = Node(
                     name=node_name,
                     organization=organization,
@@ -306,7 +311,7 @@ class NodeViewSet(viewsets.ViewSet):
                     msp=msp,
                     tls=tls,
                     agent=agent,
-                    config_file=cfg
+                    config_file=cfg,
                 )
                 node.save()
 
@@ -314,7 +319,8 @@ class NodeViewSet(viewsets.ViewSet):
                 if node.organization.network:
                     try:
                         threading.Thread(
-                            target=self._start_node, args=(node.id,)).start()
+                            target=self._start_node, args=(node.id,)
+                        ).start()
                     except Exception as e:
                         LOG.exception("Thread Failed")
                         raise e
@@ -322,14 +328,13 @@ class NodeViewSet(viewsets.ViewSet):
                 response = NodeIDSerializer(data=node.__dict__)
                 if response.is_valid(raise_exception=True):
                     return Response(
-                        ok(response.validated_data), status=status.HTTP_201_CREATED
+                        ok(response.validated_data),
+                        status=status.HTTP_201_CREATED,
                     )
         except (ResourceExists, NoResource) as e:
             raise e
         except Exception as e:
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
     def _set_port(self, type, node, agent):
         """
@@ -347,18 +352,24 @@ class NodeViewSet(viewsets.ViewSet):
             ports = find_available_ports(ip, node.id, agent.id, 2)
             set_ports_mapping(
                 node.id,
-                [{"internal": 7051, "external": ports[0]}, {
-                    "internal": 9444, "external": ports[1]}],
-                True)
+                [
+                    {"internal": 7051, "external": ports[0]},
+                    {"internal": 9444, "external": ports[1]},
+                ],
+                True,
+            )
         else:
             # unify the port mapping for orderer
             ports = find_available_ports(ip, node.id, agent.id, 3)
             set_ports_mapping(
                 node.id,
-                [{"internal": 7050, "external": ports[0]}, {
-                    "internal": 7053, "external": ports[1]}, {
-                        "internal": 9443, "external": ports[2]}],
-            True)
+                [
+                    {"internal": 7050, "external": ports[0]},
+                    {"internal": 7053, "external": ports[1]},
+                    {"internal": 9443, "external": ports[2]},
+                ],
+                True,
+            )
 
     def _conversion_msp_tls_cfg(self, type, org, node):
         """
@@ -372,13 +383,18 @@ class NodeViewSet(viewsets.ViewSet):
         """
         try:
             if type == "peer":
-                dir_node = "{}/{}/crypto-config/peerOrganizations/{}/peers/{}/" \
-                    .format(CELLO_HOME, org, org, node + "." + org)
+                dir_node = "{}/{}/crypto-config/peerOrganizations/{}/peers/{}/".format(
+                    CELLO_HOME, org, org, node + "." + org
+                )
                 name = "core.yaml"
                 cname = "peer_config.zip"
             else:
-                dir_node = "{}/{}/crypto-config/ordererOrganizations/{}/orderers/{}/" \
-                    .format(CELLO_HOME, org, org.split(".", 1)[1], node + "." + org.split(".", 1)[1])
+                dir_node = "{}/{}/crypto-config/ordererOrganizations/{}/orderers/{}/".format(
+                    CELLO_HOME,
+                    org,
+                    org.split(".", 1)[1],
+                    node + "." + org.split(".", 1)[1],
+                )
                 name = "orderer.yaml"
                 cname = "orderer_config.zip"
 
@@ -390,8 +406,9 @@ class NodeViewSet(viewsets.ViewSet):
             with open("{}tls.zip".format(dir_node), "rb") as f_tls:
                 tls = base64.b64encode(f_tls.read())
 
-            zip_file("{}{}".format(dir_node, name),
-                     "{}{}".format(dir_node, cname))
+            zip_file(
+                "{}{}".format(dir_node, name), "{}{}".format(dir_node, cname)
+            )
             with open("{}{}".format(dir_node, cname), "rb") as f_cfg:
                 cfg = base64.b64encode(f_cfg.read())
         except Exception as e:
@@ -414,40 +431,87 @@ class NodeViewSet(viewsets.ViewSet):
         args = {}
         if type == "peer":
             args.update({"peer_tls_enabled": True})
-            args.update({"operations_listenAddress": node + "." + org + ":9444"})
+            args.update(
+                {"operations_listenAddress": node + "." + org + ":9444"}
+            )
             args.update({"peer_address": node + "." + org + ":7051"})
             args.update({"peer_gossip_bootstrap": node + "." + org + ":7051"})
-            args.update({"peer_gossip_externalEndpoint": node + "." + org + ":7051"})
+            args.update(
+                {"peer_gossip_externalEndpoint": node + "." + org + ":7051"}
+            )
             args.update({"peer_id": node + "." + org})
             args.update({"peer_localMspId": org.capitalize() + "MSP"})
             args.update({"peer_mspConfigPath": "/etc/hyperledger/fabric/msp"})
-            args.update({"peer_tls_cert_file": "/etc/hyperledger/fabric/tls/server.crt"})
-            args.update({"peer_tls_key_file": "/etc/hyperledger/fabric/tls/server.key"})
-            args.update({"peer_tls_rootcert_file": "/etc/hyperledger/fabric/tls/ca.crt"})
+            args.update(
+                {
+                    "peer_tls_cert_file": "/etc/hyperledger/fabric/tls/server.crt"
+                }
+            )
+            args.update(
+                {"peer_tls_key_file": "/etc/hyperledger/fabric/tls/server.key"}
+            )
+            args.update(
+                {
+                    "peer_tls_rootcert_file": "/etc/hyperledger/fabric/tls/ca.crt"
+                }
+            )
             args.update({"vm_docker_hostConfig_NetworkMode": "cello_net"})
-            args.update({"vm_endpoint": 'unix:///host/var/run/docker.sock'})
+            args.update({"vm_endpoint": "unix:///host/var/run/docker.sock"})
 
             a = NodeConfig(org)
             a.peer(node, **args)
         else:
             args.update({"Admin_TLS_Enabled": True})
             args.update({"Admin_ListenAddress": "0.0.0.0:7053"})
-            args.update({"Admin_TLS_Certificate": "/etc/hyperledger/fabric/tls/server.crt"})
-            args.update({"Admin_TLS_PrivateKey": "/etc/hyperledger/fabric/tls/server.key"})
+            args.update(
+                {
+                    "Admin_TLS_Certificate": "/etc/hyperledger/fabric/tls/server.crt"
+                }
+            )
+            args.update(
+                {
+                    "Admin_TLS_PrivateKey": "/etc/hyperledger/fabric/tls/server.key"
+                }
+            )
             args.update({"ChannelParticipation_Enabled": True})
-            args.update({"General_Cluster_ClientCertificate": "/etc/hyperledger/fabric/tls/server.crt"})
-            args.update({"General_Cluster_ClientPrivateKey": "/etc/hyperledger/fabric/tls/server.key"})
+            args.update(
+                {
+                    "General_Cluster_ClientCertificate": "/etc/hyperledger/fabric/tls/server.crt"
+                }
+            )
+            args.update(
+                {
+                    "General_Cluster_ClientPrivateKey": "/etc/hyperledger/fabric/tls/server.key"
+                }
+            )
             args.update({"General_ListenAddress": "0.0.0.0"})
             args.update({"General_ListenPort": 7050})
             args.update({"General_LocalMSPID": "OrdererMSP"})
             args.update({"General_LocalMSPDir": "/etc/hyperledger/fabric/msp"})
             args.update({"General_TLS_Enabled": True})
-            args.update({"General_TLS_Certificate": "/etc/hyperledger/fabric/tls/server.crt"})
-            args.update({"General_TLS_PrivateKey": "/etc/hyperledger/fabric/tls/server.key"})
-            args.update({"General_TLS_RootCAs": "[/etc/hyperledger/fabric/tls/ca.crt]"})
+            args.update(
+                {
+                    "General_TLS_Certificate": "/etc/hyperledger/fabric/tls/server.crt"
+                }
+            )
+            args.update(
+                {
+                    "General_TLS_PrivateKey": "/etc/hyperledger/fabric/tls/server.key"
+                }
+            )
+            args.update(
+                {"General_TLS_RootCAs": "[/etc/hyperledger/fabric/tls/ca.crt]"}
+            )
             args.update({"General_BootstrapMethod": "none"})
             args.update({"Metrics_Provider": "prometheus"})
-            args.update({"Operations_ListenAddress": node + "." + org.split(".", 1)[1] + ":9443"})
+            args.update(
+                {
+                    "Operations_ListenAddress": node
+                    + "."
+                    + org.split(".", 1)[1]
+                    + ":9443"
+                }
+            )
 
             a = NodeConfig(org)
             a.orderer(node, **args)
@@ -475,8 +539,9 @@ class NodeViewSet(viewsets.ViewSet):
                 raise ResourceNotFound("Port Not Found")
 
             info = {}
-            org_name = org.name if node.type == "peer" else org.name.split(".", 1)[
-                1]
+            org_name = (
+                org.name if node.type == "peer" else org.name.split(".", 1)[1]
+            )
             # get info of node, e.g, tls, msp, config.
             info["status"] = node.status
             info["msp"] = node.msp
@@ -551,12 +616,11 @@ class NodeViewSet(viewsets.ViewSet):
                     )
                 else:
                     return Response(
-                        ok({"error": "invalid operation"}), status=status.HTTP_201_CREATED
+                        ok({"error": "invalid operation"}),
+                        status=status.HTTP_201_CREATED,
                     )
         except Exception as e:
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
         responses=with_common_response(
@@ -582,7 +646,9 @@ class NodeViewSet(viewsets.ViewSet):
                 node.save()
                 if node.type == "orderer":
                     orderer_cnt = Node.objects.filter(
-                        type="orderer", organization__network=node.organization.network).count()
+                        type="orderer",
+                        organization__network=node.organization.network,
+                    ).count()
                     if orderer_cnt == 1:
                         raise ResourceInUse("Orderer In Use")
                 res = False
@@ -594,48 +660,59 @@ class NodeViewSet(viewsets.ViewSet):
                     # TODO: optimize the retry logic
                     for i in range(3):
                         LOG.info(
-                            "Retry to stop/delete container %d time(s).", i + 1)
+                            "Retry to stop/delete container %d time(s).", i + 1
+                        )
                         try:
                             response = agent.stop()
                             if response is not True:
                                 LOG.error(
-                                    "Failed when agent stops/deletes container: %s", response)
+                                    "Failed when agent stops/deletes container: %s",
+                                    response,
+                                )
                                 continue
                             response = agent.delete()
                             if response is not True:
                                 LOG.error(
-                                    "Failed when agent stops/deletes container: %s", response)
+                                    "Failed when agent stops/deletes container: %s",
+                                    response,
+                                )
                                 continue
                             res = True
                         except Exception as e:
                             LOG.error(
-                                "Exception when agent stops/deletes container: %s", e)
+                                "Exception when agent stops/deletes container: %s",
+                                e,
+                            )
                             continue
                         break
                 if res:
-                    fabric_path = "{}/{}".format(FABRIC_NODE,
-                                                 infos["container_name"])
+                    fabric_path = "{}/{}".format(
+                        FABRIC_NODE, infos["container_name"]
+                    )
                     if os.path.exists(fabric_path):
                         shutil.rmtree(fabric_path, True)
-                    prod_path = "{}/{}".format(PRODUCTION_NODE,
-                                               infos["container_name"])
+                    prod_path = "{}/{}".format(
+                        PRODUCTION_NODE, infos["container_name"]
+                    )
                     if os.path.exists(prod_path):
                         shutil.rmtree(prod_path, True)
                     node.delete()
                     # node.status = "exited"
                     # node.save()
                 else:
-                    return Response(ok({"delete": False}), status=status.HTTP_202_ACCEPTED)
+                    return Response(
+                        ok({"delete": False}), status=status.HTTP_202_ACCEPTED
+                    )
             except ObjectDoesNotExist:
                 raise ResourceNotFound("Node Not Found")
-            return Response(ok({"delete": True}), status=status.HTTP_202_ACCEPTED)
+            return Response(
+                ok({"delete": True}), status=status.HTTP_202_ACCEPTED
+            )
         except (ResourceNotFound, ResourceInUse) as e:
             raise e
         except Exception as e:
             LOG.exception("Node Not Deleted")
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
         operation_id="update node",
@@ -671,9 +748,8 @@ class NodeViewSet(viewsets.ViewSet):
 
                 return Response(status=status.HTTP_202_ACCEPTED)
         except Exception as e:
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
+
     # @swagger_auto_schema(
     #     methods=["post"],
     #     request_body=NodeFileCreateSerializer,
@@ -734,23 +810,29 @@ class NodeViewSet(viewsets.ViewSet):
                 #     for port in ports
                 # ]
                 response = NodeStatusSerializer(node)
-                return Response(ok(data=response.data), status=status.HTTP_200_OK)
+                return Response(
+                    ok(data=response.data), status=status.HTTP_200_OK
+                )
         except Exception as e:
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
         methods=["get"],
         responses=with_common_response(
-            {status.HTTP_200_OK: NodeConfigFileSerializer}),
+            {status.HTTP_200_OK: NodeConfigFileSerializer}
+        ),
     )
     @swagger_auto_schema(
         methods=["post"],
         request_body=NodeConfigFileSerializer,
         responses=with_common_response({status.HTTP_202_ACCEPTED: "Accepted"}),
     )
-    @action(methods=["get", "post"], detail=True, url_path="config", url_name="config")
+    @action(
+        methods=["get", "post"],
+        detail=True,
+        url_path="config",
+        url_name="config",
+    )
     def node_config(self, request, pk=None):
         """
         Download/upload the node config file
@@ -760,34 +842,37 @@ class NodeViewSet(viewsets.ViewSet):
             organization = request.user.organization
             org = organization.name
             try:
-                node = Node.objects.get(
-                    id=pk, organization=organization
-                )
+                node = Node.objects.get(id=pk, organization=organization)
             except ObjectDoesNotExist:
                 raise ResourceNotFound("Node Not Found")
             # Get file locations based on node type
             if node.type == "peer":
-                dir_node = "{}/{}/crypto-config/peerOrganizations/{}/peers/{}/" \
-                    .format(CELLO_HOME, org, org, node.name + "." + org)
+                dir_node = "{}/{}/crypto-config/peerOrganizations/{}/peers/{}/".format(
+                    CELLO_HOME, org, org, node.name + "." + org
+                )
                 cname = "peer_config.zip"
                 name = "core.yaml"
             else:
-                dir_node = "{}/{}/crypto-config/ordererOrganizations/{}/orderers/{}/" \
-                    .format(CELLO_HOME, org, org.split(".", 1)[1], node.name + "." + org.split(".", 1)[1])
+                dir_node = "{}/{}/crypto-config/ordererOrganizations/{}/orderers/{}/".format(
+                    CELLO_HOME,
+                    org,
+                    org.split(".", 1)[1],
+                    node.name + "." + org.split(".", 1)[1],
+                )
                 cname = "orderer_config.zip"
                 name = "orderer.yaml"
         except Exception as e:
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
         if request.method == "GET":
             # Get the config file from local storage
             try:
                 config_file = open("{}{}".format(dir_node, cname), "rb")
                 response = HttpResponse(
-                    config_file, content_type="application/zip")
-                response['Content-Disposition'] = "attachment; filename={}".format(
-                    cname)
+                    config_file, content_type="application/zip"
+                )
+                response["Content-Disposition"] = (
+                    "attachment; filename={}".format(cname)
+                )
                 return response
             except Exception as e:
                 LOG.exception("Config File Not Found")
@@ -795,20 +880,25 @@ class NodeViewSet(viewsets.ViewSet):
         elif request.method == "POST":
             # Update yaml, zip files, and the database field
             try:
-                new_config_file = request.data['file']
+                new_config_file = request.data["file"]
                 try:
                     yaml.safe_load(new_config_file)
                 except yaml.YAMLError:
-                    return Response(err("Unable to parse this YAML file."), status=status.HTTP_400_BAD_REQUEST)
+                    return Response(
+                        err("Unable to parse this YAML file."),
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
                 if os.path.exists("{}{}".format(dir_node, name)):
                     os.remove("{}{}".format(dir_node, name))
-                with open("{}{}".format(dir_node, name), 'wb+') as f:
+                with open("{}{}".format(dir_node, name), "wb+") as f:
                     for chunk in new_config_file.chunks():
                         f.write(chunk)
                 if os.path.exists("{}{}".format(dir_node, cname)):
                     os.remove("{}{}".format(dir_node, cname))
-                zip_file("{}{}".format(dir_node, name),
-                         "{}{}".format(dir_node, cname))
+                zip_file(
+                    "{}{}".format(dir_node, name),
+                    "{}{}".format(dir_node, cname),
+                )
                 with open("{}{}".format(dir_node, cname), "rb") as f_cfg:
                     cfg = base64.b64encode(f_cfg.read())
                 node.config_file = cfg
@@ -823,35 +913,31 @@ class NodeViewSet(viewsets.ViewSet):
 
     @action(methods=["post"], detail=True, url_path="block", url_name="block")
     def block_file(self, request, pk=None):
-        '''
+        """
         Peer join channel by uploading a genesis block file
-        '''
+        """
         try:
             self._validate_organization(request)
             organization = request.user.organization
             org = organization.name
             try:
-                node = Node.objects.get(
-                    id=pk, organization=organization
-                )
+                node = Node.objects.get(id=pk, organization=organization)
             except ObjectDoesNotExist:
                 raise ResourceNotFound("Node Not Found")
             envs = init_env_vars(node, organization)
-            block_path = "{}/{}/crypto-config/peerOrganizations/{}/peers/{}/{}.block" \
-                .format(CELLO_HOME, org, org, node.name + "." + org, "channel")
-            uploaded_block_file = request.data['file']
-            with open(block_path, 'wb+') as f:
+            block_path = "{}/{}/crypto-config/peerOrganizations/{}/peers/{}/{}.block".format(
+                CELLO_HOME, org, org, node.name + "." + org, "channel"
+            )
+            uploaded_block_file = request.data["file"]
+            with open(block_path, "wb+") as f:
                 for chunk in uploaded_block_file.chunks():
                     f.write(chunk)
             peer_channel_cli = PeerChannel(**envs)
-            peer_channel_cli.join(
-                block_path)
+            peer_channel_cli.join(block_path)
             os.remove(block_path)
             return Response(status=status.HTTP_202_ACCEPTED)
         except Exception as e:
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
     def _register_user(self, request, pk=None):
         serializer = NodeUserCreateSerializer(data=request.data)
@@ -992,6 +1078,4 @@ class NodeViewSet(viewsets.ViewSet):
                 return Response(status=status.HTTP_202_ACCEPTED)
         except Exception as e:
             LOG.exception("Patch Failed")
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)

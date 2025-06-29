@@ -82,7 +82,7 @@ class Organization(models.Model):
         help_text="Network to which the organization belongs",
         null=True,
         related_name="organization",
-        on_delete=models.SET_NULL
+        on_delete=models.SET_NULL,
     )
     # channel = models.ForeignKey(
     #     "Channel",
@@ -105,9 +105,7 @@ class UserProfile(AbstractUser):
     )
     email = models.EmailField(db_index=True, unique=True)
     username = models.CharField(
-        default="",
-        max_length=64,
-        help_text="Name of user"
+        default="", max_length=64, help_text="Name of user"
     )
     role = models.CharField(
         choices=UserRole.to_choices(True),
@@ -115,10 +113,13 @@ class UserProfile(AbstractUser):
         max_length=64,
     )
     organization = models.ForeignKey(
-        Organization, null=True, on_delete=models.CASCADE, related_name="users",
+        Organization,
+        null=True,
+        on_delete=models.CASCADE,
+        related_name="users",
     )
     created_at = models.DateTimeField(auto_now_add=True)
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
     class Meta:
@@ -169,11 +170,7 @@ class Agent(models.Model):
         max_length=64,
         default=random_name("agent"),
     )
-    urls = models.URLField(
-        help_text="Agent URL",
-        null=True,
-        blank=True
-    )
+    urls = models.URLField(help_text="Agent URL", null=True, blank=True)
     organization = models.ForeignKey(
         "Organization",
         null=True,
@@ -210,7 +207,7 @@ class Agent(models.Model):
     free_ports = ArrayField(
         models.IntegerField(blank=True),
         help_text="Agent free ports.",
-        null=True
+        null=True,
     )
 
     def delete(self, using=None, keep_parents=False):
@@ -323,14 +320,18 @@ class Network(models.Model):
         help_text="Create time of network", auto_now_add=True
     )
     consensus = models.CharField(
-        help_text="Consensus of network", max_length=128, default="raft",
+        help_text="Consensus of network",
+        max_length=128,
+        default="raft",
     )
     genesisblock = models.TextField(
         help_text="genesis block",
         null=True,
     )
     database = models.CharField(
-        help_text="database of network", max_length=128, default="leveldb",
+        help_text="database of network",
+        max_length=128,
+        default="leveldb",
     )
 
     class Meta:
@@ -509,7 +510,7 @@ class Node(models.Model):
         help_text="Agent of node",
         null=True,
         related_name="node",
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
     # network = models.ForeignKey(
     #     Network,
@@ -617,7 +618,11 @@ class NodeUser(models.Model):
 
 class Port(models.Model):
     node = models.ForeignKey(
-        Node, help_text="Node of port", on_delete=models.CASCADE, null=True, related_name="port",
+        Node,
+        help_text="Node of port",
+        on_delete=models.CASCADE,
+        null=True,
+        related_name="port",
     )
     external = models.IntegerField(
         help_text="External port",
@@ -698,20 +703,15 @@ class File(models.Model):
             default=make_uuid,
             editable=True,
         )
-        name = models.CharField(
-            help_text="user name", max_length=128
-        )
-        roles = models.CharField(
-            help_text="roles of user", max_length=128
-        )
+        name = models.CharField(help_text="user name", max_length=128)
+        roles = models.CharField(help_text="roles of user", max_length=128)
         organization = models.ForeignKey(
-            "Organization", on_delete=models.CASCADE)
+            "Organization", on_delete=models.CASCADE
+        )
         attributes = models.CharField(
             help_text="attributes of user", max_length=128
         )
-        revoked = models.CharField(
-            help_text="revoked of user", max_length=128
-        )
+        revoked = models.CharField(help_text="revoked of user", max_length=128)
         create_ts = models.DateTimeField(
             help_text="Create time of user", auto_now_add=True
         )
@@ -731,10 +731,9 @@ class Channel(models.Model):
         help_text="ID of Channel",
         default=make_uuid,
         editable=False,
-        unique=True)
-    name = models.CharField(
-        help_text="name of channel", max_length=128
+        unique=True,
     )
+    name = models.CharField(help_text="name of channel", max_length=128)
     organizations = models.ManyToManyField(
         to="Organization",
         help_text="the organization of the channel",
@@ -744,9 +743,7 @@ class Channel(models.Model):
     create_ts = models.DateTimeField(
         help_text="Create time of Channel", auto_now_add=True
     )
-    network = models.ForeignKey(
-        "Network", on_delete=models.CASCADE
-    )
+    network = models.ForeignKey("Network", on_delete=models.CASCADE)
     orderers = models.ManyToManyField(
         to="Node",
         help_text="Orderer list in the channel",
@@ -803,16 +800,15 @@ class ChainCode(models.Model):
         help_text="ID of ChainCode",
         default=make_uuid,
         editable=False,
-        unique=True
+        unique=True,
     )
     package_id = models.CharField(
-        help_text="package_id of chainCode", max_length=128,
+        help_text="package_id of chainCode",
+        max_length=128,
         editable=False,
-        unique=True
+        unique=True,
     )
-    label = models.CharField(
-        help_text="label of chainCode", max_length=128
-    )
+    label = models.CharField(help_text="label of chainCode", max_length=128)
     creator = models.CharField(
         help_text="creator of chainCode", max_length=128
     )
@@ -820,7 +816,10 @@ class ChainCode(models.Model):
         help_text="language of chainCode", max_length=128
     )
     description = models.CharField(
-        help_text="description of chainCode", max_length=128, blank=True, null=True
+        help_text="description of chainCode",
+        max_length=128,
+        blank=True,
+        null=True,
     )
     create_ts = models.DateTimeField(
         help_text="Create time of chainCode", auto_now_add=True

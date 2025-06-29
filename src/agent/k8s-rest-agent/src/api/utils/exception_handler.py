@@ -19,9 +19,9 @@ def custom_exception_handler(exc, context):
         ):
             if isinstance(exc, ValidationError):
                 response.data["code"] = ErrorCode.ValidationError.value
-                response.data[
-                    "detail"
-                ] = ErrorCode.ValidationError.display_string
+                response.data["detail"] = (
+                    ErrorCode.ValidationError.display_string
+                )
             elif isinstance(exc, ParseError):
                 response.data["code"] = ErrorCode.ParseError.value
                 response.data["detail"] = ErrorCode.ParseError.display_string
