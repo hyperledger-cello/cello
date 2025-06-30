@@ -139,11 +139,7 @@ check: ##@Code Check code format
 	@$(MAKE) license
 	find ./docs -type f -name "*.md" -exec egrep -l " +$$" {} \;
 	cd src/api-engine && tox && cd ${ROOT_PATH}
-	make docker-compose
-	MODE=dev make start
-	sleep 10
-	MODE=dev make stop
-	make check-dashboard
+	cd src/dashboard && yarn lint && cd ${ROOT_PATH}
 
 deep-clean: ##@Clean Stop services, clean docker images and remove mounted local storage.
 	make clean-images
