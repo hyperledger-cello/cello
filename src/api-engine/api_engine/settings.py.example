@@ -171,13 +171,13 @@ SWAGGER_SETTINGS = {
     "VALIDATOR_URL": None,
     "DEFAULT_INFO": "api_engine.urls.swagger_info",
     "SECURITY_DEFINITIONS": {
-      "JWT": {
-         "type": "apiKey",
-         "name": "Authorization",
-         "in": "header"
-      }
-   },
-   "USE_SESSION_AUTH": False
+        "JWT": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    },
+    "USE_SESSION_AUTH": False
 }
 
 LOGGING = {

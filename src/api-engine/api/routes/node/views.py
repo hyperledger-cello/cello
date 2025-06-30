@@ -358,7 +358,8 @@ class NodeViewSet(viewsets.ViewSet):
                 [{"internal": 7050, "external": ports[0]}, {
                     "internal": 7053, "external": ports[1]}, {
                         "internal": 9443, "external": ports[2]}],
-            True)
+                True
+            )
 
     def _conversion_msp_tls_cfg(self, type, org, node):
         """

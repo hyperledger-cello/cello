@@ -30,8 +30,9 @@ class ChainCodePackageBody(serializers.Serializer):
 
     @staticmethod
     def extension_for_file(file):
-            extension = file.name.endswith('.tar.gz')
-            return extension
+        extension = file.name.endswith('.tar.gz')
+        return extension
+
 
 class ChainCodeNetworkSerializer(serializers.Serializer):
     id = serializers.UUIDField(help_text="Network ID")
