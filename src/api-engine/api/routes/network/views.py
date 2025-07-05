@@ -34,7 +34,9 @@ LOG = logging.getLogger(__name__)
 
 
 class NetworkViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated, ]
+    permission_classes = [
+        IsAuthenticated,
+    ]
 
     def _genesis2base64(self, network):
         """
@@ -47,8 +49,9 @@ class NetworkViewSet(viewsets.ViewSet):
             dir_node = "{}/{}/".format(CELLO_HOME, network)
             name = "genesis.block"
             zname = "block.zip"
-            zip_file("{}{}".format(dir_node, name),
-                     "{}{}".format(dir_node, zname))
+            zip_file(
+                "{}{}".format(dir_node, name), "{}{}".format(dir_node, zname)
+            )
             with open("{}{}".format(dir_node, zname), "rb") as f_block:
                 block = base64.b64encode(f_block.read())
             return block
@@ -77,7 +80,10 @@ class NetworkViewSet(viewsets.ViewSet):
                 org = request.user.organization
                 networks = org.network
                 if not networks:
-                    return Response(ok(data={"total": 0, "data": None}), status=status.HTTP_200_OK)
+                    return Response(
+                        ok(data={"total": 0, "data": None}),
+                        status=status.HTTP_200_OK,
+                    )
                 p = Paginator([networks], per_page)
                 networks = p.page(page)
                 networks = [
@@ -95,11 +101,11 @@ class NetworkViewSet(viewsets.ViewSet):
                     return Response(
                         ok(response.validated_data), status=status.HTTP_200_OK
                     )
-            return Response(ok(data={"total": 0, "data": None}), status=status.HTTP_200_OK)
-        except Exception as e:
             return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
+                ok(data={"total": 0, "data": None}), status=status.HTTP_200_OK
             )
+        except Exception as e:
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
     def _agent_params(self, pk):
         """
@@ -124,8 +130,9 @@ class NetworkViewSet(viewsets.ViewSet):
 
             info = {}
 
-            org_name = org.name if node.type == "peer" else org.name.split(".", 1)[
-                1]
+            org_name = (
+                org.name if node.type == "peer" else org.name.split(".", 1)[1]
+            )
             # get info of node, e.g, tls, msp, config.
             info["status"] = node.status
             info["msp"] = node.msp
@@ -189,18 +196,21 @@ class NetworkViewSet(viewsets.ViewSet):
                 org = request.user.organization
                 if org.network:
                     raise ResourceExists(
-                        detail="Network exists for the organization")
+                        detail="Network exists for the organization"
+                    )
 
                 network = Network(
-                    name=name, consensus=consensus, database=database)
+                    name=name, consensus=consensus, database=database
+                )
                 network.save()
                 org.network = network
                 org.save()
                 nodes = Node.objects.filter(organization=org)
                 for node in nodes:
                     try:
-                        threading.Thread(target=self._start_node,
-                                         args=(node.id,)).start()
+                        threading.Thread(
+                            target=self._start_node, args=(node.id,)
+                        ).start()
                     except Exception as e:
                         LOG.exception("Network Not Created")
                         raise e
@@ -208,15 +218,14 @@ class NetworkViewSet(viewsets.ViewSet):
                 response = NetworkIDSerializer(data=network.__dict__)
                 if response.is_valid(raise_exception=True):
                     return Response(
-                        ok(response.validated_data), status=status.HTTP_201_CREATED
+                        ok(response.validated_data),
+                        status=status.HTTP_201_CREATED,
                     )
         except ResourceExists as e:
             LOG.exception("Network Exists")
             raise e
         except Exception as e:
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(responses=with_common_response())
     def retrieve(self, request, pk=None):
@@ -248,9 +257,7 @@ class NetworkViewSet(viewsets.ViewSet):
             return Response(ok(None), status=status.HTTP_202_ACCEPTED)
 
         except Exception as e:
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
         methods=["get"],

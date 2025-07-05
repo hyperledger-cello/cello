@@ -38,7 +38,10 @@ LOG = logging.getLogger(__name__)
 
 class AgentViewSet(viewsets.ViewSet):
     """Class represents agent related operations."""
-    permission_classes = [IsAuthenticated, ]
+
+    permission_classes = [
+        IsAuthenticated,
+    ]
 
     @swagger_auto_schema(
         query_serializer=AgentQuery,
@@ -101,7 +104,11 @@ class AgentViewSet(viewsets.ViewSet):
                         "status": agent.status,
                         "type": agent.type,
                         "urls": agent.urls,
-                        "organization": str(agent.organization.id) if agent.organization else None,
+                        "organization": (
+                            str(agent.organization.id)
+                            if agent.organization
+                            else None
+                        ),
                         "created_at": agent.created_at,
                     }
                     for agent in agents
@@ -115,9 +122,7 @@ class AgentViewSet(viewsets.ViewSet):
                         ok(response.validated_data), status=status.HTTP_200_OK
                     )
         except Exception as e:
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
         request_body=AgentCreateBody,
@@ -148,9 +153,7 @@ class AgentViewSet(viewsets.ViewSet):
                 }
 
                 if name:
-                    agent_count = Agent.objects.filter(
-                        name=name
-                    ).count()
+                    agent_count = Agent.objects.filter(name=name).count()
                     if agent_count > 0:
                         raise ResourceExists("Agent Exists")
 
@@ -171,14 +174,13 @@ class AgentViewSet(viewsets.ViewSet):
                 response = AgentIDSerializer(data=agent.__dict__)
                 if response.is_valid(raise_exception=True):
                     return Response(
-                        ok(response.validated_data), status=status.HTTP_201_CREATED
+                        ok(response.validated_data),
+                        status=status.HTTP_201_CREATED,
                     )
         except ResourceExists as e:
             raise e
         except Exception as e:
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
         responses=with_common_response(
@@ -243,9 +245,7 @@ class AgentViewSet(viewsets.ViewSet):
         except ResourceExists as e:
             raise e
         except Exception as e:
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
         request_body=AgentPatchBody,
@@ -280,9 +280,7 @@ class AgentViewSet(viewsets.ViewSet):
         except ResourceNotFound as e:
             raise e
         except Exception as e:
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
         responses=with_common_response(
@@ -318,9 +316,7 @@ class AgentViewSet(viewsets.ViewSet):
         except (ResourceNotFound, ResourceInUse) as e:
             raise e
         except Exception as e:
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
         method="post",
@@ -372,9 +368,7 @@ class AgentViewSet(viewsets.ViewSet):
             raise e
         except Exception as e:
             LOG.exception("Agent Not Applied")
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
         method="delete",
@@ -409,6 +403,4 @@ class AgentViewSet(viewsets.ViewSet):
         except ResourceNotFound as e:
             raise e
         except Exception as e:
-            return Response(
-                err(e.args), status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)

@@ -12,11 +12,12 @@ LOG = logging.getLogger(__name__)
 
 class DockerAgent(AgentBase):
     """Class represents docker agent."""
+
     def __init__(self, node=None):
         """init DockerAgent
-            param:
-            node:Information needed to create, start, and delete nodes, such as organizations, nodes, and so on
-            return:null
+        param:
+        node:Information needed to create, start, and delete nodes, such as organizations, nodes, and so on
+        return:null
         """
         if node is None:
             node = {}
@@ -33,26 +34,33 @@ class DockerAgent(AgentBase):
         :rtype: string
         """
         try:
-            port_map = {str(port.internal): str(port.external) for port in info.get("ports")}
-
-            data = {
-                'msp': info.get("msp")[2:-1],
-                'tls': info.get("tls")[2:-1],
-                'peer_config_file': info.get("config_file")[2:-1],
-                'orderer_config_file': info.get("config_file")[2:-1],
-                'img': 'hyperledger/fabric:2.5.10',
-                'cmd': 'bash /tmp/init.sh "peer node start"' if info.get("type") == "peer" else 'bash /tmp/init.sh "orderer"',
-                'name': info.get("name"),
-                'type': info.get("type"),
-                'port_map': port_map.__repr__(),
-                'action': 'create'
+            port_map = {
+                str(port.internal): str(port.external)
+                for port in info.get("ports")
             }
 
-            response = post('{}/api/v1/nodes'.format(self._urls), data=data)
+            data = {
+                "msp": info.get("msp")[2:-1],
+                "tls": info.get("tls")[2:-1],
+                "peer_config_file": info.get("config_file")[2:-1],
+                "orderer_config_file": info.get("config_file")[2:-1],
+                "img": "hyperledger/fabric:2.5.10",
+                "cmd": (
+                    'bash /tmp/init.sh "peer node start"'
+                    if info.get("type") == "peer"
+                    else 'bash /tmp/init.sh "orderer"'
+                ),
+                "name": info.get("name"),
+                "type": info.get("type"),
+                "port_map": port_map.__repr__(),
+                "action": "create",
+            }
+
+            response = post("{}/api/v1/nodes".format(self._urls), data=data)
 
             if response.status_code == 200:
                 txt = json.loads(response.text)
-                return txt['data']['id']
+                return txt["data"]["id"]
             else:
                 return None
         except Exception as e:
@@ -61,7 +69,10 @@ class DockerAgent(AgentBase):
 
     def delete(self, *args, **kwargs):
         try:
-            response = post('{}/api/v1/nodes/{}'.format(self._urls, self._cname), data={'action': 'delete'})
+            response = post(
+                "{}/api/v1/nodes/{}".format(self._urls, self._cname),
+                data={"action": "delete"},
+            )
             if response.status_code == 200:
                 return True
             else:
@@ -72,7 +83,10 @@ class DockerAgent(AgentBase):
 
     def start(self, *args, **kwargs):
         try:
-            response = post('{}/api/v1/nodes/{}'.format(self._urls, self._cname), data={'action': 'start'})
+            response = post(
+                "{}/api/v1/nodes/{}".format(self._urls, self._cname),
+                data={"action": "start"},
+            )
             if response.status_code == 200:
                 return True
             else:
@@ -83,7 +97,10 @@ class DockerAgent(AgentBase):
 
     def restart(self, *args, **kwargs):
         try:
-            response = post('{}/api/v1/nodes/{}'.format(self._urls, self._cname), data={'action': 'restart'})
+            response = post(
+                "{}/api/v1/nodes/{}".format(self._urls, self._cname),
+                data={"action": "restart"},
+            )
             if response.status_code == 200:
                 return True
             else:
@@ -94,7 +111,10 @@ class DockerAgent(AgentBase):
 
     def stop(self, *args, **kwargs):
         try:
-            response = post('{}/api/v1/nodes/{}'.format(self._urls, self._cname), data={'action': 'stop'})
+            response = post(
+                "{}/api/v1/nodes/{}".format(self._urls, self._cname),
+                data={"action": "stop"},
+            )
             if response.status_code == 200:
                 return True
             else:
@@ -105,7 +125,9 @@ class DockerAgent(AgentBase):
 
     def get(self, *args, **kwargs):
         try:
-            response = get('{}/api/v1/nodes/{}'.format(self._urls, self._cname))
+            response = get(
+                "{}/api/v1/nodes/{}".format(self._urls, self._cname)
+            )
             if response.status_code == 200:
                 return True
             else:
@@ -118,12 +140,14 @@ class DockerAgent(AgentBase):
         try:
             cmd = 'bash /tmp/update.sh "{} node start"'.format(node_type)
             data = {
-                'peer_config_file': config_file,
-                'orderer_config_file': config_file,
-                'action': 'update',
-                'cmd': cmd
+                "peer_config_file": config_file,
+                "orderer_config_file": config_file,
+                "action": "update",
+                "cmd": cmd,
             }
-            response = post('{}/api/v1/nodes/{}'.format(self._urls, self._cname), data=data)
+            response = post(
+                "{}/api/v1/nodes/{}".format(self._urls, self._cname), data=data
+            )
             if response.status_code == 200:
                 return True
             else:

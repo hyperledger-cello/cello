@@ -151,8 +151,10 @@ class KubernetesClient(object):
                 parameters.update({"empty_dir": empty_dir})
             persistent_volume_claim = volume.get("pvc", None)
             if persistent_volume_claim:
-                persistent_volume_claim = client.V1PersistentVolumeClaimVolumeSource(
-                    claim_name=persistent_volume_claim
+                persistent_volume_claim = (
+                    client.V1PersistentVolumeClaimVolumeSource(
+                        claim_name=persistent_volume_claim
+                    )
                 )
                 parameters.update(
                     {"persistent_volume_claim": persistent_volume_claim}
@@ -186,10 +188,12 @@ class KubernetesClient(object):
             kind="Deployment",
             metadata=deployment_metadata,
             spec=client.V1DeploymentSpec(
-                selector=client.V1LabelSelector(match_labels={
-                    "app": kwargs.get("name"),
-                }),
-                template=template_spec
+                selector=client.V1LabelSelector(
+                    match_labels={
+                        "app": kwargs.get("name"),
+                    }
+                ),
+                template=template_spec,
             ),
         )
 

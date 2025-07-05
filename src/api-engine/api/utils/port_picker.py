@@ -120,11 +120,7 @@ def get_available_ports(
     used_ports = agent.free_ports
 
     ports = sample(
-        [
-            i
-            for i in range(CLUSTER_PORT_START, 65535)
-            if i not in used_ports
-        ],
+        [i for i in range(CLUSTER_PORT_START, 65535) if i not in used_ports],
         request_count,
     )
 
