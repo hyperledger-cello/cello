@@ -24,6 +24,11 @@ markdown_extensions:
   - markdown.extensions.meta
   - markdown.extensions.toc:
       permalink: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid
 docs_dir: docs
 nav:
   - Docs:
@@ -52,8 +57,9 @@ nav:
       - faq.md
   - Release Notes:
       - release_note.md
-#plugins:
-#  - search
+plugins:
+ - search
+ - mermaid2
 #  - minify:
 #      minify_html: true
 #  - pdf-export:
