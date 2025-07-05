@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 
 _url_validator = URLValidator()
 
+
 def validate_url(value):
     try:
         _url_validator(value)

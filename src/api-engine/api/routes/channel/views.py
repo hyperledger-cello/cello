@@ -62,7 +62,7 @@ class ChannelViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated, ]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
-    @ swagger_auto_schema(
+    @swagger_auto_schema(
         query_serializer=PageQuerySerializer,
         responses=with_common_response(
             {status.HTTP_201_CREATED: ChannelListResponse}
@@ -366,15 +366,17 @@ class ChannelViewSet(viewsets.ViewSet):
             LOG.exception("channel org not found")
             raise ResourceNotFound
 
+
 def validate_nodes(nodes):
-        """
-        validate if all nodes are running
-        :param nodes: list of nodes
-        :return: none
-        """
-        for node in nodes:
-            if node.status != "running":
-                raise NoResource("Node {} is not running".format(node.name))
+    """
+    validate if all nodes are running
+    :param nodes: list of nodes
+    :return: none
+    """
+    for node in nodes:
+        if node.status != "running":
+            raise NoResource("Node {} is not running".format(node.name))
+
 
 def assemble_transaction_config(org):
     """
@@ -407,10 +409,16 @@ def osn_channel_join(name, ordering_node, org):
     peer_channel_cli.create(
         channel=name,
         orderer_admin_url="{}.{}:{}".format(
-        ordering_node.name, org.name.split(".", 1)[1], str(7053)),
+            ordering_node.name,
+            org.name.split(".", 1)[1], str(7053)
+        ),
         block_path="{}/{}/{}.block".format(
-        CELLO_HOME, org.network.name, name)
+            CELLO_HOME,
+            org.network.name,
+            name
+        )
     )
+
 
 def peer_channel_join(name, peers, org):
     """
@@ -429,6 +437,7 @@ def peer_channel_join(name, peers, org):
                 CELLO_HOME, org.network.name, name)
         )
 
+
 def set_anchor_peer(name, org, anchor_peer, ordering_node):
     """
     Set anchor peer for the channel.
@@ -439,7 +448,7 @@ def set_anchor_peer(name, org, anchor_peer, ordering_node):
     """
     org_msp = '{}'.format(org.name.split(".", 1)[0].capitalize())
     channel_artifacts_path = "{}/{}".format(CELLO_HOME, org.network.name)
-    
+
     # Fetch the channel block from the orderer
     peer_channel_fetch(name, org, anchor_peer, ordering_node)
 
@@ -449,7 +458,7 @@ def set_anchor_peer(name, org, anchor_peer, ordering_node):
         type="common.Block",
         output="{}/config_block.json".format(channel_artifacts_path),
     )
-    
+
     # Get the config data from the block
     json_filter(
         input="{}/config_block.json".format(channel_artifacts_path),
@@ -532,9 +541,15 @@ def peer_channel_fetch(name, org, anchor_peer, ordering_node):
     """
     envs = init_env_vars(anchor_peer, org)
     peer_channel_cli = PeerChannel(**envs)
-    peer_channel_cli.fetch(block_path="{}/{}/config_block.pb".format(CELLO_HOME, org.network.name),
-                            channel=name, orderer_general_url="{}.{}:{}".format(
-                               ordering_node.name, org.name.split(".", 1)[1], str(7050)))
+    peer_channel_cli.fetch(
+        block_path="{}/{}/config_block.pb".format(CELLO_HOME, org.network.name),
+        channel=name, orderer_general_url="{}.{}:{}".format(
+            ordering_node.name,
+            org.name.split(".", 1)[1],
+            str(7050)
+        )
+    )
+
 
 def peer_channel_update(name, org, anchor_peer, ordering_node, channel_artifacts_path):
     """
