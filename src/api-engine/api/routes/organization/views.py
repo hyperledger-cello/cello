@@ -75,8 +75,14 @@ class OrganizationViewSet(viewsets.ViewSet):
                 {
                     "id": str(organization.id),
                     "name": organization.name,
-                    "network": str(organization.network.id) if organization.network else None,
-                    "agents": organization.agents if organization.agents else None,
+                    "network": (
+                        str(organization.network.id)
+                        if organization.network
+                        else None
+                    ),
+                    "agents": (
+                        organization.agents if organization.agents else None
+                    ),
                     "created_at": organization.created_at,
                 }
                 for organization in organizations
@@ -145,11 +151,13 @@ class OrganizationViewSet(viewsets.ViewSet):
         :return: null
         """
         for i in range(num):
-            nodeName = "peer" + \
-                str(i) if nodeType == "peer" else "orderer" + str(i)
+            nodeName = (
+                "peer" + str(i) if nodeType == "peer" else "orderer" + str(i)
+            )
             self._generate_config(nodeType, org.name, nodeName)
             msp, tls, cfg = self._conversion_msp_tls_cfg(
-                nodeType, org.name, nodeName)
+                nodeType, org.name, nodeName
+            )
             urls = "{}.{}".format(nodeName, org.name)
             node = Node(
                 name=nodeName,
@@ -159,7 +167,7 @@ class OrganizationViewSet(viewsets.ViewSet):
                 msp=msp,
                 tls=tls,
                 agent=None,
-                config_file=cfg
+                config_file=cfg,
             )
             node.save()
 
@@ -175,13 +183,18 @@ class OrganizationViewSet(viewsets.ViewSet):
         """
         try:
             if type == "peer":
-                dir_node = "{}/{}/crypto-config/peerOrganizations/{}/peers/{}/" \
-                    .format(CELLO_HOME, org, org, node + "." + org)
+                dir_node = "{}/{}/crypto-config/peerOrganizations/{}/peers/{}/".format(
+                    CELLO_HOME, org, org, node + "." + org
+                )
                 name = "core.yaml"
                 cname = "peer_config.zip"
             else:
-                dir_node = "{}/{}/crypto-config/ordererOrganizations/{}/orderers/{}/" \
-                    .format(CELLO_HOME, org, org.split(".", 1)[1], node + "." + org.split(".", 1)[1])
+                dir_node = "{}/{}/crypto-config/ordererOrganizations/{}/orderers/{}/".format(
+                    CELLO_HOME,
+                    org,
+                    org.split(".", 1)[1],
+                    node + "." + org.split(".", 1)[1],
+                )
                 name = "orderer.yaml"
                 cname = "orderer_config.zip"
 
@@ -193,8 +206,9 @@ class OrganizationViewSet(viewsets.ViewSet):
             with open("{}tls.zip".format(dir_node), "rb") as f_tls:
                 tls = base64.b64encode(f_tls.read())
 
-            zip_file("{}{}".format(dir_node, name),
-                     "{}{}".format(dir_node, cname))
+            zip_file(
+                "{}{}".format(dir_node, name), "{}{}".format(dir_node, cname)
+            )
             with open("{}{}".format(dir_node, cname), "rb") as f_cfg:
                 cfg = base64.b64encode(f_cfg.read())
         except Exception as e:
@@ -219,9 +233,15 @@ class OrganizationViewSet(viewsets.ViewSet):
             args.update({"peer_id": "{}.{}".format(node, org)})
             args.update({"peer_address": "{}.{}:{}".format(node, org, 7051)})
             args.update(
-                {"peer_gossip_externalEndpoint": "{}.{}:{}".format(node, org, 7051)})
+                {
+                    "peer_gossip_externalEndpoint": "{}.{}:{}".format(
+                        node, org, 7051
+                    )
+                }
+            )
             args.update(
-                {"peer_chaincodeAddress": "{}.{}:{}".format(node, org, 7052)})
+                {"peer_chaincodeAddress": "{}.{}:{}".format(node, org, 7052)}
+            )
             args.update({"peer_tls_enabled": True})
             args.update({"peer_localMspId": "{}MSP".format(org.capitalize())})
 
@@ -230,7 +250,8 @@ class OrganizationViewSet(viewsets.ViewSet):
         else:
             args.update({"General_ListenPort": 7050})
             args.update(
-                {"General_LocalMSPID": "{}OrdererMSP".format(org.capitalize())})
+                {"General_LocalMSPID": "{}OrdererMSP".format(org.capitalize())}
+            )
             args.update({"General_TLS_Enabled": True})
 
             a = NodeConfig(org)
@@ -245,8 +266,9 @@ class OrganizationViewSet(viewsets.ViewSet):
         :rtype: bytes
         """
         try:
-            dir_org = "{}/{}/crypto-config/peerOrganizations/{}/" \
-                .format(CELLO_HOME, name, name)
+            dir_org = "{}/{}/crypto-config/peerOrganizations/{}/".format(
+                CELLO_HOME, name, name
+            )
 
             zip_dir("{}msp".format(dir_org), "{}msp.zip".format(dir_org))
             with open("{}msp.zip".format(dir_org), "rb") as f_msp:

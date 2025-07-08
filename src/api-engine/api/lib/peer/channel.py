@@ -11,6 +11,7 @@ import logging
 
 LOG = logging.getLogger(__name__)
 
+
 class Channel(Command):
     """Call CMD to perform channel create, join and other related operations"""
 
@@ -23,37 +24,55 @@ class Channel(Command):
         try:
             command = []
 
-            if os.getenv("CORE_PEER_TLS_ENABLED") == "false" or os.getenv("CORE_PEER_TLS_ENABLED") is None:
+            if (
+                os.getenv("CORE_PEER_TLS_ENABLED") == "false"
+                or os.getenv("CORE_PEER_TLS_ENABLED") is None
+            ):
                 command = [
                     self.osnadmin,
-                    "channel", "join",
-                    "--channelID", channel,
-                    "--config-block", block_path,
-                    "-o", orderer_admin_url,
+                    "channel",
+                    "join",
+                    "--channelID",
+                    channel,
+                    "--config-block",
+                    block_path,
+                    "-o",
+                    orderer_admin_url,
                 ]
             else:
                 ORDERER_CA = os.getenv("ORDERER_CA")
-                ORDERER_ADMIN_TLS_SIGN_CERT = os.getenv("ORDERER_ADMIN_TLS_SIGN_CERT")
-                ORDERER_ADMIN_TLS_PRIVATE_KEY = os.getenv("ORDERER_ADMIN_TLS_PRIVATE_KEY")
+                ORDERER_ADMIN_TLS_SIGN_CERT = os.getenv(
+                    "ORDERER_ADMIN_TLS_SIGN_CERT"
+                )
+                ORDERER_ADMIN_TLS_PRIVATE_KEY = os.getenv(
+                    "ORDERER_ADMIN_TLS_PRIVATE_KEY"
+                )
                 command = [
                     self.osnadmin,
-                    "channel", "join",
-                    "--channelID", channel,
-                    "--config-block", block_path,
-                    "-o", orderer_admin_url,
-                    "--ca-file", ORDERER_CA,
-                    "--client-cert", ORDERER_ADMIN_TLS_SIGN_CERT,
-                    "--client-key", ORDERER_ADMIN_TLS_PRIVATE_KEY
+                    "channel",
+                    "join",
+                    "--channelID",
+                    channel,
+                    "--config-block",
+                    block_path,
+                    "-o",
+                    orderer_admin_url,
+                    "--ca-file",
+                    ORDERER_CA,
+                    "--client-cert",
+                    ORDERER_ADMIN_TLS_SIGN_CERT,
+                    "--client-key",
+                    ORDERER_ADMIN_TLS_PRIVATE_KEY,
                 ]
 
             LOG.info(" ".join(command))
-            
+
             res = subprocess.run(command, check=True)
 
         except subprocess.CalledProcessError as e:
             err_msg = "create channel failed for {}!".format(e)
-            raise Exception(err_msg+str(e))
-        
+            raise Exception(err_msg + str(e))
+
         except Exception as e:
             err_msg = "create channel failed for {}!".format(e)
             raise Exception(err_msg)
@@ -61,8 +80,12 @@ class Channel(Command):
 
     def list(self):
         try:
-            res = subprocess.Popen("{} channel list".format(self.peer), shell=True,
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            res = subprocess.Popen(
+                "{} channel list".format(self.peer),
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
 
             stdout, stderr = res.communicate()
             return_code = res.returncode
@@ -91,13 +114,19 @@ class Channel(Command):
 
             command = [
                 self.peer,
-                "channel", "update",
-                "-f", channel_tx,
-                "-c", channel,
-                "-o", orderer_url,
-                "--ordererTLSHostnameOverride", orderer_url.split(":")[0],
+                "channel",
+                "update",
+                "-f",
+                channel_tx,
+                "-c",
+                channel,
+                "-o",
+                orderer_url,
+                "--ordererTLSHostnameOverride",
+                orderer_url.split(":")[0],
                 "--tls",
-                "--cafile", ORDERER_CA
+                "--cafile",
+                ORDERER_CA,
             ]
             LOG.info(" ".join(command))
 
@@ -108,7 +137,14 @@ class Channel(Command):
             raise Exception(err_msg)
         return res
 
-    def fetch(self, block_path, channel, orderer_general_url, max_retries=5, retry_interval=1):
+    def fetch(
+        self,
+        block_path,
+        channel,
+        orderer_general_url,
+        max_retries=5,
+        retry_interval=1,
+    ):
         """
         Fetch a specified block, writing it to a file e.g. <channelID>.block.
         params:
@@ -117,32 +153,45 @@ class Channel(Command):
         """
         res = 0
         command = []
-        if os.getenv("CORE_PEER_TLS_ENABLED") == "false" or os.getenv("CORE_PEER_TLS_ENABLED") is None:
+        if (
+            os.getenv("CORE_PEER_TLS_ENABLED") == "false"
+            or os.getenv("CORE_PEER_TLS_ENABLED") is None
+        ):
             command = [
                 self.peer,
-                "channel", "fetch",
-                "config", block_path,
-                "-o", orderer_general_url,
-                "-c", channel
+                "channel",
+                "fetch",
+                "config",
+                block_path,
+                "-o",
+                orderer_general_url,
+                "-c",
+                channel,
             ]
         else:
             ORDERER_CA = os.getenv("ORDERER_CA")
             orderer_address = orderer_general_url.split(":")[0]
             command = [
                 self.peer,
-                "channel", "fetch",
-                "config", block_path,
-                "-o", orderer_general_url,
-                "--ordererTLSHostnameOverride", orderer_address,
-                "-c", channel,
+                "channel",
+                "fetch",
+                "config",
+                block_path,
+                "-o",
+                orderer_general_url,
+                "--ordererTLSHostnameOverride",
+                orderer_address,
+                "-c",
+                channel,
                 "--tls",
-                "--cafile", ORDERER_CA
+                "--cafile",
+                ORDERER_CA,
             ]
 
         LOG.info(" ".join(command))
 
         # Retry fetching the block up to max_retries times
-        for attempt in range(1, max_retries+1):
+        for attempt in range(1, max_retries + 1):
             try:
                 LOG.debug("Attempt %d/%d to fetch block", attempt, max_retries)
 
@@ -157,7 +206,9 @@ class Channel(Command):
                 if attempt <= max_retries:
                     time.sleep(retry_interval)
                 else:
-                    LOG.error(f"Failed to fetch block after {max_retries} attempts")
+                    LOG.error(
+                        f"Failed to fetch block after {max_retries} attempts"
+                    )
                     raise e
 
         return res
@@ -170,7 +221,8 @@ class Channel(Command):
         """
         try:
             res = os.system(
-                "{} channel signconfigtx -f {}".format(self.peer, channel_tx))
+                "{} channel signconfigtx -f {}".format(self.peer, channel_tx)
+            )
         except Exception as e:
             err_msg = "signs a configtx update failed {}".format(e)
             raise Exception(err_msg)
@@ -203,8 +255,12 @@ class Channel(Command):
             channel: In case of a newChain command, the channel ID to create.
         """
         try:
-            res = subprocess.Popen("{} channel getinfo  -c {}".format(self.peer, channel), shell=True,
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            res = subprocess.Popen(
+                "{} channel getinfo  -c {}".format(self.peer, channel),
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
 
             stdout, stderr = res.communicate()
             return_code = res.returncode
@@ -219,6 +275,7 @@ class Channel(Command):
                 return return_code, stderr
         except Exception as e:
             err_msg = "get blockchain information of a specified channel failed. {}".format(
-                e)
+                e
+            )
             raise Exception(err_msg)
         return return_code, body

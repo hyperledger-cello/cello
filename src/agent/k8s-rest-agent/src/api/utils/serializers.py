@@ -5,9 +5,13 @@ from api.utils.enums import ErrorCode
 
 
 class PaginationSerializer(serializers.Serializer):
-    page = serializers.IntegerField(default=1, min_value=1, help_text="查询第几页")
+    page = serializers.IntegerField(
+        default=1, min_value=1, help_text="查询第几页"
+    )
     per_page = serializers.IntegerField(
-        default=10, min_value=-1, help_text="查询分页的每页数量, 如果为-1则不限制分页数量"
+        default=10,
+        min_value=-1,
+        help_text="查询分页的每页数量, 如果为-1则不限制分页数量",
     )
     limit = serializers.IntegerField(
         min_value=1, help_text="限制最大数量", required=False
