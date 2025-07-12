@@ -23,12 +23,12 @@ def get_network():
     containers = {}
     for container in container_list:
         containers[container.id]={
-        "id":container.id,
-        "short_id":container.short_id,
-        "name":container.name,
-        "status":container.status,
-        "image":str(container.image),
-        "attrs":container.attrs
+            "id":container.id,
+            "short_id":container.short_id,
+            "name":container.name,
+            "status":container.status,
+            "image":str(container.image),
+            "attrs":container.attrs
         }
     res = {'code':PASS_CODE, 'data':containers, 'msg':''}
     return jsonify({'res':res})
@@ -37,11 +37,11 @@ def get_network():
 def create_node():
     node_name = request.form.get('name')
     env = {
-    'HLF_NODE_MSP': request.form.get('msp'),
-    'HLF_NODE_TLS':request.form.get('tls'),
-    'HLF_NODE_PEER_CONFIG':request.form.get('peer_config_file'),
-    'HLF_NODE_ORDERER_CONFIG':request.form.get('orderer_config_file'),
-    'platform': 'linux/amd64',
+        'HLF_NODE_MSP': request.form.get('msp'),
+        'HLF_NODE_TLS':request.form.get('tls'),
+        'HLF_NODE_PEER_CONFIG':request.form.get('peer_config_file'),
+        'HLF_NODE_ORDERER_CONFIG':request.form.get('orderer_config_file'),
+        'platform': 'linux/amd64',
     }
     port_map = ast.literal_eval(request.form.get("port_map"))
     volumes = [        
@@ -113,7 +113,7 @@ def create_node():
             volumes=volumes,
             environment=env,
             ports=port_map
-            )
+        )
     except:
         res['code'] = FAIL_CODE
         res['data'] = sys.exc_info()[0]

@@ -40,7 +40,7 @@ class DockerAgent(AgentBase):
                 'tls': info.get("tls")[2:-1],
                 'peer_config_file': info.get("config_file")[2:-1],
                 'orderer_config_file': info.get("config_file")[2:-1],
-                'img': 'hyperledger/fabric:2.5.10',
+                'img': 'hyperledger/fabric-peer:2.5.10' if info.get("type") == "peer" else 'hyperledger/fabric-orderer:2.5.10',
                 'cmd': 'bash /tmp/init.sh "peer node start"' if info.get("type") == "peer" else 'bash /tmp/init.sh "orderer"',
                 'name': info.get("name"),
                 'type': info.get("type"),
