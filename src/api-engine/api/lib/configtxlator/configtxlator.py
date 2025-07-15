@@ -7,6 +7,7 @@ from api.config import FABRIC_TOOL, FABRIC_VERSION
 import logging
 LOG = logging.getLogger(__name__)
 
+
 class ConfigTxLator:
     """
     Class represents configtxlator CLI.
@@ -32,7 +33,7 @@ class ConfigTxLator:
                        "--type={}".format(type),
                        "--output={}".format(output),
                        ]
-            
+
             LOG.info(" ".join(command))
 
             call(command)
@@ -57,7 +58,7 @@ class ConfigTxLator:
                        "--input={}".format(input),
                        "--output={}".format(output),
                        ]
-            
+
             LOG.info(" ".join(command))
 
             call(command)
@@ -85,7 +86,7 @@ class ConfigTxLator:
                        "--channel_id={}".format(channel_id),
                        "--output={}".format(output),
                        ]
-            
+
             LOG.info(" ".join(command))
 
             call(command)

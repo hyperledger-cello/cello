@@ -48,7 +48,7 @@ class ConfigTxGen:
 
         except subprocess.CalledProcessError as e:
             err_msg = "configtxgen genesis fail! "
-            raise Exception(err_msg+str(e))
+            raise Exception(err_msg + str(e))
 
         except Exception as e:
             err_msg = "configtxgen genesis fail! "

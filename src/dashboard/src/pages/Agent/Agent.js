@@ -227,20 +227,33 @@ class Agent extends PureComponent {
     this.handleModalVisible(true);
   };
 
-  deleteCallback = () => {
+  deleteCallback = res => {
     const { intl } = this.props;
     const userRole = getAuthority()[0];
-    const id = userRole === 'admin' ? 'app.agent.delete.success' : 'app.agent.release.success';
-    const defaultMessage =
-      userRole === 'admin' ? 'Delete agent success.' : 'Release agent success.';
+    if (res.status === 'successful') {
+      const id = userRole === 'admin' ? 'app.agent.delete.success' : 'app.agent.release.success';
+      const defaultMessage =
+        userRole === 'admin' ? 'Delete agent success.' : 'Release agent success.';
 
-    message.success(
-      intl.formatMessage({
-        id,
-        defaultMessage,
-      })
-    );
-    this.queryAgentList();
+      message.success(
+        intl.formatMessage({
+          id,
+          defaultMessage,
+        })
+      );
+      this.queryAgentList();
+    } else {
+      const id = userRole === 'admin' ? 'app.agent.delete.fail' : 'app.agent.release.fail';
+      const defaultMessage =
+        userRole === 'admin' ? 'Delete agent failed.' : 'Release agent failed.';
+
+      message.error(
+        intl.formatMessage({
+          id,
+          defaultMessage,
+        })
+      );
+    }
   };
 
   handleTableChange = page => {

@@ -2,7 +2,7 @@ site_name: Hyperledger Cello
 repo_name: "hyperledger/cello"
 repo_url: "https://github.com/hyperledger/cello"
 theme:
-  name: "mkdocs"
+  name: "material"
   logo: "images/favicon.png"
   favicon: "images/favicon.png"
   feature:
@@ -24,6 +24,14 @@ markdown_extensions:
   - markdown.extensions.meta
   - markdown.extensions.toc:
       permalink: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid
+  - pymdownx.mark
+  - pymdownx.critic:
+      mode: view
 docs_dir: docs
 nav:
   - Docs:
@@ -52,8 +60,9 @@ nav:
       - faq.md
   - Release Notes:
       - release_note.md
-#plugins:
-#  - search
+plugins:
+ - search
+ - mermaid2
 #  - minify:
 #      minify_html: true
 #  - pdf-export:

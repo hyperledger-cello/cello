@@ -103,7 +103,7 @@ class StandardTable extends PureComponent {
                   {intl.formatMessage({
                     id: 'component.standardTable.selected',
                     defaultMessage: 'Selected',
-                  })}
+                  })}{' '}
                   <a style={{ fontWeight: 600 }}>{selectedRowKeys.length}</a>{' '}
                   {intl.formatMessage({
                     id: 'component.standardTable.item',

@@ -483,6 +483,83 @@ class ChainCodeViewSet(viewsets.ViewSet):
                 ok(content), status=status.HTTP_200_OK
             )
 
+    def _get_orderer_url(self, org):
+        qs = Node.objects.filter(type="orderer", organization=org)
+        if not qs.exists():
+            raise ResourceNotFound("Orderer Does Not Exist")
+        return qs.first().name + "." + org.name.split(".", 1)[1] + ":" + str(7050)
+
+    def _get_peer_channel_cli(self, org):
+        qs = Node.objects.filter(type="peer", organization=org)
+        if not qs.exists():
+            raise ResourceNotFound("Peer Does Not Exist")
+        envs = init_env_vars(qs.first(), org)
+        return PeerChainCode(**envs)
+
+    def _get_approved_organizations_by_channel_and_chaincode(self, peer_channel_cli, channel_name, chaincode_name, chaincode_version, sequence):
+        code, readiness_result = peer_channel_cli.lifecycle_check_commit_readiness(
+            channel_name, chaincode_name, chaincode_version, sequence)
+        if code != 0:
+            raise Exception(f"Check commit readiness failed: {readiness_result}")
+
+        # Check approved status
+        approvals = readiness_result.get("approvals", {})
+        approved_msps = [org_msp for org_msp, approved in approvals.items() if approved]
+        if not approved_msps:
+            raise Exception("No organizations have approved this chaincode")
+
+        LOG.info(f"Approved organizations: {approved_msps}")
+
+        try:
+            channel = Channel.objects.get(name=channel_name)
+            channel_orgs = channel.organizations.all()
+        except Channel.DoesNotExist:
+            raise Exception(f"Channel {channel_name} not found")
+
+        # find the corresponding organization by MSP ID
+        # MSP ID format: Org1MSP, Org2MSP -> organization name format: org1.xxx, org2.xxx
+        approved_orgs = []
+        for msp_id in approved_msps:
+            if msp_id.endswith("MSP"):
+                org_prefix = msp_id[:-3].lower()  # remove "MSP" and convert to lowercase
+                # find the corresponding organization in the channel
+                for channel_org in channel_orgs:
+                    if channel_org.name.split(".")[0] == org_prefix:
+                        approved_orgs.append(channel_org)
+                        LOG.info(f"Found approved organization: {channel_org.name} (MSP: {msp_id})")
+                        break
+
+        if not approved_orgs:
+            raise Exception("No approved organizations found in this channel")
+        return approved_orgs
+
+    def _get_peer_addresses_and_certs_by_organizations(self, orgs):
+        addresses = []
+        certs = []
+        for org in orgs:
+            qs = Node.objects.filter(type="peer", organization=org)
+            if not qs.exists():
+                LOG.warning(f"No peer nodes found for organization: {org.name}")
+                continue
+
+            # select the first peer node for each organization
+            peer = qs.first()
+            peer_tls_cert = "{}/{}/crypto-config/peerOrganizations/{}/peers/{}/tls/ca.crt".format(
+                CELLO_HOME,
+                org.name,
+                org.name,
+                peer.name + "." + org.name
+            )
+            peer_address = peer.name + "." + org.name + ":" + str(7051)
+            LOG.info(f"Added peer from org {org.name}: {peer_address}")
+
+            addresses.append(peer_address)
+            certs.append(peer_tls_cert)
+
+        if not addresses:
+            raise Exception("No peer nodes found for specified organizations")
+        return addresses, certs
+
     @swagger_auto_schema(
         method="post",
         responses=with_common_response(
@@ -500,92 +577,32 @@ class ChainCodeViewSet(viewsets.ViewSet):
                 policy = serializer.validated_data.get("policy")
                 sequence = serializer.validated_data.get("sequence")
                 init_flag = serializer.validated_data.get("init_flag", False)
-                
                 org = request.user.organization
-                qs = Node.objects.filter(type="orderer", organization=org)
-                if not qs.exists():
-                    raise ResourceNotFound("Orderer Does Not Exist")
-                orderer_node = qs.first()
-                orderer_url = orderer_node.name + "." + org.name.split(".", 1)[1] + ":" + str(7050)
+
+                orderer_url = self._get_orderer_url(org)
 
                 # Step 1: Check commit readiness, find all approved organizations
-                qs = Node.objects.filter(type="peer", organization=org)
-                if not qs.exists():
-                    raise ResourceNotFound("Peer Does Not Exist")
-                peer_node = qs.first()
-                envs = init_env_vars(peer_node, org)
-                
-                peer_channel_cli = PeerChainCode(**envs)
-                code, readiness_result = peer_channel_cli.lifecycle_check_commit_readiness(
-                    channel_name, chaincode_name, chaincode_version, sequence)
-                if code != 0:
-                    return Response(err(f"Check commit readiness failed: {readiness_result}"), 
-                                  status=status.HTTP_400_BAD_REQUEST)
-                
-                # Check approved status
-                approvals = readiness_result.get("approvals", {})
-                approved_orgs = [org_msp for org_msp, approved in approvals.items() if approved]
-                if not approved_orgs:
-                    return Response(err("No organizations have approved this chaincode"), 
-                                  status=status.HTTP_400_BAD_REQUEST)
-                
-                LOG.info(f"Approved organizations: {approved_orgs}")
+                peer_channel_cli = self._get_peer_channel_cli(org)
+                approved_organizations = self._get_approved_organizations_by_channel_and_chaincode(
+                    peer_channel_cli,
+                    channel_name,
+                    chaincode_name,
+                    chaincode_version,
+                    sequence
+                )
 
-                # Step 2: Get channel organizations and peer nodes
-                try:
-                    channel = Channel.objects.get(name=channel_name)
-                    channel_orgs = channel.organizations.all()
-                except Channel.DoesNotExist:
-                    return Response(err(f"Channel {channel_name} not found"), 
-                                  status=status.HTTP_400_BAD_REQUEST)
-
-                # find the corresponding organization by MSP ID
-                # MSP ID format: Org1MSP, Org2MSP -> organization name format: org1.xxx, org2.xxx
-                approved_organizations = []
-                for msp_id in approved_orgs:
-                    if msp_id.endswith("MSP"):
-                        org_prefix = msp_id[:-3].lower()  # remove "MSP" and convert to lowercase
-                        # find the corresponding organization in the channel
-                        for channel_org in channel_orgs:
-                            if channel_org.name.split(".")[0] == org_prefix:
-                                approved_organizations.append(channel_org)
-                                LOG.info(f"Found approved organization: {channel_org.name} (MSP: {msp_id})")
-                                break
-
-                if not approved_organizations:
-                    return Response(err("No approved organizations found in this channel"), 
-                                  status=status.HTTP_400_BAD_REQUEST)
-
-                # get peer nodes and root certs
-                peer_address_list = []
-                peer_root_certs = []
-                
-                for approved_org in approved_organizations:
-                    org_peer_nodes = Node.objects.filter(type="peer", organization=approved_org)
-                    if org_peer_nodes.exists():
-                        # select the first peer node for each organization
-                        peer = org_peer_nodes.first()
-                        peer_tls_cert = "{}/{}/crypto-config/peerOrganizations/{}/peers/{}/tls/ca.crt" \
-                                        .format(CELLO_HOME, approved_org.name, approved_org.name, 
-                                               peer.name + "." + approved_org.name)
-                        peer_address = peer.name + "." + approved_org.name + ":" + str(7051)
-                        peer_address_list.append(peer_address)
-                        peer_root_certs.append(peer_tls_cert)
-                        LOG.info(f"Added peer from approved org {approved_org.name}: {peer_address}")
-                    else:
-                        LOG.warning(f"No peer nodes found for approved organization: {approved_org.name}")
-
-                if not peer_address_list:
-                    return Response(err("No peer nodes found for approved organizations"), 
-                                  status=status.HTTP_400_BAD_REQUEST)
+                # Step 2: Get peer nodes and root certs
+                peer_address_list, peer_root_certs = self._get_peer_addresses_and_certs_by_organizations(approved_organizations)
 
                 # Step 3: Commit chaincode
                 code = peer_channel_cli.lifecycle_commit(
-                    orderer_url, channel_name, chaincode_name, chaincode_version, 
+                    orderer_url, channel_name, chaincode_name, chaincode_version,
                     sequence, policy, peer_address_list, peer_root_certs, init_flag)
                 if code != 0:
-                    return Response(err("Commit chaincode failed"), 
-                                  status=status.HTTP_400_BAD_REQUEST)
+                    return Response(
+                        err("Commit chaincode failed"),
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
 
                 LOG.info(f"Chaincode {chaincode_name} committed successfully")
 
@@ -601,7 +618,7 @@ class ChainCodeViewSet(viewsets.ViewSet):
             except Exception as e:
                 LOG.error(f"Commit chaincode failed: {str(e)}")
                 return Response(
-                    err(f"Commit chaincode failed: {str(e)}"), 
+                    err(f"Commit chaincode failed: {str(e)}"),
                     status=status.HTTP_400_BAD_REQUEST
                 )
 

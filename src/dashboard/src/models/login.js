@@ -62,6 +62,8 @@ export default {
     },
 
     *logout(_, { put }) {
+      localStorage.removeItem('cello-token');
+
       yield put({
         type: 'changeLoginStatus',
         payload: {

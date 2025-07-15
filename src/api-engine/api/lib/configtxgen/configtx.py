@@ -52,13 +52,16 @@ class ConfigTX:
 
         for orderer in orderers:
             OrdererMSP = "OrdererMSP"
-            OrdererOrg = dict(Name="Orderer",
-                              ID= OrdererMSP,
-                              MSPDir='{}/{}/crypto-config/ordererOrganizations/{}/msp'.format(self.filepath, orderer["name"], orderer['name'].split(".", 1)[1]),
-                              Policies=dict(Readers=dict(Type="Signature", Rule="OR('{}.member')".format(OrdererMSP)),
-                              Writers=dict(Type="Signature", Rule="OR('{}.member')".format(OrdererMSP)),
-                              Admins=dict(Type="Signature", Rule="OR('{}.admin')".format(OrdererMSP)))
-                              )
+            OrdererOrg = dict(
+                Name="Orderer",
+                ID=OrdererMSP,
+                MSPDir='{}/{}/crypto-config/ordererOrganizations/{}/msp'.format(self.filepath, orderer["name"], orderer['name'].split(".", 1)[1]),
+                Policies=dict(
+                    Readers=dict(Type="Signature", Rule="OR('{}.member')".format(OrdererMSP)),
+                    Writers=dict(Type="Signature", Rule="OR('{}.member')".format(OrdererMSP)),
+                    Admins=dict(Type="Signature", Rule="OR('{}.admin')".format(OrdererMSP))
+                )
+            )
             for host in orderer['hosts']:
                 OrdererAddress.append('{}.{}:{}'.format(host['name'], orderer['name'].split(".", 1)[1], 7050))
                 Consenters.append(dict(

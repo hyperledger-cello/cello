@@ -11,6 +11,7 @@ import logging
 
 LOG = logging.getLogger(__name__)
 
+
 class Channel(Command):
     """Call CMD to perform channel create, join and other related operations"""
 
@@ -47,13 +48,13 @@ class Channel(Command):
                 ]
 
             LOG.info(" ".join(command))
-            
+
             res = subprocess.run(command, check=True)
 
         except subprocess.CalledProcessError as e:
             err_msg = "create channel failed for {}!".format(e)
-            raise Exception(err_msg+str(e))
-        
+            raise Exception(err_msg + str(e))
+
         except Exception as e:
             err_msg = "create channel failed for {}!".format(e)
             raise Exception(err_msg)
@@ -142,7 +143,7 @@ class Channel(Command):
         LOG.info(" ".join(command))
 
         # Retry fetching the block up to max_retries times
-        for attempt in range(1, max_retries+1):
+        for attempt in range(1, max_retries + 1):
             try:
                 LOG.debug("Attempt %d/%d to fetch block", attempt, max_retries)
 
