@@ -118,7 +118,7 @@ def create_node():
         res['code'] = FAIL_CODE
         res['data'] = sys.exc_info()[0]
         res['msg'] = 'creation failed'
-        logging.debug(res)
+        logging.error(res)
         raise
 
     res['code'] = PASS_CODE
@@ -178,7 +178,7 @@ def operate_node(id):
             res['code'] = FAIL_CODE
             res['data'] = sys.exc_info()[0]
             res['msg'] = act + 'failed'
-            logging.debug(res)
+            logging.error(res)
             raise
     else:
         # GET
