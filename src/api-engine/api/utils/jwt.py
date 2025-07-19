@@ -31,7 +31,9 @@ def jwt_response_payload_handler(token, user=None, request=None):
     :param request: request context
     :return: UserSerializer data
     """
-    return ok({
-        "token": token,
-        "user": UserSerializer(user, context={"request": request}).data,
-    })
+    return ok(
+        {
+            "token": token,
+            "user": UserSerializer(user, context={"request": request}).data,
+        }
+    )

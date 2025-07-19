@@ -18,14 +18,19 @@ from django.core.paginator import Paginator
 
 from api.config import CELLO_HOME
 from api.common.serializers import PageQuerySerializer
-from api.utils.common import with_common_response, parse_block_file, to_dict, json_filter, json_add_anchor_peer, json_create_envelope, init_env_vars
+from api.utils.common import (
+    with_common_response,
+    parse_block_file,
+    to_dict,
+    json_filter,
+    json_add_anchor_peer,
+    json_create_envelope,
+    init_env_vars,
+)
 from api.lib.configtxgen import ConfigTX, ConfigTxGen
 from api.lib.peer.channel import Channel as PeerChannel
 from api.lib.configtxlator.configtxlator import ConfigTxLator
-from api.exceptions import (
-    ResourceNotFound,
-    NoResource
-)
+from api.exceptions import ResourceNotFound, NoResource
 from api.models import (
     Channel,
     Node,
@@ -36,7 +41,7 @@ from api.routes.channel.serializers import (
     ChannelIDSerializer,
     ChannelListResponse,
     ChannelResponseSerializer,
-    ChannelUpdateSerializer
+    ChannelUpdateSerializer,
 )
 
 from api.common import ok, err
@@ -59,7 +64,10 @@ CFG_DELTA_ENV_PB = "cfg_delta_env.pb"
 
 class ChannelViewSet(viewsets.ViewSet):
     """Class represents Channel related operations."""
-    permission_classes = [IsAuthenticated, ]
+
+    permission_classes = [
+        IsAuthenticated,
+    ]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     @swagger_auto_schema(
@@ -82,8 +90,9 @@ class ChannelViewSet(viewsets.ViewSet):
 
             try:
                 org = request.user.organization
-                channels = Channel.objects.filter(
-                    organizations=org).order_by("create_ts")
+                channels = Channel.objects.filter(organizations=org).order_by(
+                    "create_ts"
+                )
                 p = Paginator(channels, per_page)
                 channels_pages = p.page(page)
                 channels_list = [
@@ -91,14 +100,20 @@ class ChannelViewSet(viewsets.ViewSet):
                         "id": channel.id,
                         "name": channel.name,
                         "network": channel.network.__dict__,
-                        "organizations": [{"id": org.id, "name": org.name} for org in channel.organizations.all()],
+                        "organizations": [
+                            {"id": org.id, "name": org.name}
+                            for org in channel.organizations.all()
+                        ],
                         "create_ts": channel.create_ts,
                     }
                     for channel in channels_pages
                 ]
                 response = ChannelListResponse(
-                    {"data": channels_list, "total": channels.count()})
-                return Response(data=ok(response.data), status=status.HTTP_200_OK)
+                    {"data": channels_list, "total": channels.count()}
+                )
+                return Response(
+                    data=ok(response.data), status=status.HTTP_200_OK
+                )
             except Exception as e:
                 return Response(
                     err(e.args), status=status.HTTP_400_BAD_REQUEST
@@ -136,8 +151,14 @@ class ChannelViewSet(viewsets.ViewSet):
                 # assemble transaction config
                 _orderers, _peers = assemble_transaction_config(org)
 
-                ConfigTX(org.network.name).create(name, org.network.consensus, _orderers, _peers)
-                ConfigTxGen(org.network.name).genesis(profile=name, channelid=name, outputblock="{}.block".format(name))
+                ConfigTX(org.network.name).create(
+                    name, org.network.consensus, _orderers, _peers
+                )
+                ConfigTxGen(org.network.name).genesis(
+                    profile=name,
+                    channelid=name,
+                    outputblock="{}.block".format(name),
+                )
 
                 # osnadmin channel join
                 ordering_node = Node.objects.get(id=orderers[0])
@@ -151,10 +172,7 @@ class ChannelViewSet(viewsets.ViewSet):
                 set_anchor_peer(name, org, anchor_peer, ordering_node)
 
                 # save channel to db
-                channel = Channel(
-                    name=name,
-                    network=org.network
-                )
+                channel = Channel(name=name, network=org.network)
                 channel.save()
                 channel.organizations.add(org)
                 channel.orderers.add(ordering_node)
@@ -163,7 +181,8 @@ class ChannelViewSet(viewsets.ViewSet):
                 response = ChannelIDSerializer(data=channel.__dict__)
                 if response.is_valid(raise_exception=True):
                     return Response(
-                        ok(response.validated_data), status=status.HTTP_201_CREATED
+                        ok(response.validated_data),
+                        status=status.HTTP_201_CREATED,
                     )
             except Exception as e:
                 return Response(
@@ -172,7 +191,8 @@ class ChannelViewSet(viewsets.ViewSet):
 
     @swagger_auto_schema(
         responses=with_common_response(
-            {status.HTTP_200_OK: ChannelResponseSerializer}),
+            {status.HTTP_200_OK: ChannelResponseSerializer}
+        ),
     )
     def retrieve(self, request, pk=None):
         """
@@ -209,21 +229,27 @@ class ChannelViewSet(viewsets.ViewSet):
             org = request.user.organization
             try:
                 # Read uploaded file in cache without saving it on disk.
-                file = request.FILES.get('data').read()
-                json_data = file.decode('utf8').replace("'", '"')
+                file = request.FILES.get("data").read()
+                json_data = file.decode("utf8").replace("'", '"')
                 data = json.loads(json_data)
                 msp_id = serializer.validated_data.get("msp_id")
                 org_type = serializer.validated_data.get("org_type")
                 # Validate uploaded config file
                 try:
-                    config = data["config"]["channel_group"]["groups"][org_type]["groups"][msp_id]
+                    config = data["config"]["channel_group"]["groups"][
+                        org_type
+                    ]["groups"][msp_id]
                 except KeyError:
                     LOG.exception("config file not found")
                     raise ResourceNotFound
 
                 try:
                     # Read current channel config from local disk
-                    with open(channel.get_channel_artifacts_path(CFG_JSON), 'r', encoding='utf-8') as f:
+                    with open(
+                        channel.get_channel_artifacts_path(CFG_JSON),
+                        "r",
+                        encoding="utf-8",
+                    ) as f:
                         LOG.info("load current config success")
                         current_config = json.load(f)
                 except FileNotFoundError:
@@ -236,11 +262,17 @@ class ChannelViewSet(viewsets.ViewSet):
                 )
                 LOG.info("new org created")
                 updated_config = deepcopy(current_config)
-                updated_config["channel_group"]["groups"]["Application"]["groups"][msp_id] = config
+                updated_config["channel_group"]["groups"]["Application"][
+                    "groups"
+                ][msp_id] = config
                 LOG.info("update config success", updated_config)
 
                 # Update and save the config with new org
-                with open(channel.get_channel_artifacts_path(UPDATED_CFG_JSON), 'w', encoding='utf-8') as f:
+                with open(
+                    channel.get_channel_artifacts_path(UPDATED_CFG_JSON),
+                    "w",
+                    encoding="utf-8",
+                ) as f:
                     LOG.info("save updated config success")
                     json.dump(updated_config, f, sort_keys=False)
 
@@ -275,12 +307,14 @@ class ChannelViewSet(viewsets.ViewSet):
                                 "type": 2,
                             }
                         },
-                        "data": {
-                            "config_update": to_dict(config_update)
-                        }
+                        "data": {"config_update": to_dict(config_update)},
                     }
                 }
-                with open(channel.get_channel_artifacts_path(CFG_JSON), 'w', encoding='utf-8') as f:
+                with open(
+                    channel.get_channel_artifacts_path(CFG_JSON),
+                    "w",
+                    encoding="utf-8",
+                ) as f:
                     LOG.info("save config to json success")
                     json.dump(updated_config, f, sort_keys=False)
 
@@ -288,7 +322,9 @@ class ChannelViewSet(viewsets.ViewSet):
                 ConfigTxLator().proto_encode(
                     input=channel.get_channel_artifacts_path(CFG_JSON),
                     type="common.Envelope",
-                    output=channel.get_channel_artifacts_path(CFG_DELTA_ENV_PB),
+                    output=channel.get_channel_artifacts_path(
+                        CFG_DELTA_ENV_PB
+                    ),
                 )
                 LOG.info("Encode the config update envelope success")
 
@@ -296,18 +332,22 @@ class ChannelViewSet(viewsets.ViewSet):
                 nodes = Node.objects.filter(
                     organization=org,
                     type=FabricNodeType.Peer.name.lower(),
-                    status=NodeStatus.Running.name.lower()
+                    status=NodeStatus.Running.name.lower(),
                 )
 
                 for node in nodes:
                     dir_node = "{}/{}/crypto-config/peerOrganizations".format(
-                        CELLO_HOME, org.name)
+                        CELLO_HOME, org.name
+                    )
                     env = {
-                        "FABRIC_CFG_PATH": "{}/{}/peers/{}/".format(dir_node, org.name, node.name + "." + org.name),
+                        "FABRIC_CFG_PATH": "{}/{}/peers/{}/".format(
+                            dir_node, org.name, node.name + "." + org.name
+                        ),
                     }
                     cli = PeerChannel(**env)
                     cli.signconfigtx(
-                        channel.get_channel_artifacts_path(CFG_DELTA_ENV_PB))
+                        channel.get_channel_artifacts_path(CFG_DELTA_ENV_PB)
+                    )
                     LOG.info("Peers to send the update transaction success")
 
                 # Save a new organization to db.
@@ -330,18 +370,23 @@ class ChannelViewSet(viewsets.ViewSet):
             node = Node.objects.filter(
                 organization=org,
                 type=FabricNodeType.Peer.name.lower(),
-                status=NodeStatus.Running.name.lower()
+                status=NodeStatus.Running.name.lower(),
             ).first()
             dir_node = "{}/{}/crypto-config/peerOrganizations".format(
-                CELLO_HOME, org.name)
+                CELLO_HOME, org.name
+            )
             env = {
-                "FABRIC_CFG_PATH": "{}/{}/peers/{}/".format(dir_node, org.name, node.name + "." + org.name),
+                "FABRIC_CFG_PATH": "{}/{}/peers/{}/".format(
+                    dir_node, org.name, node.name + "." + org.name
+                ),
             }
             peer_channel_cli = PeerChannel(**env)
             peer_channel_cli.fetch(option="config", channel=channel.name)
 
             # Decode latest config block into json
-            config = ConfigTxLator().proto_decode(input=path, type="common.Block")
+            config = ConfigTxLator().proto_decode(
+                input=path, type="common.Block"
+            )
             config = parse_block_file(config)
 
             # Prepare return data
@@ -349,11 +394,15 @@ class ChannelViewSet(viewsets.ViewSet):
                 "config": config,
                 "organization": org.name,
                 # TODO: create a method on Organization or Node to return msp_id
-                "msp_id": '{}'.format(org.name.split(".")[0].capitalize())
+                "msp_id": "{}".format(org.name.split(".")[0].capitalize()),
             }
 
             # Save as a json file for future usage
-            with open(channel.get_channel_artifacts_path(CFG_JSON), 'w', encoding='utf-8') as f:
+            with open(
+                channel.get_channel_artifacts_path(CFG_JSON),
+                "w",
+                encoding="utf-8",
+            ) as f:
                 json.dump(config, f, sort_keys=False)
             # Encode block file as pb
             ConfigTxLator().proto_encode(
@@ -409,14 +458,9 @@ def osn_channel_join(name, ordering_node, org):
     peer_channel_cli.create(
         channel=name,
         orderer_admin_url="{}.{}:{}".format(
-            ordering_node.name,
-            org.name.split(".", 1)[1], str(7053)
+            ordering_node.name, org.name.split(".", 1)[1], str(7053)
         ),
-        block_path="{}/{}/{}.block".format(
-            CELLO_HOME,
-            org.network.name,
-            name
-        )
+        block_path="{}/{}/{}.block".format(CELLO_HOME, org.network.name, name),
     )
 
 
@@ -434,7 +478,8 @@ def peer_channel_join(name, peers, org):
         peer_channel_cli = PeerChannel(**envs)
         peer_channel_cli.join(
             block_path="{}/{}/{}.block".format(
-                CELLO_HOME, org.network.name, name)
+                CELLO_HOME, org.network.name, name
+            )
         )
 
 
@@ -446,7 +491,7 @@ def set_anchor_peer(name, org, anchor_peer, ordering_node):
     :param ordering_node: Orderer node
     :return: none
     """
-    org_msp = '{}'.format(org.name.split(".", 1)[0].capitalize())
+    org_msp = "{}".format(org.name.split(".", 1)[0].capitalize())
     channel_artifacts_path = "{}/{}".format(CELLO_HOME, org.network.name)
 
     # Fetch the channel block from the orderer
@@ -463,7 +508,7 @@ def set_anchor_peer(name, org, anchor_peer, ordering_node):
     json_filter(
         input="{}/config_block.json".format(channel_artifacts_path),
         output="{}/config.json".format(channel_artifacts_path),
-        expression=".data.data[0].payload.data.config"
+        expression=".data.data[0].payload.data.config",
     )
 
     # add anchor peer config
@@ -472,13 +517,10 @@ def set_anchor_peer(name, org, anchor_peer, ordering_node):
             "mod_policy": "Admins",
             "value": {
                 "anchor_peers": [
-                    {
-                        "host": anchor_peer.name + "." + org.name,
-                        "port": 7051
-                    }
+                    {"host": anchor_peer.name + "." + org.name, "port": 7051}
                 ]
             },
-            "version": 0
+            "version": 0,
         }
     }
 
@@ -486,7 +528,7 @@ def set_anchor_peer(name, org, anchor_peer, ordering_node):
         input="{}/config.json".format(channel_artifacts_path),
         output="{}/modified_config.json".format(channel_artifacts_path),
         anchor_peer_config=anchor_peer_config,
-        org_msp=org_msp
+        org_msp=org_msp,
     )
 
     ConfigTxLator().proto_encode(
@@ -517,18 +559,26 @@ def set_anchor_peer(name, org, anchor_peer, ordering_node):
     # Create config update envelope
     json_create_envelope(
         input="{}/config_update.json".format(channel_artifacts_path),
-        output="{}/config_update_in_envelope.json".format(channel_artifacts_path),
-        channel=name
+        output="{}/config_update_in_envelope.json".format(
+            channel_artifacts_path
+        ),
+        channel=name,
     )
 
     ConfigTxLator().proto_encode(
-        input="{}/config_update_in_envelope.json".format(channel_artifacts_path),
+        input="{}/config_update_in_envelope.json".format(
+            channel_artifacts_path
+        ),
         type="common.Envelope",
-        output="{}/config_update_in_envelope.pb".format(channel_artifacts_path),
+        output="{}/config_update_in_envelope.pb".format(
+            channel_artifacts_path
+        ),
     )
 
     # Update the channel of anchor peer
-    peer_channel_update(name, org, anchor_peer, ordering_node, channel_artifacts_path)
+    peer_channel_update(
+        name, org, anchor_peer, ordering_node, channel_artifacts_path
+    )
 
 
 def peer_channel_fetch(name, org, anchor_peer, ordering_node):
@@ -542,16 +592,19 @@ def peer_channel_fetch(name, org, anchor_peer, ordering_node):
     envs = init_env_vars(anchor_peer, org)
     peer_channel_cli = PeerChannel(**envs)
     peer_channel_cli.fetch(
-        block_path="{}/{}/config_block.pb".format(CELLO_HOME, org.network.name),
-        channel=name, orderer_general_url="{}.{}:{}".format(
-            ordering_node.name,
-            org.name.split(".", 1)[1],
-            str(7050)
-        )
+        block_path="{}/{}/config_block.pb".format(
+            CELLO_HOME, org.network.name
+        ),
+        channel=name,
+        orderer_general_url="{}.{}:{}".format(
+            ordering_node.name, org.name.split(".", 1)[1], str(7050)
+        ),
     )
 
 
-def peer_channel_update(name, org, anchor_peer, ordering_node, channel_artifacts_path):
+def peer_channel_update(
+    name, org, anchor_peer, ordering_node, channel_artifacts_path
+):
     """
     Update the channel.
     :param anchor_peer: Anchor peer node
@@ -563,7 +616,10 @@ def peer_channel_update(name, org, anchor_peer, ordering_node, channel_artifacts
     peer_channel_cli = PeerChannel(**envs)
     peer_channel_cli.update(
         channel=name,
-        channel_tx="{}/config_update_in_envelope.pb".format(channel_artifacts_path),
+        channel_tx="{}/config_update_in_envelope.pb".format(
+            channel_artifacts_path
+        ),
         orderer_url="{}.{}:{}".format(
-            ordering_node.name, org.name.split(".", 1)[1], str(7050)),
+            ordering_node.name, org.name.split(".", 1)[1], str(7050)
+        ),
     )

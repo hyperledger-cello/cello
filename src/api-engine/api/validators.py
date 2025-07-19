@@ -17,7 +17,9 @@ def validate_url(value):
         parsed = urlparse(value)
         scheme, host = parsed.scheme, parsed.hostname or ""
         if scheme not in ("http", "https"):
-            raise ValidationError("Invalid scheme. URLs must start with 'http' or 'https'")
+            raise ValidationError(
+                "Invalid scheme. URLs must start with 'http' or 'https'"
+            )
         fqdn = FQDN(host, min_labels=1)
         if not fqdn.is_valid:
             raise ValidationError("Invalid hostname")
