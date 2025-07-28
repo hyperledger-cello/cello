@@ -1,0 +1,2017 @@
+{
+	"info": {
+		"_postman_id": "deaa6f62-4155-4b00-b84f-ed1354f3f321",
+		"name": "Hyperledger Cello API Engine",
+		"description": "Hyperledger Cello is a blockchain provision and operation system, which helps manage blockchain networks in an efficient way. This document is a complete API collection for its API Engine with all RESTful endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"token\", jsonData.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"email\": \"foo@email.com\",\n\t\"password\": \"foo\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"login"
+							]
+						},
+						"description": "Login with email and password to get access token"
+					}
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"refresh\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/login/refresh/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"login",
+								"refresh",
+								""
+							]
+						},
+						"description": "Refresh access token using refresh token"
+					}
+				},
+				{
+					"name": "Verify Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"token\": \"{{token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/token-verify",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"token-verify"
+							]
+						},
+						"description": "Verify the validity of access token"
+					}
+				},
+				{
+					"name": "Register User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"org_id\", jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"username\": \"admin\",\n\t\"email\": \"admin@email.com\",\n\t\"password\": \"password\",\n\t\"orgName\": \"org1.example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"register"
+							]
+						},
+						"description": "Register new user with organization"
+					}
+				}
+			],
+			"description": "Authentication and user registration endpoints"
+		},
+		{
+			"name": "Agents",
+			"item": [
+				{
+					"name": "List Agents",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/agents",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"agents"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								},
+								{
+									"key": "name",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "type",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get list of agents with pagination and filtering options"
+					}
+				},
+				{
+					"name": "Create Agent",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"agent_id\", jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"cello-agent-docker\",\n\t\"type\": \"docker\",\n\t\"urls\": \"http://cello.docker.agent:5001\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/agents",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"agents"
+							]
+						},
+						"description": "Create new agent"
+					}
+				},
+				{
+					"name": "Get Agent",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/agents/{{agent_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"agents",
+								"{{agent_id}}"
+							]
+						},
+						"description": "Get agent details by ID"
+					}
+				},
+				{
+					"name": "Update Agent",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"updated-agent-name\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/agents/{{agent_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"agents",
+								"{{agent_id}}"
+							]
+						},
+						"description": "Update agent information"
+					}
+				},
+				{
+					"name": "Partial Update Agent",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"partial-updated-name\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/agents/{{agent_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"agents",
+								"{{agent_id}}"
+							]
+						},
+						"description": "Partially update agent information"
+					}
+				},
+				{
+					"name": "Delete Agent",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/agents/{{agent_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"agents",
+								"{{agent_id}}"
+							]
+						},
+						"description": "Delete agent by ID"
+					}
+				},
+				{
+					"name": "Apply Agent",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"type\": \"kubernetes\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/agents/organization",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"agents",
+								"organization"
+							]
+						},
+						"description": "Apply for agent assignment to organization"
+					}
+				},
+				{
+					"name": "Release Agent",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/agents/{{agent_id}}/organization",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"agents",
+								"{{agent_id}}",
+								"organization"
+							]
+						},
+						"description": "Release agent from organization assignment"
+					}
+				}
+			],
+			"description": "Agent management endpoints for Docker and Kubernetes agents"
+		},
+		{
+			"name": "Organizations",
+			"item": [
+				{
+					"name": "List Organizations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/organizations",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organizations"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								},
+								{
+									"key": "name",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get list of organizations with pagination"
+					}
+				},
+				{
+					"name": "Create Organization",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"org_id\", jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"org1.example.com\",\n\t\"peernum\": 2,\n\t\"orderernum\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/organizations",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organizations"
+							]
+						},
+						"description": "Create new organization with specified peer and orderer nodes"
+					}
+				},
+				{
+					"name": "Get Organization",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/organizations/{{org_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organizations",
+								"{{org_id}}"
+							]
+						},
+						"description": "Get organization details by ID"
+					}
+				},
+				{
+					"name": "Update Organization",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"updated-org.example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/organizations/{{org_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organizations",
+								"{{org_id}}"
+							]
+						},
+						"description": "Update organization information"
+					}
+				},
+				{
+					"name": "Delete Organization",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/organizations/{{org_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organizations",
+								"{{org_id}}"
+							]
+						},
+						"description": "Delete organization by ID"
+					}
+				}
+			],
+			"description": "Organization management endpoints"
+		},
+		{
+			"name": "Networks",
+			"item": [
+				{
+					"name": "List Networks",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/networks",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"networks"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								},
+								{
+									"key": "status",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get list of blockchain networks"
+					}
+				},
+				{
+					"name": "Create Network",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"network_id\", jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"test-network\",\n\t\"consensus\": \"etcdraft\",\n\t\"database\": \"leveldb\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/networks",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"networks"
+							]
+						},
+						"description": "Create new blockchain network"
+					}
+				},
+				{
+					"name": "Get Network",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/networks/{{network_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"networks",
+								"{{network_id}}"
+							]
+						},
+						"description": "Get network details by ID"
+					}
+				},
+				{
+					"name": "Delete Network",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/networks/{{network_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"networks",
+								"{{network_id}}"
+							]
+						},
+						"description": "Delete network by ID"
+					}
+				}
+			],
+			"description": "Blockchain network management endpoints"
+		},
+		{
+			"name": "Nodes",
+			"item": [
+				{
+					"name": "List Nodes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/nodes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nodes"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								},
+								{
+									"key": "type",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "name",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get list of blockchain nodes (peers and orderers)"
+					}
+				},
+				{
+					"name": "Create Peer Node",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"peer_id\", jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"peer0\",\n\t\"type\": \"peer\",\n\t\"num\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nodes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nodes"
+							]
+						},
+						"description": "Create new peer node"
+					}
+				},
+				{
+					"name": "Create Orderer Node",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"orderer_id\", jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"orderer0\",\n\t\"type\": \"orderer\",\n\t\"num\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nodes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nodes"
+							]
+						},
+						"description": "Create new orderer node"
+					}
+				},
+				{
+					"name": "Get Node",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/nodes/{{peer_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nodes",
+								"{{peer_id}}"
+							]
+						},
+						"description": "Get node details by ID"
+					}
+				},
+				{
+					"name": "Update Node",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"updated-peer0\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nodes/{{peer_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nodes",
+								"{{peer_id}}"
+							]
+						},
+						"description": "Update node information"
+					}
+				},
+				{
+					"name": "Delete Node",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/nodes/{{peer_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nodes",
+								"{{peer_id}}"
+							]
+						},
+						"description": "Delete node by ID"
+					}
+				},
+				{
+					"name": "Operate Node",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"action\": \"start\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nodes/{{peer_id}}/operations",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nodes",
+								"{{peer_id}}",
+								"operations"
+							]
+						},
+						"description": "Perform operations on node (start, stop, restart)"
+					}
+				},
+				{
+					"name": "Get Node Config",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/nodes/{{peer_id}}/config",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nodes",
+								"{{peer_id}}",
+								"config"
+							]
+						},
+						"description": "Download node configuration files"
+					}
+				},
+				{
+					"name": "Upload Node Config",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nodes/{{peer_id}}/config",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nodes",
+								"{{peer_id}}",
+								"config"
+							]
+						},
+						"description": "Upload node configuration file"
+					}
+				},
+				{
+					"name": "Join Channel",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": [],
+									"description": "Genesis block file"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nodes/{{peer_id}}/block",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nodes",
+								"{{peer_id}}",
+								"block"
+							]
+						},
+						"description": "Upload genesis block to join channel"
+					}
+				},
+				{
+					"name": "List Node Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/nodes/{{peer_id}}/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nodes",
+								"{{peer_id}}",
+								"users"
+							]
+						},
+						"description": "Get list of users registered to node"
+					}
+				},
+				{
+					"name": "Register User to Node",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"username\": \"user1\",\n\t\"password\": \"password123\",\n\t\"type\": \"client\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nodes/{{peer_id}}/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nodes",
+								"{{peer_id}}",
+								"users"
+							]
+						},
+						"description": "Register new user to node"
+					}
+				}
+			],
+			"description": "Blockchain node (peer and orderer) management endpoints"
+		},
+		{
+			"name": "Channels",
+			"item": [
+				{
+					"name": "List Channels",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/channels",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"channels"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get list of channels"
+					}
+				},
+				{
+					"name": "Create Channel",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"channel_id\", jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"mychannel\",\n\t\"orderers\": [\"{{orderer_id}}\"],\n\t\"peers\": [\"{{peer_id}}\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/channels",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"channels"
+							]
+						},
+						"description": "Create new channel with specified peers and orderers"
+					}
+				},
+				{
+					"name": "Get Channel",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/channels/{{channel_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"channels",
+								"{{channel_id}}"
+							]
+						},
+						"description": "Get channel details by ID"
+					}
+				},
+				{
+					"name": "Update Channel",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "msp_id",
+									"value": "Org1MSP",
+									"type": "text"
+								},
+								{
+									"key": "org_type",
+									"value": "Application",
+									"type": "text"
+								},
+								{
+									"key": "data",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/channels/{{channel_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"channels",
+								"{{channel_id}}"
+							]
+						},
+						"description": "Update channel configuration"
+					}
+				}
+			],
+			"description": "Blockchain channel management endpoints"
+		},
+		{
+			"name": "Chaincodes",
+			"item": [
+				{
+					"name": "List Chaincodes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/chaincodes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"chaincodes"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get list of chaincode packages"
+					}
+				},
+				{
+					"name": "Upload Chaincode Package",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"chaincode_id\", jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": [],
+									"description": "Chaincode package (.tar.gz)"
+								},
+								{
+									"key": "description",
+									"value": "Sample chaincode for testing",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/chaincodes/chaincodeRepo",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"chaincodes",
+								"chaincodeRepo"
+							]
+						},
+						"description": "Upload chaincode package file"
+					}
+				},
+				{
+					"name": "Approve Chaincode",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"channel_name\": \"mychannel\",\n\t\"chaincode_name\": \"mycc\",\n\t\"chaincode_version\": \"1.0\",\n\t\"sequence\": 1,\n\t\"policy\": \"\",\n\t\"init_flag\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/chaincodes/{{chaincode_id}}/approve",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"chaincodes",
+								"{{chaincode_id}}",
+								"approve"
+							]
+						},
+						"description": "Approve chaincode for organization"
+					}
+				},
+				{
+					"name": "Commit Chaincode",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"channel_name\": \"mychannel\",\n\t\"chaincode_name\": \"mycc\",\n\t\"chaincode_version\": \"1.0\",\n\t\"sequence\": 1,\n\t\"policy\": \"\",\n\t\"init_flag\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/chaincodes/{{chaincode_id}}/commit",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"chaincodes",
+								"{{chaincode_id}}",
+								"commit"
+							]
+						},
+						"description": "Commit chaincode definition to channel"
+					}
+				}
+			],
+			"description": "Chaincode management endpoints for smart contract deployment"
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "List Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users?page=1&per_page=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								},
+								{
+									"key": "username",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get list of users with pagination and filtering"
+					}
+				},
+				{
+					"name": "Create User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"user_id\", jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"username\": \"testuser\",\n\t\"email\": \"testuser@email.com\",\n\t\"password\": \"password123\",\n\t\"role\": \"operator\",\n\t\"organization\": \"{{org_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users"
+							]
+						},
+						"description": "Create new user"
+					}
+				},
+				{
+					"name": "Get User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_id}}"
+							]
+						},
+						"description": "Get user details by ID"
+					}
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"password\": \"newpassword123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_id}}"
+							]
+						},
+						"description": "Update user information"
+					}
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_id}}"
+							]
+						},
+						"description": "Delete user by ID"
+					}
+				}
+			],
+			"description": "User management endpoints"
+		},
+		{
+			"name": "Files",
+			"item": [
+				{
+					"name": "List Files",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/files",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"files"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								},
+								{
+									"key": "name",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "type",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get list of uploaded files"
+					}
+				},
+				{
+					"name": "Upload File",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"file_id\", jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "name",
+									"value": "test-file",
+									"type": "text"
+								},
+								{
+									"key": "type",
+									"value": "config",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/files",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"files"
+							]
+						},
+						"description": "Upload new file"
+					}
+				},
+				{
+					"name": "Get File",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/files/{{file_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"files",
+								"{{file_id}}"
+							]
+						},
+						"description": "Get file details by ID"
+					}
+				},
+				{
+					"name": "Delete File",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "JWT {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/files/{{file_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"files",
+								"{{file_id}}"
+							]
+						},
+						"description": "Delete file by ID"
+					}
+				}
+			],
+			"description": "File management endpoints for configuration and other files"
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8080",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "org_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "agent_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "network_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "peer_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "orderer_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "channel_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "chaincode_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "file_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+} 
