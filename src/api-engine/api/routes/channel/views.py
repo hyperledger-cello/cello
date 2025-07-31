@@ -326,41 +326,41 @@ class ChannelViewSet(viewsets.ViewSet):
         try:
             org = request.user.organization
             channel = Channel.objects.get(id=pk)
-            path = channel.get_channel_config_path()
-            node = Node.objects.filter(
+            peer = Node.objects.filter(
                 organization=org,
                 type=FabricNodeType.Peer.name.lower(),
                 status=NodeStatus.Running.name.lower()
             ).first()
-            dir_node = "{}/{}/crypto-config/peerOrganizations".format(
-                CELLO_HOME, org.name)
-            env = {
-                "FABRIC_CFG_PATH": "{}/{}/peers/{}/".format(dir_node, org.name, node.name + "." + org.name),
-            }
-            peer_channel_cli = PeerChannel(**env)
-            peer_channel_cli.fetch(option="config", channel=channel.name)
+            orderer = Node.objects.filter(
+                organization=org,
+                type=FabricNodeType.Orderer.name.lower(),
+                status=NodeStatus.Running.name.lower()
+            ).first()
 
-            # Decode latest config block into json
-            config = ConfigTxLator().proto_decode(input=path, type="common.Block")
-            config = parse_block_file(config)
+            peer_channel_fetch(channel.name, org, peer, orderer)
+
+            # Decode block to JSON
+            ConfigTxLator().proto_decode(
+                input=channel.get_channel_artifacts_path("config_block.pb"),
+                type="common.Block",
+                output=channel.get_channel_artifacts_path("config_block.json"),
+            )
+
+            # Get the config data from the block
+            json_filter(
+                input=channel.get_channel_artifacts_path("config_block.json"),
+                output=channel.get_channel_artifacts_path("config.json"),
+                expression=".data.data[0].payload.data.config"
+            )
 
             # Prepare return data
-            data = {
-                "config": config,
-                "organization": org.name,
-                # TODO: create a method on Organization or Node to return msp_id
-                "msp_id": '{}'.format(org.name.split(".")[0].capitalize())
-            }
-
-            # Save as a json file for future usage
-            with open(channel.get_channel_artifacts_path(CFG_JSON), 'w', encoding='utf-8') as f:
-                json.dump(config, f, sort_keys=False)
-            # Encode block file as pb
-            ConfigTxLator().proto_encode(
-                input=channel.get_channel_artifacts_path(CFG_JSON),
-                type="common.Config",
-                output=channel.get_channel_artifacts_path(CFG_PB),
-            )
+            with open(channel.get_channel_artifacts_path("config.json"), 'r', encoding='utf-8') as f:
+                data = {
+                    "config": json.load(f),
+                    "organization": org.name,
+                    # TODO: create a method on Organization or Node to return msp_id
+                    "msp_id": '{}'.format(org.name.split(".")[0].capitalize())
+                }
             return Response(data=data, status=status.HTTP_200_OK)
         except ObjectDoesNotExist:
             LOG.exception("channel org not found")
@@ -374,7 +374,7 @@ def validate_nodes(nodes):
     :return: none
     """
     for node in nodes:
-        if node.status != "running":
+        if node.status != NodeStatus.Running.name.lower():
             raise NoResource("Node {} is not running".format(node.name))
 
 
@@ -539,9 +539,7 @@ def peer_channel_fetch(name, org, anchor_peer, ordering_node):
     :param channel_name: Name of the channel.
     :return: none
     """
-    envs = init_env_vars(anchor_peer, org)
-    peer_channel_cli = PeerChannel(**envs)
-    peer_channel_cli.fetch(
+    PeerChannel(**{**init_env_vars(ordering_node, org), **init_env_vars(anchor_peer, org)}).fetch(
         block_path="{}/{}/config_block.pb".format(CELLO_HOME, org.network.name),
         channel=name, orderer_general_url="{}.{}:{}".format(
             ordering_node.name,
