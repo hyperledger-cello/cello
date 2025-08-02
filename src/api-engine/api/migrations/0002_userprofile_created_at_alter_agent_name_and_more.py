@@ -7,29 +7,43 @@ import django.utils.timezone
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0001_initial'),
+        ("api", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='userprofile',
-            name='created_at',
-            field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
+            model_name="userprofile",
+            name="created_at",
+            field=models.DateTimeField(
+                auto_now_add=True, default=django.utils.timezone.now
+            ),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='agent',
-            name='name',
-            field=models.CharField(blank=True, help_text='Agent name, can be generated automatically.', max_length=64, unique=True),
+            model_name="agent",
+            name="name",
+            field=models.CharField(
+                blank=True,
+                help_text="Agent name, can be generated automatically.",
+                max_length=64,
+                unique=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='network',
-            name='name',
-            field=models.CharField(blank=True, help_text='network name, can be generated automatically.', max_length=64, unique=True),
+            model_name="network",
+            name="name",
+            field=models.CharField(
+                blank=True,
+                help_text="network name, can be generated automatically.",
+                max_length=64,
+                unique=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='node',
-            name='name',
-            field=models.CharField(blank=True, help_text='Node name', max_length=64, unique=True),
+            model_name="node",
+            name="name",
+            field=models.CharField(
+                blank=True, help_text="Node name", max_length=64, unique=True
+            ),
         ),
     ]

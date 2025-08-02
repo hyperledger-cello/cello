@@ -10,7 +10,7 @@ import os
 
 
 def upload_to(instance, filename):
-    return '/'.join([FABRIC_CHAINCODE_STORE, instance.user_name, filename])
+    return "/".join([FABRIC_CHAINCODE_STORE, instance.user_name, filename])
 
 
 class ChainCodeIDSerializer(serializers.Serializer):
@@ -30,7 +30,7 @@ class ChainCodePackageBody(serializers.Serializer):
 
     @staticmethod
     def extension_for_file(file):
-        extension = file.name.endswith('.tar.gz')
+        extension = file.name.endswith(".tar.gz")
         return extension
 
 
@@ -42,17 +42,28 @@ class ChainCodeNetworkSerializer(serializers.Serializer):
 class ChainCodeOrgListSerializer(serializers.Serializer):
     id = serializers.UUIDField(help_text="Organization ID")
     name = serializers.CharField(
-        max_length=128, help_text="name of Organization")
+        max_length=128, help_text="name of Organization"
+    )
 
 
-class ChainCodeResponseSerializer(ChainCodeIDSerializer, serializers.ModelSerializer):
+class ChainCodeResponseSerializer(
+    ChainCodeIDSerializer, serializers.ModelSerializer
+):
     id = serializers.UUIDField(help_text="ID of ChainCode")
     # network = ChainCodeNetworkSerializer()
     # organizations = ChainCodeOrgListSerializer(many=True)
 
     class Meta:
         model = ChainCode
-        fields = ("id", "package_id", "label", "creator", "language", "create_ts", "description")
+        fields = (
+            "id",
+            "package_id",
+            "label",
+            "creator",
+            "language",
+            "create_ts",
+            "description",
+        )
 
 
 class ChaincodeListResponse(ListResponseSerializer):
@@ -64,7 +75,9 @@ class ChainCodeApproveForMyOrgBody(serializers.Serializer):
     chaincode_name = serializers.CharField(max_length=128, required=True)
     chaincode_version = serializers.CharField(max_length=128, required=True)
     sequence = serializers.IntegerField(min_value=1, required=True)
-    policy = serializers.CharField(max_length=128, required=False, allow_blank=True)
+    policy = serializers.CharField(
+        max_length=128, required=False, allow_blank=True
+    )
     init_flag = serializers.BooleanField(required=False)
 
 

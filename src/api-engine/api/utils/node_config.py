@@ -10,7 +10,13 @@ from api.config import CELLO_HOME
 class NodeConfig:
     """Class represents crypto-config yaml."""
 
-    def __init__(self, org, peer_file="core.yaml", orderer_file="orderer.yaml", ca_file=""):
+    def __init__(
+        self,
+        org,
+        peer_file="core.yaml",
+        orderer_file="orderer.yaml",
+        ca_file="",
+    ):
         """
         init  node config
 
@@ -41,7 +47,7 @@ class NodeConfig:
         :rtype: none
         """
         try:
-            with open(src, 'r+') as f:
+            with open(src, "r+") as f:
                 cfg = yaml.load(f, Loader=yaml.FullLoader)
 
             for key, value in kw.items():
@@ -60,7 +66,7 @@ class NodeConfig:
                 elif len(keys) == 5:
                     cfg[keys[0]][keys[1]][keys[2]][keys[3]][keys[4]] = value
 
-            with open(dst, 'w+') as f:
+            with open(dst, "w+") as f:
                 yaml.dump(cfg, f)
         except Exception as e:
             raise Exception("Configuration File Not Generated") from e
@@ -75,11 +81,18 @@ class NodeConfig:
         :rtype: string
         """
         if node_type == "peer":
-            dst = "{}/{}/crypto-config/peerOrganizations/{}/peers/{}.{}/{}"\
-                .format(CELLO_HOME, self.org, self.org, node, self.org, self.peer_file)
+            dst = "{}/{}/crypto-config/peerOrganizations/{}/peers/{}.{}/{}".format(
+                CELLO_HOME, self.org, self.org, node, self.org, self.peer_file
+            )
         elif node_type == "orderer":
-            dst = "{}/{}/crypto-config/ordererOrganizations/{}/orderers/{}.{}/{}"\
-                .format(CELLO_HOME, self.org, self.org.split(".", 1)[1], node, self.org.split(".", 1)[1], self.orderer_file)
+            dst = "{}/{}/crypto-config/ordererOrganizations/{}/orderers/{}.{}/{}".format(
+                CELLO_HOME,
+                self.org,
+                self.org.split(".", 1)[1],
+                node,
+                self.org.split(".", 1)[1],
+                self.orderer_file,
+            )
         else:
             dst = ""
         return dst
