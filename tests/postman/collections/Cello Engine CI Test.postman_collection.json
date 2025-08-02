@@ -1,0 +1,677 @@
+{
+	"info": {
+		"_postman_id": "04314160-39b9-401c-b74f-6ea9f1cd89fd",
+		"name": "Cello Engine CI Test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "43793131",
+		"_collection_link": "https://www.postman.com/haiboyang-3238546/workspace/hyperledger-cello/collection/43793131-04314160-39b9-401c-b74f-6ea9f1cd89fd?action=share&source=collection_link&creator=43793131"
+	},
+	"item": [
+		{
+			"name": "Register User",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"if (pm.response.code === 200) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"org_id\", jsonData.data.id);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"email\": \"foo@email.com\",\n\t\"password\": \"foo\",\n\t\"orgName\": \"org1.foo.com\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/register",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"register"
+					]
+				},
+				"description": "Register new user with organization"
+			}
+		},
+		{
+			"name": "Login User",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"if (pm.response.code === 200) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"token\", jsonData.data.token);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"email\": \"foo@email.com\",\n\t\"password\": \"foo\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/login",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"login"
+					]
+				},
+				"description": "Login with email and password to get access token"
+			}
+		},
+		{
+			"name": "Create Agent",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"if (pm.response.code === 201) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"agent_id\", jsonData.data.id);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "JWT {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"name\": \"cello-agent-docker\",\n\t\"type\": \"docker\",\n\t\"urls\": \"http://cello.docker.agent:5001\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/agents",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"agents"
+					]
+				},
+				"description": "Create new agent"
+			}
+		},
+		{
+			"name": "Create Peer Node",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"if (pm.response.code === 201) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"peer_id\", jsonData.data.id);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "JWT {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"name\": \"peer0\",\n\t\"type\": \"peer\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/nodes",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"nodes"
+					]
+				},
+				"description": "Create new peer node"
+			}
+		},
+		{
+			"name": "Create Orderer Node",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"if (pm.response.code === 201) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"orderer_id\", jsonData.data.id);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "JWT {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"name\": \"orderer0\",\n\t\"type\": \"orderer\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/nodes",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"nodes"
+					]
+				},
+				"description": "Create new orderer node"
+			}
+		},
+		{
+			"name": "Create Network",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"if (pm.response.code === 201) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"network_id\", jsonData.data.id);",
+							"    ",
+							"    setTimeout(function() {",
+							"        console.log(\"Delayed 5 seconds\");",
+							"    }, 5000);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "JWT {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"name\": \"test-network\",\n\t\"consensus\": \"etcdraft\",\n\t\"database\": \"couchdb\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/networks",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"networks"
+					]
+				},
+				"description": "Create new blockchain network"
+			}
+		},
+		{
+			"name": "Create Channel",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"if (pm.response.code === 201) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"channel_id\", jsonData.id);",
+							"    ",
+							"    setTimeout(function() {",
+							"        console.log(\"Delayed 10 seconds\");",
+							"    }, 10000);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "JWT {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"name\": \"mychannel\",\n\t\"orderers\": [\"{{orderer_id}}\"],\n\t\"peers\": [\"{{peer_id}}\"]\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/channels",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"channels"
+					]
+				},
+				"description": "Create new channel with specified peers and orderers"
+			}
+		},
+		{
+			"name": "Upload Chaincode Package",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "JWT {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": ["basic.tar.gz"],
+							"description": "basic chaincode package"
+						},
+						{
+							"key": "description",
+							"value": "Sample chaincode for testing",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/chaincodes/chaincodeRepo",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"chaincodes",
+						"chaincodeRepo"
+					]
+				},
+				"description": "Upload chaincode package file"
+			}
+		},
+		{
+			"name": "List Chaincodes",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"if (pm.response.code === 200) {",
+							"    var jsonData = pm.response.json();",
+							"    if (jsonData.data && jsonData.data.data && jsonData.data.data.length > 0) {",
+							"        var latestChaincode = jsonData.data.data[0];",
+							"        pm.environment.set(\"package_id\", latestChaincode.package_id);",
+							"    } else {",
+							"        console.log(\"No chaincodes found in response\");",
+							"    }",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "JWT {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/chaincodes?page=1&per_page=10",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"chaincodes"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "per_page",
+							"value": "10"
+						}
+					]
+				},
+				"description": "List chaincodes to get the latest uploaded chaincode ID"
+			}
+		},
+		{
+			"name": "Install Chaincode",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "JWT {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"id\": \"{{package_id}}\",\n\t\"node\": \"{{peer_id}}\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/chaincodes/install",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"chaincodes",
+						"install"
+					]
+				},
+				"description": "Install chaincode package to peer node"
+			}
+		},
+		{
+			"name": "Approve Chaincode",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "JWT {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"channel_name\": \"mychannel\",\n\t\"chaincode_name\": \"basic\",\n\t\"chaincode_version\": \"1.0\",\n\t\"sequence\": 1,\n\t\"policy\": \"\",\n\t\"init_flag\": false\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/chaincodes/approve_for_my_org",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"chaincodes",
+						"approve_for_my_org"
+					]
+				},
+				"description": "Approve chaincode for organization"
+			}
+		},
+		{
+			"name": "Commit Chaincode",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "JWT {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"channel_name\": \"mychannel\",\n\t\"chaincode_name\": \"basic\",\n\t\"chaincode_version\": \"1.0\",\n\t\"sequence\": 1,\n\t\"policy\": \"\",\n\t\"init_flag\": false\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/chaincodes/commit",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"chaincodes",
+						"commit"
+					]
+				},
+				"description": "Commit chaincode definition to channel"
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8080",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "org_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "agent_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "network_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "peer_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "orderer_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "channel_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "package_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+} 

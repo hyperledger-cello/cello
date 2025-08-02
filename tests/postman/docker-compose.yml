@@ -1,8 +1,0 @@
-version: '3.2'
-services:
-  newman:
-    image: postman/newman_ubuntu1404:4.4.0
-    volumes:
-      - ./:/etc/newman
-    command: run /etc/newman/test/test.json -e /etc/newman/env.json -r junit,cli --reporter-junit-export junitResult.xml
-    network_mode: "host"
