@@ -145,6 +145,9 @@ deep-clean: ##@Clean Stop services, clean docker images and remove mounted local
 	make clean-images
 	rm -rf $(LOCAL_STORAGE_PATH)
 
+docs:
+	make doc
+
 doc: ##@Documentation Build local online documentation and start serve
 	command -v mkdocs >/dev/null 2>&1 || pip install -r docs/requirements.txt || pip3 -r docs/requirements.txt
 	mkdocs serve -f mkdocs.yml
@@ -223,13 +226,14 @@ fabric:
 dashboard:
 	docker build -t hyperledger/cello-dashboard:latest -f build_image/docker/common/dashboard/Dockerfile.in ./
 
-
-
+server:
+	docker compose -f bootup/docker-compose-files/docker-compose.server.dev.yml up -d --force-recreate --remove-orphans
 
 .PHONY: \
 	all \
 	license \
 	check \
+	docs \
 	doc \ 
 	help \
 	docker \
@@ -249,3 +253,4 @@ dashboard:
 	start-docker-compose \
 	stop-docker-compose \
 	images \
+	server\

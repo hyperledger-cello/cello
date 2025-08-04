@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 hero: All concepts related to cello
 
 # Concepts
