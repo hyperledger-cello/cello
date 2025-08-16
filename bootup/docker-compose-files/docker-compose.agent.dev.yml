@@ -1,0 +1,27 @@
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+services:
+  cello-docker-agent:
+    image: hyperledger/cello-agent-docker
+    container_name: cello-docker-agent
+    hostname: cello.docker.agent
+    restart: always
+    ports:
+      - "2375:2375"
+      - "5001:5001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DOCKER_URL=unix://var/run/docker.sock
+      - STORAGE_PATH=${CELLO_STORAGE_PATH:-/opt/cello}/hyperledger
+    networks:
+      - cello-net
+
+networks:
+  cello-net:
+    name: cello-net
+
+volumes:
+  cello-docker-agent:

@@ -1,7 +1,12 @@
+---
+hide:
+  - navigation
+---
+
 Welcome to Hyperledger Cello
 ===
 
-![Typical Scenario](images/scenario.png)
+![Logo](images/logo.svg)
 
 Hyperledger Cello (HLC) is a blockchain provision and operation system, which helps people use and manage blockchains in a more efficient way.
 
@@ -19,16 +24,13 @@ Using Cello, blockchain developers can:
 * Check the system status and manage chains, upload smart contract and test... through dashboards.
 * Maintain a pool of running blockchain networks on top of bare-metals, virtual clouds (e.g., virtual machines, vsphere Clouds), container clusters (e.g., Docker, Swarm, Kubernetes).
 
-## [Getting Started](setup/server.md)
+![Typical Scenario](images/scenario.png)
 
-**For beginners, it is highly recommended to read the [Setup](setup/server.md) first**.
+## Getting Started
 
-## Operation Guidelines
-* [Operator operations in dashboard](operations/dashboard/operator.md)
-* [Admin operations in dashboard](operations/dashboard/admin.md)
-* [User operations in dashboard](operations/dashboard/user.md)
+**For beginners, it is highly recommended to read the [*Tutorials*](tutorials/introduction.md) first**.
 
-## [Contribute to the Project](contributing.md)
+## Contribute to the Project
 * [How to Contribute](contributing.md)
 * [Code Style Guide](https://black.readthedocs.io/en/stable/the_black_code_style.html)
 

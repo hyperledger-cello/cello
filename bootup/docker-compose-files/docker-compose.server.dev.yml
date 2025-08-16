@@ -1,0 +1,67 @@
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+services:
+  cello-dashboard:
+    image: hyperledger/cello-dashboard
+    container_name: cello-dashboard
+    ports:
+      - "${DASHBOARD_SERVICE_PORT}:8081"
+    networks:
+      - cello-net
+    depends_on:
+      - cello-api-engine
+
+  # pg database
+  cello-postgres:
+    image: postgres:12.0
+    container_name: cello-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=api_engine
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123456
+    ports:
+      - "5432:5432"
+    volumes:
+      - ${CELLO_STORAGE_PATH:-/opt/cello}/pgdata:/var/lib/postgresql/data
+    networks:
+      - cello-net
+
+  # api engine service of cello 
+  cello-api-engine:
+    image: hyperledger/cello-api-engine
+    container_name: cello-api-engine
+    restart: unless-stopped
+    stdin_open: true
+    dns_search: .
+    environment:
+      - GODEBUG=netdns=go
+      - DB_NAME=api_engine
+      - DB_USER=postgres
+      - DB_PASSWORD=123456
+      - DB_HOST=cello-postgres
+      - CELERY_BROKER_URL=redis://redis
+      - DB_PORT=5432
+      - DEBUG=True
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - FABRIC_LOGGING_SPEC=INFO
+      - API_ENGINE_ADMIN_EMAIL=admin@cello.com
+    ports:
+      - "8080:8080"
+    volumes:
+      - ${CELLO_STORAGE_PATH:-/opt/cello}:/opt/cello
+    networks:
+      - cello-net
+    depends_on:
+      - cello-postgres
+
+networks:
+  cello-net:
+    name: cello-net
+
+volumes:
+  cello-api-engine:
+  cello-postgres:
+  cello-dashboard:

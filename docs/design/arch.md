@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # Architecture Design
 
 Here we discuss the architecture design for the mangement services on the Master node.
