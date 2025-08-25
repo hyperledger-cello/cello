@@ -106,12 +106,13 @@ class UserProfile(AbstractUser):
     )
     email = models.EmailField(db_index=True, unique=True)
     username = models.CharField(
-        default="", max_length=64, help_text="Name of user"
+        max_length=64, help_text="Name of user", unique=True
     )
     role = models.CharField(
-        choices=UserRole.to_choices(True),
+        choices=UserRole.to_choices(string_as_value=True),
         default=UserRole.User.value,
         max_length=64,
+        help_text=UserRole.get_info("User roles:", list_str=True),
     )
     organization = models.ForeignKey(
         Organization,
