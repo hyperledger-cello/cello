@@ -7,7 +7,6 @@ import django.contrib.auth.models
 import django.contrib.postgres.fields
 import django.core.validators
 from django.db import migrations, models
-import django.db.models.deletion
 import django.utils.timezone
 
 
@@ -16,7 +15,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ("auth", "0012_alter_user_first_name_max_length"),
+        ("user", "0012_alter_user_first_name_max_length"),
     ]
 
     operations = [
@@ -116,7 +115,7 @@ class Migration(migrations.Migration):
                         help_text="The groups this user belongs to. A user will get all permissions granted to each of their groups.",
                         related_name="user_set",
                         related_query_name="user",
-                        to="auth.group",
+                        to="user.group",
                         verbose_name="groups",
                     ),
                 ),
@@ -1155,7 +1154,7 @@ class Migration(migrations.Migration):
                 help_text="Specific permissions for this user.",
                 related_name="user_set",
                 related_query_name="user",
-                to="auth.permission",
+                to="user.permission",
                 verbose_name="user permissions",
             ),
         ),
