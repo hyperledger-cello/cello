@@ -21,10 +21,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "=5-oa588z5-5ow4wd8+=xoj%uy_rd6a65edkfvn3&zw+1=qhwd"
+SECRET_KEY = os.getenv('SECRET_KEY', 'change_me')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = ${DEBUG}
+DEBUG = os.getenv('DEBUG', 'True').upper() == 'TRUE'
 
 ALLOWED_HOSTS = ["*"]
 
@@ -32,7 +32,7 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-    "django.contrib.auth",
+    "django.contrib.user",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "rest_auth.registration",
     "corsheaders",
     "rest_framework_simplejwt",
+    "user.apps.UserConfig",
 ]
 
 MIDDLEWARE = [
@@ -58,7 +59,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.user.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -75,7 +76,7 @@ TEMPLATES = [
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
+                "django.contrib.user.context_processors.user",
                 "django.contrib.messages.context_processors.messages",
             ]
         },
@@ -91,11 +92,11 @@ WSGI_APPLICATION = "api_engine.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "$DB_NAME",
-        "USER": "$DB_USER",
-        "PASSWORD": "$DB_PASSWORD",
-        "HOST": "$DB_HOST",
-        "PORT": "$DB_PORT",
+        "NAME": os.getenv("DB_NAME", "postgres"),
+        "USER": os.getenv("DB_USER", "postgres"),
+        "PASSWORD": os.getenv("DB_PASSWORD", "postgres"),
+        "HOST": os.getenv("DB_HOST", "db"),
+        "PORT": os.getenv("DB_PORT", "5432"),
     }
 }
 
@@ -105,12 +106,12 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+        "NAME": "django.contrib.user.password_validation.UserAttributeSimilarityValidator"
     },
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.user.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.user.password_validation.CommonPasswordValidator"},
     {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"
+        "NAME": "django.contrib.user.password_validation.NumericPasswordValidator"
     },
 ]
 
@@ -132,8 +133,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
-WEBROOT = "$WEBROOT"
-STATIC_URL = "$WEBROOT/static/"
+WEB_PREFIX = os.getenv("WEB_PREFIX", "api").strip("/")
+API_VERSION = os.getenv("API_VERSION", "v1").strip("/")
+WEBROOT = "/" + "/".join([WEB_PREFIX, API_VERSION])
+STATIC_URL = "/".join([WEBROOT, "static"])
 STATIC_ROOT = "/var/www/server/static"
 
 REST_FRAMEWORK = {
@@ -151,7 +154,7 @@ REST_FRAMEWORK = {
 }
 
 AUTHENTICATION_BACKENDS = (
-    "django.contrib.auth.backends.ModelBackend",
+    "django.contrib.user.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 )
 
@@ -211,9 +214,7 @@ LOGGING = {
 MAX_AGENT_CAPACITY = 100
 
 MEDIA_ROOT = "/var/www/media"
-MEDIA_URL = "$WEBROOT/media/"
-
-CELERY_BROKER_URL = "$CELERY_BROKER_URL"
+MEDIA_URL = "/".join([WEBROOT, "media"])
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
