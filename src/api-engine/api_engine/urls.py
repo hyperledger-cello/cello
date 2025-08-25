@@ -16,8 +16,6 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-import os
-
 from django.conf import settings
 from django.urls import path, include
 from rest_framework import permissions
@@ -33,7 +31,7 @@ from api.routes.network.views import NetworkViewSet
 from api.routes.agent.views import AgentViewSet
 from api.routes.node.views import NodeViewSet
 from api.routes.organization.views import OrganizationViewSet
-from api.routes.user.views import UserViewSet
+from user.views import UserViewSet
 from api.routes.file.views import FileViewSet
 from api.routes.general.views import RegisterViewSet
 from api.routes.channel.views import ChannelViewSet
@@ -44,11 +42,8 @@ from api.routes.general.views import (
 )
 
 
-DEBUG = getattr(settings, "DEBUG")
-API_VERSION = os.getenv("API_VERSION")
-WEBROOT = os.getenv("WEBROOT")
-# WEBROOT = "/".join(WEBROOT.split("/")[1:]) + "/"
-WEBROOT = "api/v1/"
+DEBUG = settings.DEBUG
+WEBROOT = settings.WEBROOT
 
 swagger_info = openapi.Info(
     title="Cello API Engine Service",
@@ -58,10 +53,10 @@ swagger_info = openapi.Info(
     """,
 )
 
-SchemaView = get_schema_view(
+schema_view = get_schema_view(
     validators=["ssv", "flex"],
     public=True,
-    permission_classes=(permissions.AllowAny,),
+    permission_classes=[permissions.AllowAny],
 )
 
 # define and register routers of api
@@ -84,8 +79,8 @@ urlpatterns += [
     ),
     path("login/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("token-verify", CelloTokenVerifyView.as_view(), name="token_verify"),
-    path("docs/", SchemaView.with_ui("swagger", cache_timeout=0), name="docs"),
-    path("redoc/", SchemaView.with_ui("redoc", cache_timeout=0), name="redoc"),
+    path("docs/", schema_view.with_ui("swagger", cache_timeout=0), name="docs"),
+    path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="redoc"),
 ]
 
 if DEBUG:
