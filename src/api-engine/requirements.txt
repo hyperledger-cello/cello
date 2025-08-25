@@ -1,7 +1,6 @@
 asgiref==3.6.0
 attrs==20.3.0
 cachetools==4.1.1
-celery==5.2.6
 certifi==2024.7.4
 chardet==3.0.4
 coreapi==2.3.3
