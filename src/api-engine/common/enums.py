@@ -1,6 +1,6 @@
 from enum import Enum
 
-from utils import separate_upper_class
+from common.utils import separate_upper_class
 
 
 class ExtraEnum(Enum):

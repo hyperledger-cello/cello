@@ -32,9 +32,8 @@ WorkerAPIMaxLen = 128
 CapacityMinValue = 1
 
 
-class AgentQuery(PageQuerySerializer, serializers.ModelSerializer):
+class AgentQuery(PageQuerySerializer, serializers.Serializer):
     class Meta:
-        model = Agent
         fields = ("status", "name", "type", "page", "per_page", "organization")
 
 
