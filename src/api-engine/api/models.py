@@ -97,54 +97,6 @@ class Organization(models.Model):
         ordering = ("-created_at",)
 
 
-class UserProfile(AbstractUser):
-    id = models.UUIDField(
-        primary_key=True,
-        help_text="ID of user",
-        default=make_uuid,
-        editable=True,
-    )
-    email = models.EmailField(db_index=True, unique=True)
-    username = models.CharField(
-        max_length=64, help_text="Name of user", unique=True
-    )
-    role = models.CharField(
-        choices=UserRole.to_choices(string_as_value=True),
-        default=UserRole.User.value,
-        max_length=64,
-        help_text=UserRole.get_info("User roles:", list_str=True),
-    )
-    organization = models.ForeignKey(
-        Organization,
-        null=True,
-        on_delete=models.CASCADE,
-        related_name="users",
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = []
-
-    class Meta:
-        verbose_name = "User Info"
-        verbose_name_plural = verbose_name
-        ordering = ["-date_joined"]
-
-    def __str__(self):
-        return self.username
-
-    @property
-    def is_admin(self):
-        return self.role == UserRole.Admin.name.lower()
-
-    @property
-    def is_operator(self):
-        return self.role == UserRole.Operator.name.lower()
-
-    @property
-    def is_common_user(self):
-        return self.role == UserRole.User.name.lower()
-
-
 def get_agent_config_file_path(instance, file):
     file_ext = file.split(".")[-1]
     filename = "%s.%s" % (hash_file(instance.config_file), file_ext)

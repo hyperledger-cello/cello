@@ -3,24 +3,26 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 import logging
+from typing import Optional
 
 from django.core.paginator import Paginator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from api.exceptions import CustomError
-from api.models import UserProfile
 from serializers import (
     UserCreateBody,
     UserIDSerializer,
     UserQuerySerializer,
     UserListSerializer,
-    UserUpdateSerializer,
+    UserPasswordUpdateSerializer,
 )
 from api.utils.common import with_common_response
+from user.models import UserProfile
 
 LOG = logging.getLogger(__name__)
 
@@ -32,7 +34,7 @@ class UserViewSet(viewsets.ViewSet):
             {status.HTTP_200_OK: UserListSerializer}
         ),
     )
-    def list(self, request):
+    def list(self, request: Request) -> Response:
         """
         List Users
 
@@ -40,12 +42,12 @@ class UserViewSet(viewsets.ViewSet):
         """
         serializer = UserQuerySerializer(data=request.GET)
         serializer.is_valid(raise_exception=True)
-        username = serializer.validated_data.get("username")
+        email = serializer.validated_data.get("email")
         page = serializer.validated_data.get("page")
         per_page = serializer.validated_data.get("per_page")
         query_params = {}
-        if username:
-            query_params.update({"username__icontains": username})
+        if email:
+            query_params.update({"email__icontains": email})
 
         users = UserProfile.objects.filter(**query_params)
         p = Paginator(users, per_page)
@@ -63,7 +65,7 @@ class UserViewSet(viewsets.ViewSet):
             {status.HTTP_201_CREATED: UserIDSerializer}
         ),
     )
-    def create(self, request):
+    def create(self, request: Request) -> Response:
         """
         Create User
 
@@ -83,7 +85,7 @@ class UserViewSet(viewsets.ViewSet):
             {status.HTTP_204_NO_CONTENT: "No Content"}
         )
     )
-    def destroy(self, request, pk=None):
+    def destroy(self, request: Request, pk: Optional[str] = None) -> Response:
         """
         Delete User
 
@@ -97,7 +99,7 @@ class UserViewSet(viewsets.ViewSet):
 
     @swagger_auto_schema(
         method="post",
-        request_body=UserUpdateSerializer,
+        request_body=UserPasswordUpdateSerializer,
         responses=with_common_response({status.HTTP_204_NO_CONTENT: "No Content"}),
     )
     @action(
@@ -108,19 +110,16 @@ class UserViewSet(viewsets.ViewSet):
             IsAuthenticated,
         ],
     )
-    def password(self, request):
+    def password(self, request: Request) -> Response:
         """
         post:
         Update/Reset Password
 
         Update/Reset password for user
         """
-        serializer = UserUpdateSerializer(data=request.data)
+        serializer = UserPasswordUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        password = serializer.validated_data.get("password")
-        user = request.user
-        user.set_password(password)
-        user.save()
+        serializer.update_password(request.user)
         return Response(
             status = status.HTTP_204_NO_CONTENT
         )
