@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework_simplejwt",
     "user.apps.UserConfig",
+    "organization.apps.OrganizationConfig",
 ]
 
 MIDDLEWARE = [
@@ -167,7 +168,7 @@ SITE_ID = 1
 
 REST_USE_JWT = True
 
-AUTH_USER_MODEL = 'api.UserProfile'
+AUTH_USER_MODEL = 'user.UserProfile'
 
 SWAGGER_SETTINGS = {
     # For validating your swagger schema(setting None to not validate)

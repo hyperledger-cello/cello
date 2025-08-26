@@ -4,7 +4,7 @@
 from typing import Dict, Any
 
 from rest_framework import serializers
-from api.common.serializers import PageQuerySerializer
+from api.common.serializers import PageQuerySerializer, ListResponseSerializer
 from api.utils.jwt import OrgSerializer
 from user.models import UserProfile
 
@@ -21,7 +21,7 @@ class UserCreateBody(serializers.ModelSerializer):
         }
 
     def create(self, validated_data: Dict[str, Any]) -> UserProfile:
-        user = super(UserCreateBody, self).create(validated_data)
+        user = super().create(validated_data)
 
         user.set_password(validated_data["password"])
         user.save()
@@ -33,9 +33,8 @@ class UserIDSerializer(serializers.Serializer):
 
 
 class UserQuerySerializer(PageQuerySerializer, serializers.Serializer):
-    email = serializers.CharField(
-        help_text="Email to filter", required=False, max_length=64
-    )
+    class Meta:
+        fields = ("page", "per_page")
 
 
 class UserInfoSerializer(serializers.ModelSerializer):
@@ -47,8 +46,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
         fields = ("id", "email", "role", "organization", "created_at")
 
 
-class UserListSerializer(serializers.Serializer):
-    total = serializers.IntegerField(help_text="Total number of users")
+class UserListSerializer(ListResponseSerializer):
     data = UserInfoSerializer(many=True, help_text="Users list")
 
 
