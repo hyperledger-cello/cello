@@ -1,38 +1,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
+from typing import Dict, Any
+
 from rest_framework import serializers
-from api.common.enums import Operation, NetworkType, FabricNodeType
 from api.common.serializers import PageQuerySerializer
-from api.exceptions import ResourceExists
-from api.models import UserProfile
 from api.utils.jwt import OrgSerializer
-
-
-class NodeQuery(PageQuerySerializer):
-    pass
-
-
-class NodeCreateBody(serializers.Serializer):
-    network_type = serializers.ChoiceField(
-        help_text=NetworkType.get_info("Network types:", list_str=True),
-        choices=NetworkType.to_choices(),
-    )
-    type = serializers.ChoiceField(
-        help_text=FabricNodeType.get_info("Node Types:", list_str=True),
-        choices=FabricNodeType.to_choices(True),
-    )
-
-
-class NodeIDSerializer(serializers.Serializer):
-    id = serializers.CharField(help_text="ID of node")
-
-
-class NodeOperationSerializer(serializers.Serializer):
-    action = serializers.ChoiceField(
-        help_text=Operation.get_info("Operation for node:", list_str=True),
-        choices=Operation.to_choices(True),
-    )
+from user.models import UserProfile
 
 
 class UserCreateBody(serializers.ModelSerializer):
@@ -41,18 +15,12 @@ class UserCreateBody(serializers.ModelSerializer):
         fields = ("role", "organization", "password", "email")
         extra_kwargs = {
             "role": {"required": True},
-            "password": {"required": True},
+            "organization": {"required": True},
             "email": {"required": True},
+            "password": {"required": True},
         }
 
-    def validate_email(self, value):
-        if UserProfile.objects.filter(email=value).exists():
-            raise ResourceExists(detail="User Email already exists")
-        return value
-
-    def create(self, validated_data):
-        validated_data["username"] = validated_data["email"]
-
+    def create(self, validated_data: Dict[str, Any]) -> UserProfile:
         user = super(UserCreateBody, self).create(validated_data)
 
         user.set_password(validated_data["password"])
@@ -65,8 +33,8 @@ class UserIDSerializer(serializers.Serializer):
 
 
 class UserQuerySerializer(PageQuerySerializer, serializers.Serializer):
-    username = serializers.CharField(
-        help_text="Username to filter", required=False, max_length=64
+    email = serializers.CharField(
+        help_text="Email to filter", required=False, max_length=64
     )
 
 
@@ -76,11 +44,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = ("id", "username", "role", "organization", "created_at")
-        extra_kwargs = {
-            "id": {"read_only": False},
-            "username": {"validators": []},
-        }
+        fields = ("id", "email", "role", "organization", "created_at")
 
 
 class UserListSerializer(serializers.Serializer):
@@ -88,24 +52,14 @@ class UserListSerializer(serializers.Serializer):
     data = UserInfoSerializer(many=True, help_text="Users list")
 
 
-class UserAuthSerializer(serializers.Serializer):
-    username = serializers.CharField(
-        help_text="Username for login", max_length=64
-    )
-    password = serializers.CharField(
-        help_text="Password for login", max_length=64
-    )
-
-
-class UserAuthResponseSerializer(serializers.Serializer):
-    access_token = serializers.CharField(help_text="Access token")
-    expires_in = serializers.IntegerField(help_text="Expires time")
-    scope = serializers.CharField(help_text="Scopes for token")
-    token_type = serializers.CharField(help_text="Type of token")
-
-
-class UserUpdateSerializer(serializers.Serializer):
+class UserPasswordUpdateSerializer(serializers.Serializer):
     password = serializers.CharField(
         help_text="New password for login", max_length=64
     )
+
+    def update_password(self, user: UserProfile) -> UserProfile:
+        password = self.validated_data.get("password")
+        user.set_password(password)
+        user.save()
+        return user
 
