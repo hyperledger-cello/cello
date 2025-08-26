@@ -7,7 +7,6 @@ import tarfile
 from zipfile import ZipFile
 
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -27,7 +26,6 @@ from api.common.enums import (
     FabricCAUserStatus,
 )
 from api.common.enums import (
-    UserRole,
     NetworkType,
     FabricNodeType,
     FabricVersions,
@@ -35,6 +33,9 @@ from api.common.enums import (
 from api.utils.common import make_uuid, random_name, hash_file
 from api.config import CELLO_HOME
 from api.validators import validate_url
+from organization.models import Organization
+
+# from user.models import UserProfile
 
 SUPER_USER_TOKEN = getattr(settings, "ADMIN_TOKEN", "")
 MAX_CAPACITY = getattr(settings, "MAX_AGENT_CAPACITY", 100)
@@ -58,43 +59,6 @@ class Govern(models.Model):
         default="", max_length=64, help_text="Name of govern"
     )
     created_at = models.DateTimeField(auto_now_add=True)
-
-
-class Organization(models.Model):
-    id = models.UUIDField(
-        primary_key=True,
-        help_text="ID of organization",
-        default=make_uuid,
-        editable=True,
-    )
-    name = models.CharField(
-        default="", max_length=64, help_text="Name of organization"
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    msp = models.TextField(help_text="msp of organization", null=True)
-    tls = models.TextField(help_text="tls of organization", null=True)
-    agents = models.CharField(
-        help_text="agent of organization",
-        max_length=128,
-        default="",
-    )
-    network = models.ForeignKey(
-        "Network",
-        help_text="Network to which the organization belongs",
-        null=True,
-        related_name="organization",
-        on_delete=models.SET_NULL,
-    )
-    # channel = models.ForeignKey(
-    #     "Channel",
-    #     help_text="channel to which the organization belongs",
-    #     null=True,
-    #     related_name="channel",
-    #     on_delete=models.SET_NULL
-    # )
-
-    class Meta:
-        ordering = ("-created_at",)
 
 
 def get_agent_config_file_path(instance, file):
@@ -128,7 +92,7 @@ class Agent(models.Model):
         help_text="Agent URL", null=True, blank=True, validators=[validate_url]
     )
     organization = models.ForeignKey(
-        "Organization",
+        Organization,
         null=True,
         on_delete=models.CASCADE,
         help_text="Organization of agent",
@@ -461,12 +425,12 @@ class Node(models.Model):
         blank=True,
         default=dict,
     )
-    user = models.ForeignKey(
-        UserProfile,
-        help_text="User of node",
-        null=True,
-        on_delete=models.CASCADE,
-    )
+    # user = models.ForeignKey(
+    #     UserProfile,
+    #     help_text="User of node",
+    #     null=True,
+    #     on_delete=models.CASCADE,
+    # )
     organization = models.ForeignKey(
         Organization,
         help_text="Organization of node",

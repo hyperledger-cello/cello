@@ -13,6 +13,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
+from api.common import ok
 from api.exceptions import CustomError
 from serializers import (
     UserCreateBody,
@@ -42,21 +43,19 @@ class UserViewSet(viewsets.ViewSet):
         """
         serializer = UserQuerySerializer(data=request.GET)
         serializer.is_valid(raise_exception=True)
-        email = serializer.validated_data.get("email")
         page = serializer.validated_data.get("page")
         per_page = serializer.validated_data.get("per_page")
-        query_params = {}
-        if email:
-            query_params.update({"email__icontains": email})
 
-        users = UserProfile.objects.filter(**query_params)
+        users = UserProfile.objects.all()
         p = Paginator(users, per_page)
+        response = UserListSerializer(
+            data = {
+                "total": p.count,
+                "data": list(p.page(page).object_list)
+            })
+        response.is_valid(raise_exception=True)
         return Response(
-            data = UserListSerializer(
-                data = {
-                    "total": p.count,
-                    "data": list(p.page(page).object_list)
-                }).data,
+            data = ok(response.validated_data),
             status = status.HTTP_200_OK)
 
     @swagger_auto_schema(

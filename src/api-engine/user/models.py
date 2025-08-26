@@ -3,7 +3,7 @@ from django.db import models
 
 from api.models import Organization
 from common.utils import make_uuid
-from enums import UserRole
+from user.enums import UserRole
 
 
 # Create your models here.

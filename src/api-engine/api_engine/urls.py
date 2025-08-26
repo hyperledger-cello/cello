@@ -30,16 +30,11 @@ from django.conf.urls.static import static
 from api.routes.network.views import NetworkViewSet
 from api.routes.agent.views import AgentViewSet
 from api.routes.node.views import NodeViewSet
-from api.routes.organization.views import OrganizationViewSet
+from auth.views import RegisterViewSet, CelloTokenObtainPairView, CelloTokenVerifyView
+from organization.views import OrganizationViewSet
 from user.views import UserViewSet
-from api.routes.file.views import FileViewSet
-from api.routes.general.views import RegisterViewSet
 from api.routes.channel.views import ChannelViewSet
 from api.routes.chaincode.views import ChainCodeViewSet
-from api.routes.general.views import (
-    CelloTokenObtainPairView,
-    CelloTokenVerifyView,
-)
 
 
 DEBUG = settings.DEBUG
@@ -66,7 +61,6 @@ router.register("agents", AgentViewSet, basename="agent")
 router.register("nodes", NodeViewSet, basename="node")
 router.register("organizations", OrganizationViewSet, basename="organization")
 router.register("users", UserViewSet, basename="user")
-router.register("files", FileViewSet, basename="file")
 router.register("register", RegisterViewSet, basename="register")
 router.register("channels", ChannelViewSet, basename="channel")
 router.register("chaincodes", ChainCodeViewSet, basename="chaincode")
