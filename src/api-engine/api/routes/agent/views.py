@@ -68,18 +68,6 @@ class AgentViewSet(viewsets.ViewSet):
                 organization = request.user.organization
 
                 query_filters = {}
-                # if organization:
-                #     if not request.user.is_operator:
-                #         raise PermissionDenied()
-                #     query_filters.update({"organization": organization})
-                # else:
-                #     org_name = (
-                #         request.user.organization.name
-                #         if request.user.organization
-                #         else ""
-                #     )
-                #     if request.user.is_admin:
-                #         query_filters.update({"organization__name": org_name})
                 if name:
                     query_filters.update({"name__icontains": name})
                 if agent_status:
