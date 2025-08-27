@@ -15,10 +15,6 @@ class AgentIDSerializer(serializers.Serializer):
 
 
 class AgentResponseSerializer(AgentIDSerializer, serializers.ModelSerializer):
-    organization = serializers.UUIDField(
-        help_text="Organization ID", required=True
-    )
-
     class Meta:
         model = Agent
         fields = (
