@@ -27,8 +27,8 @@ from rest_framework_simplejwt.views import (
 )
 from django.conf.urls.static import static
 
+from agent.views import AgentViewSet
 from api.routes.network.views import NetworkViewSet
-from api.routes.agent.views import AgentViewSet
 from api.routes.node.views import NodeViewSet
 from auth.views import RegisterViewSet, CelloTokenObtainPairView, CelloTokenVerifyView
 from organization.views import OrganizationViewSet
