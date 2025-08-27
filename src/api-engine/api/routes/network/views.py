@@ -22,7 +22,6 @@ from api.routes.network.serializers import (
     NetworkIDSerializer,
 )
 from api.utils.common import with_common_response
-from api.lib.configtxgen import ConfigTX, ConfigTxGen
 from api.models import Network, Node, Port
 from api.config import CELLO_HOME
 from api.utils import zip_file
@@ -37,75 +36,6 @@ class NetworkViewSet(viewsets.ViewSet):
     permission_classes = [
         IsAuthenticated,
     ]
-
-    def _genesis2base64(self, network):
-        """
-        convert genesis.block to Base64
-        :param network: network id
-        :return: genesis block
-        :rtype: bytearray
-        """
-        try:
-            dir_node = "{}/{}/".format(CELLO_HOME, network)
-            name = "genesis.block"
-            zname = "block.zip"
-            zip_file(
-                "{}{}".format(dir_node, name), "{}{}".format(dir_node, zname)
-            )
-            with open("{}{}".format(dir_node, zname), "rb") as f_block:
-                block = base64.b64encode(f_block.read())
-            return block
-        except Exception as e:
-            LOG.exception("Genesis to Base64 Failed")
-            raise e
-
-    @swagger_auto_schema(
-        query_serializer=NetworkQuery,
-        responses=with_common_response(
-            with_common_response({status.HTTP_200_OK: NetworkListResponse})
-        ),
-    )
-    def list(self, request):
-        """
-        List network
-        :param request: query parameter
-        :return: network list
-        :rtype: list
-        """
-        try:
-            serializer = NetworkQuery(data=request.GET)
-            if serializer.is_valid(raise_exception=True):
-                page = serializer.validated_data.get("page", 1)
-                per_page = serializer.validated_data.get("page", 10)
-                org = request.user.organization
-                networks = org.network
-                if not networks:
-                    return Response(
-                        ok(data={"total": 0, "data": None}),
-                        status=status.HTTP_200_OK,
-                    )
-                p = Paginator([networks], per_page)
-                networks = p.page(page)
-                networks = [
-                    {
-                        "id": network.id,
-                        "name": network.name,
-                        "created_at": network.created_at,
-                    }
-                    for network in networks
-                ]
-                response = NetworkListResponse(
-                    data={"total": p.count, "data": networks}
-                )
-                if response.is_valid(raise_exception=True):
-                    return Response(
-                        ok(response.validated_data), status=status.HTTP_200_OK
-                    )
-            return Response(
-                ok(data={"total": 0, "data": None}), status=status.HTTP_200_OK
-            )
-        except Exception as e:
-            return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
     def _agent_params(self, pk):
         """
@@ -227,13 +157,6 @@ class NetworkViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
-    @swagger_auto_schema(responses=with_common_response())
-    def retrieve(self, request, pk=None):
-        """
-        Get Network
-        Get network information
-        """
-        pass
 
     @swagger_auto_schema(
         responses=with_common_response(
@@ -259,41 +182,3 @@ class NetworkViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
-    @swagger_auto_schema(
-        methods=["get"],
-        responses=with_common_response(
-            {status.HTTP_200_OK: NetworkMemberResponse}
-        ),
-    )
-    @swagger_auto_schema(
-        methods=["post"],
-        responses=with_common_response(
-            {status.HTTP_200_OK: NetworkMemberResponse}
-        ),
-    )
-    @action(methods=["get", "post"], detail=True, url_path="peers")
-    def peers(self, request, pk=None):
-        """
-        get:
-        Get Peers
-        Get peers of network.
-        post:
-        Add New Peer
-        Add peer into network
-        """
-        pass
-
-    @swagger_auto_schema(
-        methods=["delete"],
-        responses=with_common_response(
-            {status.HTTP_200_OK: NetworkMemberResponse}
-        ),
-    )
-    @action(methods=["delete"], detail=True, url_path="peers/<str:peer_id>")
-    def delete_peer(self, request, pk=None, peer_id=None):
-        """
-        delete:
-        Delete Peer
-        Delete peer in network
-        """
-        pass
