@@ -29,24 +29,11 @@ class OrganizationViewSet(viewsets.ViewSet):
         per_page = serializer.validated_data.get("per_page", 10)
         organizations = Organization.objects.all()
         p = Paginator(organizations, per_page)
-        organizations = [
-            {
-                "id": str(organization.id),
-                "name": organization.name,
-                "network": (
-                    str(organization.network.id)
-                    if organization.network
-                    else None
-                ),
-                "agents": (
-                    organization.agent.id if organization.agent else None
-                ),
-                "created_at": organization.created_at,
-            }
-            for organization in p.page(page)
-        ]
         response = OrganizationList(
-            data={"total": p.count, "data": organizations}
+            data={
+                "total": p.count,
+                "data": list(p.page(page).object_list)
+            }
         )
         response.is_valid(raise_exception=True)
         return Response(

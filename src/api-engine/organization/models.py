@@ -17,13 +17,5 @@ class Organization(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     msp = models.TextField(help_text="msp of organization", null=True)
     tls = models.TextField(help_text="tls of organization", null=True)
-    network = models.ForeignKey(
-        "Network",
-        help_text="Network to which the organization belongs",
-        null=True,
-        related_name="organization",
-        on_delete=models.SET_NULL,
-    )
-
     class Meta:
         ordering = ("-created_at",)

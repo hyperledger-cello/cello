@@ -53,7 +53,6 @@ from api.routes.node.serializers import (
     NodeUserListSerializer,
     NodeConfigFileSerializer,
 )
-from api.tasks import operate_node
 from api.utils.common import with_common_response
 from api.lib.pki import CryptoGen, CryptoConfig
 from api.utils import zip_dir, zip_file
