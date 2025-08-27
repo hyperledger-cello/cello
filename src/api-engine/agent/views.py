@@ -31,24 +31,10 @@ class AgentViewSet(viewsets.ViewSet):
         per_page = serializer.validated_data.get("per_page")
 
         p = Paginator(Agent.objects.filter(organization=request.user.organization), per_page)
-        agent_list = [
-            {
-                "id": agent.id,
-                "name": agent.name,
-                "status": agent.status,
-                "type": agent.type,
-                "urls": agent.urls,
-                "organization": (
-                    str(agent.organization.id)
-                    if agent.organization
-                    else None
-                ),
-                "created_at": agent.created_at,
-            }
-            for agent in p.page(page)
-        ]
         response = AgentListResponse(
-            data={"data": agent_list, "total": p.count}
+            data={
+                "data": list(p.page(page).object_list),
+                "total": p.count}
         )
         response.is_valid(raise_exception=True)
         return Response(

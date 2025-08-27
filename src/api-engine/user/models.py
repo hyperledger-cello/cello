@@ -13,7 +13,6 @@ class UserProfile(AbstractUser):
         primary_key=True,
         help_text="ID of user",
         default=make_uuid,
-        editable=True,
     )
     email = models.EmailField(db_index=True, unique=True)
     role = models.CharField(
@@ -24,7 +23,6 @@ class UserProfile(AbstractUser):
     )
     organization = models.ForeignKey(
         Organization,
-        null=True,
         on_delete=models.CASCADE,
         related_name="users",
     )
