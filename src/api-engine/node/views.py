@@ -4,6 +4,7 @@ from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from api.common import ok
 from api.models import Node
 from api.utils.common import with_common_response
 from node.serializers import NodeQuery, NodeListSerializer, NodeCreateBody, NodeIDSerializer
@@ -45,4 +46,10 @@ class NodeViewSet(viewsets.ViewSet):
     def create(self, request):
         serializer = NodeCreateBody(data=request.data)
         serializer.is_valid(raise_exception=True)
+        response = NodeIDSerializer(data=serializer.save().__dict__)
+        response.is_valid(raise_exception=True)
+        return Response(
+            status=status.HTTP_201_CREATED,
+            data=ok(response.validated_data),
+        )
 
