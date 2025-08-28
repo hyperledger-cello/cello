@@ -1,9 +1,6 @@
-import os
-import shutil
-
 from django.db import models
 
-from agent.enums import HostStatus, HostType
+from agent.enums import AgentStatus, AgentType
 from agent.validators import validate_url
 from common.utils import make_uuid
 from organization.models import Organization
@@ -22,7 +19,7 @@ class Agent(models.Model):
         help_text="Agent name, can be generated automatically.",
         max_length=64,
     )
-    urls = models.CharField(
+    url = models.CharField(
         help_text="Agent URL", null=True, blank=True, validators=[validate_url]
     )
     organization = models.ForeignKey(
@@ -34,15 +31,15 @@ class Agent(models.Model):
     )
     status = models.CharField(
         help_text="Status of agent",
-        choices=HostStatus.to_choices(True),
+        choices=AgentStatus.to_choices(True),
         max_length=10,
-        default=HostStatus.Active.name.lower(),
+        default=AgentStatus.Active.name.lower(),
     )
     type = models.CharField(
         help_text="Type of agent",
-        choices=HostType.to_choices(True),
+        choices=AgentType.to_choices(True),
         max_length=32,
-        default=HostType.Docker.name.lower(),
+        default=AgentType.Docker.name.lower(),
     )
     created_at = models.DateTimeField(
         help_text="Create time of agent", auto_now_add=True
@@ -50,5 +47,3 @@ class Agent(models.Model):
 
     class Meta:
         ordering = ("-created_at",)
-
-

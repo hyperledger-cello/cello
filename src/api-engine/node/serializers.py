@@ -1,14 +1,19 @@
 import base64
 import os
+from typing import Optional, Dict, Any
 from zipfile import ZipFile
 
 import yaml
+from requests import post
 from rest_framework import serializers
 
+from agent.enums import AgentType
 from api.common.serializers import PageQuerySerializer, ListResponseSerializer
 from api.config import CELLO_HOME
+from api.lib.agent.base import AgentBase
+from api.lib.agent.docker import DockerAgent
 from api.lib.pki import CryptoConfig, CryptoGen
-from node.enums import NodeType
+from node.enums import NodeType, NodeStatus
 from node.models import Node
 
 
@@ -57,42 +62,73 @@ class NodeCreateBody(serializers.ModelSerializer):
             "type": {"required": True},
         }
 
-    def validate(self, data):
+    def validate(self, data: Dict[str, Any]):
         if any(node.name == data["name"] for node in self.context["request"].user.organization.agent.nodes):
             raise serializers.ValidationError("Node Exists")
         return data
 
-    def create(self, validated_data):
-        organization_name = self.context["request"].user.organization.name
+    def create(self, validated_data: Dict[str, Any]) -> Node:
+        organization = self.context["request"].user.organization
         node_type = validated_data["type"]
         node_name = validated_data["name"]
-        CryptoConfig(organization_name).update({"type": node_type, "Specs": [node_name]})
-        CryptoGen(organization_name).extend()
-        self._generate_node_config(node_type, organization_name, node_name)
+        CryptoConfig(organization.name).update({"type": node_type, "Specs": [node_name]})
+        CryptoGen(organization.name).extend()
+        node_domain_name = self._get_node_domain_name(node_type, organization.name, node_name)
+        self._generate_node_config(node_type, organization.name, node_domain_name)
+        msp = self._get_msp(node_type, organization.name, node_domain_name)
+        tls = self._get_tls(node_type, organization.name, node_domain_name)
+        cfg = self._get_cfg(node_type, organization.name, node_domain_name)
+        agent = organization.agent
+        response = post(
+            "{}/api/v1/nodes".format(agent.url),
+            data={
+                "msp": msp,
+                "tls": tls,
+                "peer_config_file": cfg,
+                "orderer_config_file": cfg,
+                "img": "hyperledger/fabric:2.5.10",
+                "cmd": (
+                    'bash /tmp/init.sh "peer node start"'
+                    if node_type == NodeType.Peer
+                    else 'bash /tmp/init.sh "orderer"'
+                ),
+                "name": node_domain_name,
+                "type": node_type,
+                "action": "create",
+            })
+        node = Node(
+            name=node_name,
+            type=node_type,
+            agent=organization.agent,
+            status=NodeStatus.Running.name if response.status_code == 200 else NodeStatus.Failed.name,
+            config_file=cfg,
+            msp=msp,
+            tls=tls,
+        )
+        node.save()
+        return node
 
-
-    def _generate_node_config(self, node_type: NodeType, organization_name: str, node_name: str) -> None:
+    def _generate_node_config(self, node_type: NodeType, organization_name: str, node_domain_name: str) -> None:
         if node_type == NodeType.Peer:
-            self._generate_peer_config(organization_name, node_name)
+            self._generate_peer_config(organization_name, node_domain_name)
         elif node_type == NodeType.Orderer:
-            self._generate_orderer_config(organization_name, node_name)
+            self._generate_orderer_config(organization_name, node_domain_name)
         # throw exception here
-        pass
+        return None
 
-    def _generate_peer_config(self, organization_name: str, peer_name: str) -> None:
-        peer_full_name = "{}.{}".format(peer_name, organization_name)
+    def _generate_peer_config(self, organization_name: str, peer_domain_name: str) -> None:
         self._generate_config(
             "/opt/node/core.yaml.bak",
             os.path.join(
-                self._get_peer_directory(organization_name, peer_name),
+                self._get_peer_directory(organization_name, peer_domain_name),
                 "core.yaml"),
             **{
                 "peer_tls_enabled": True,
-                "operations_listenAddress": "{}:9444".format(peer_full_name),
-                "peer_address": "{}:7051".format(peer_full_name),
-                "peer_gossip_bootstrap": "{}:7051".format(peer_full_name),
-                "peer_gossip_externalEndpoint": "{}:7051".format(peer_full_name),
-                "peer_id": peer_full_name,
+                "operations_listenAddress": "{}:9444".format(peer_domain_name),
+                "peer_address": "{}:7051".format(peer_domain_name),
+                "peer_gossip_bootstrap": "{}:7051".format(peer_domain_name),
+                "peer_gossip_externalEndpoint": "{}:7051".format(peer_domain_name),
+                "peer_id": peer_domain_name,
                 "peer_localMspId": "{}MSP".format(organization_name.capitalize()),
                 "peer_mspConfigPath": "/etc/hyperledger/fabric/msp",
                 "peer_tls_cert_file": "/etc/hyperledger/fabric/tls/server.crt",
@@ -103,13 +139,11 @@ class NodeCreateBody(serializers.ModelSerializer):
             }
         )
 
-    def _generate_orderer_config(self, organization_name: str, orderer_name: str) -> None:
-        organization_domain = organization_name.split(".", 1)[1]
-        orderer_full_name = "{}.{}".format(orderer_name, organization_domain)
+    def _generate_orderer_config(self, organization_name: str, orderer_domain_name: str) -> None:
         self._generate_config(
             "/opt/node/orderer.yaml.bak",
             os.path.join(
-                self._get_orderer_directory(organization_name, orderer_name),
+                self._get_orderer_directory(organization_name, orderer_domain_name),
                 "orderer.yaml"),
             **{
                 "Admin_TLS_Enabled": True,
@@ -129,7 +163,7 @@ class NodeCreateBody(serializers.ModelSerializer):
                 "General_TLS_RootCAs": "[/etc/hyperledger/fabric/tls/ca.crt]",
                 "General_BootstrapMethod": "none",
                 "Metrics_Provider": "prometheus",
-                "Operations_ListenAddress": "{}:9443".format(orderer_full_name),
+                "Operations_ListenAddress": "{}:9443".format(orderer_domain_name),
             }
         )
 
@@ -146,82 +180,81 @@ class NodeCreateBody(serializers.ModelSerializer):
         with open(dst, "w+") as f:
             yaml.dump(cfg, f)
 
-    def _generate_msp_tls_and_cfg(self, node_type: NodeType, organization_name: str, node_name: str) -> None:
-
-    def _generate_msp(self, node_type: NodeType, organization_name: str, peer_name: str):
-        directory_path = self._get_node_directory(node_type, organization_name, peer_name)
+    def _get_msp(self, node_type: NodeType, organization_name: str, node_domain_name: str) -> bytes:
+        directory_path = self._get_node_directory(node_type, organization_name, node_domain_name)
         msp_zip_path = os.path.join(directory_path, "msp.zip")
         self._zip_directory(
             os.path.join(directory_path, "msp"),
             msp_zip_path,
         )
         with open(msp_zip_path, "rb") as msp_input_stream:
-            msp = base64.b64encode(msp_input_stream.read())
-        return msp
+            return base64.b64encode(msp_input_stream.read())
 
-    def _generate_tls(self, node_type: NodeType, organization_name: str, peer_name: str):
-        directory_path = self._get_node_directory(node_type, organization_name, peer_name)
+    def _get_tls(self, node_type: NodeType, organization_name: str, node_domain_name: str) -> bytes:
+        directory_path = self._get_node_directory(node_type, organization_name, node_domain_name)
         tls_zip_path = os.path.join(directory_path, "tls.zip")
         self._zip_directory(
             os.path.join(directory_path, "tls"),
             tls_zip_path,
         )
         with open(tls_zip_path, "rb") as tls_input_stream:
-            tls = base64.b64encode(tls_input_stream.read())
-        return tls
+            return base64.b64encode(tls_input_stream.read())
 
-    def _generate_peer_cfg(self, organization_name: str, peer_name: str):
-        directory_path = self._get_peer_directory(organization_name, peer_name)
+    def _get_cfg(self, node_type: NodeType, organization_name: str, node_domain_name: str) -> Optional[bytes]:
+        if node_type == NodeType.Peer:
+            return self._get_peer_cfg(organization_name, node_domain_name)
+        elif node_type == NodeType.Orderer:
+            return self._get_orderer_cfg(organization_name, node_domain_name)
+        # throw exception here
+        return None
+
+    def _get_peer_cfg(self, organization_name: str, peer_domain_name: str):
+        directory_path = self._get_peer_directory(organization_name, peer_domain_name)
         cfg_zip_path = os.path.join(directory_path, "peer_config.zip")
         self._zip_directory(
             os.path.join(directory_path, "core.yaml"),
             cfg_zip_path
         )
         with open(cfg_zip_path, "rb") as cfg_zip_input_stream:
-            cfg = base64.b64encode(cfg_zip_input_stream.read())
+            return base64.b64encode(cfg_zip_input_stream.read())
 
-    def _generate_orderer_cfg(self, organization_name: str, orderer_name: str):
-        directory_path = self._get_orderer_directory(organization_name, orderer_name)
+    def _get_orderer_cfg(self, organization_name: str, orderer_domain_name: str):
+        directory_path = self._get_orderer_directory(organization_name, orderer_domain_name)
         cfg_zip_path = os.path.join(directory_path, "orderer_config.zip")
         self._zip_directory(
             os.path.join(directory_path, "orderer.yaml"),
             cfg_zip_path
         )
         with open(cfg_zip_path, "rb") as cfg_zip_input_stream:
-            cfg = base64.b64encode(cfg_zip_input_stream.read())
+            return base64.b64encode(cfg_zip_input_stream.read())
 
-    def _generate_peer_msp_tls_and_cfg(self, organization_name: str, peer_name: str) -> None:
-        directory_path = self._get_peer_directory(organization_name, peer_name)
+    def _get_peer_directory(self, organization_name: str, peer_domain_name: str):
+        return self._get_node_directory(NodeType.Peer, organization_name, peer_domain_name)
 
-        cfg_zip_path = os.path.join(directory_path, "peer_config.zip")
-        self._zip_directory(
-            os.path.join(directory_path, "core.yaml"),
-            cfg_zip_path
-        )
-        with open(cfg_zip_path, "rb") as cfg_zip_input_stream:
-            cfg = base64.b64encode(cfg_zip_input_stream.read())
-
-    def _get_peer_directory(self, organization_name: str, peer_name: str):
-        return self._get_node_directory(NodeType.Peer, organization_name, peer_name)
-
-    def _get_orderer_directory(self, organization_name: str, orderer_name: str):
-        return self._get_node_directory(NodeType.Orderer, organization_name, orderer_name)
+    def _get_orderer_directory(self, organization_name: str, orderer_domain_name: str):
+        return self._get_node_directory(NodeType.Orderer, organization_name, orderer_domain_name)
 
     @staticmethod
-    def _get_node_directory(node_type: NodeType, organization_name: str, node_name: str):
-        organization_domain = organization_name.split(".", 1)[1] \
-            if node_type == NodeType.Orderer \
-            else organization_name
-        return ("{}/{}/crypto-config/{}Organizations/{}/{}s/{}.{}"
+    def _get_node_directory(node_type: NodeType, organization_name: str, node_domain_name: str):
+        return ("{}/{}/crypto-config/{}Organizations/{}/{}s/{}"
             .format(
                 CELLO_HOME,
                 organization_name,
                 node_type.name.lower(),
-                organization_domain,
+                organization_name.split(".", 1)[1]
+                    if node_type == NodeType.Orderer
+                    else organization_name,
                 node_type.name.lower(),
-                node_name,
-                organization_domain,
+                node_domain_name,
             ))
+
+    @staticmethod
+    def _get_node_domain_name(node_type: NodeType, organization_name: str, node_name: str):
+        return "{}.{}".format(
+            node_name,
+            organization_name
+                if node_type == NodeType.Peer
+                else organization_name.split(".", 1)[1])
 
     @staticmethod
     def _zip_directory(directory_path:str, output_file_path: str) -> None:
@@ -239,3 +272,8 @@ class NodeCreateBody(serializers.ModelSerializer):
                         str(os.path.join(path, sud_directory)),
                         str(os.path.join(path_inside_zip, sud_directory))
                     )
+
+    def _get_agent_interface(self, agent_type: AgentType) -> Optional[DockerAgent]:
+        if agent_type == AgentType.Docker:
+            return DockerAgent()
+        return None

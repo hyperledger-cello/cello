@@ -28,9 +28,8 @@ from rest_framework_simplejwt.views import (
 from django.conf.urls.static import static
 
 from agent.views import AgentViewSet
-from api.routes.network.views import NetworkViewSet
-from api.routes.node.views import NodeViewSet
 from auth.views import RegisterViewSet, CelloTokenObtainPairView, CelloTokenVerifyView
+from node.views import NodeViewSet
 from organization.views import OrganizationViewSet
 from user.views import UserViewSet
 from api.routes.channel.views import ChannelViewSet
@@ -56,7 +55,6 @@ schema_view = get_schema_view(
 
 # define and register routers of api
 router = DefaultRouter(trailing_slash=False)
-router.register("networks", NetworkViewSet, basename="network")
 router.register("agents", AgentViewSet, basename="agent")
 router.register("nodes", NodeViewSet, basename="node")
 router.register("organizations", OrganizationViewSet, basename="organization")
