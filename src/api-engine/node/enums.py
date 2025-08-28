@@ -11,10 +11,5 @@ class NodeType(ExtraEnum):
 
 @unique
 class NodeStatus(ExtraEnum):
-    Created = 0
-    Restarting = 1
-    Running = 2
-    Removing = 3
-    Paused = 4
-    Exited = 5
-    Dead = 6
+    Running = 1
+    Failed = 2

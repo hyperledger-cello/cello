@@ -4,10 +4,10 @@ from common.enums import ExtraEnum
 
 
 @unique
-class HostStatus(ExtraEnum):
+class AgentStatus(ExtraEnum):
     Inactive = 0
     Active = 1
 
 @unique
-class HostType(ExtraEnum):
+class AgentType(ExtraEnum):
     Docker = 0
