@@ -7,7 +7,6 @@ import tarfile
 from zipfile import ZipFile
 
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -27,7 +26,6 @@ from api.common.enums import (
     FabricCAUserStatus,
 )
 from api.common.enums import (
-    UserRole,
     NetworkType,
     FabricNodeType,
     FabricVersions,
@@ -35,6 +33,9 @@ from api.common.enums import (
 from api.utils.common import make_uuid, random_name, hash_file
 from api.config import CELLO_HOME
 from api.validators import validate_url
+from organization.models import Organization
+
+# from user.models import UserProfile
 
 SUPER_USER_TOKEN = getattr(settings, "ADMIN_TOKEN", "")
 MAX_CAPACITY = getattr(settings, "MAX_AGENT_CAPACITY", 100)
@@ -45,257 +46,6 @@ LIMIT_K8S_CONFIG_FILE_MB = 100
 LIMIT_FILE_MB = 100
 MIN_PORT = 1
 MAX_PORT = 65535
-
-
-class Govern(models.Model):
-    id = models.UUIDField(
-        primary_key=True,
-        help_text="ID of govern",
-        default=make_uuid,
-        editable=True,
-    )
-    name = models.CharField(
-        default="", max_length=64, help_text="Name of govern"
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-
-class Organization(models.Model):
-    id = models.UUIDField(
-        primary_key=True,
-        help_text="ID of organization",
-        default=make_uuid,
-        editable=True,
-    )
-    name = models.CharField(
-        default="", max_length=64, help_text="Name of organization"
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    msp = models.TextField(help_text="msp of organization", null=True)
-    tls = models.TextField(help_text="tls of organization", null=True)
-    agents = models.CharField(
-        help_text="agent of organization",
-        max_length=128,
-        default="",
-    )
-    network = models.ForeignKey(
-        "Network",
-        help_text="Network to which the organization belongs",
-        null=True,
-        related_name="organization",
-        on_delete=models.SET_NULL,
-    )
-    # channel = models.ForeignKey(
-    #     "Channel",
-    #     help_text="channel to which the organization belongs",
-    #     null=True,
-    #     related_name="channel",
-    #     on_delete=models.SET_NULL
-    # )
-
-    class Meta:
-        ordering = ("-created_at",)
-
-
-class UserProfile(AbstractUser):
-    id = models.UUIDField(
-        primary_key=True,
-        help_text="ID of user",
-        default=make_uuid,
-        editable=True,
-    )
-    email = models.EmailField(db_index=True, unique=True)
-    username = models.CharField(
-        default="", max_length=64, help_text="Name of user"
-    )
-    role = models.CharField(
-        choices=UserRole.to_choices(True),
-        default=UserRole.User.value,
-        max_length=64,
-    )
-    organization = models.ForeignKey(
-        Organization,
-        null=True,
-        on_delete=models.CASCADE,
-        related_name="users",
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = []
-
-    class Meta:
-        verbose_name = "User Info"
-        verbose_name_plural = verbose_name
-        ordering = ["-date_joined"]
-
-    def __str__(self):
-        return self.username
-
-    @property
-    def is_admin(self):
-        return self.role == UserRole.Admin.name.lower()
-
-    @property
-    def is_operator(self):
-        return self.role == UserRole.Operator.name.lower()
-
-    @property
-    def is_common_user(self):
-        return self.role == UserRole.User.name.lower()
-
-
-def get_agent_config_file_path(instance, file):
-    file_ext = file.split(".")[-1]
-    filename = "%s.%s" % (hash_file(instance.config_file), file_ext)
-
-    return os.path.join("config_files/%s" % str(instance.id), filename)
-
-
-def validate_agent_config_file(file):
-    file_size = file.size
-    if file_size > LIMIT_K8S_CONFIG_FILE_MB * 1024 * 1024:
-        raise ValidationError(
-            "Max file size is %s MB" % LIMIT_K8S_CONFIG_FILE_MB
-        )
-
-
-class Agent(models.Model):
-    id = models.UUIDField(
-        primary_key=True,
-        help_text="ID of agent",
-        default=make_uuid,
-        editable=True,
-    )
-    name = models.CharField(
-        help_text="Agent name, can be generated automatically.",
-        max_length=64,
-        blank=True
-    )
-    urls = models.CharField(
-        help_text="Agent URL", null=True, blank=True, validators=[validate_url]
-    )
-    organization = models.ForeignKey(
-        "Organization",
-        null=True,
-        on_delete=models.CASCADE,
-        help_text="Organization of agent",
-        related_name="agent",
-    )
-    status = models.CharField(
-        help_text="Status of agent",
-        choices=HostStatus.to_choices(True),
-        max_length=10,
-        default=HostStatus.Active.name.lower(),
-    )
-    type = models.CharField(
-        help_text="Type of agent",
-        choices=HostType.to_choices(True),
-        max_length=32,
-        default=HostType.Docker.name.lower(),
-    )
-    config_file = models.FileField(
-        help_text="Config file for agent",
-        max_length=256,
-        blank=True,
-        upload_to=get_agent_config_file_path,
-    )
-    created_at = models.DateTimeField(
-        help_text="Create time of agent", auto_now_add=True
-    )
-
-    # free_port = models.IntegerField(
-    #     help_text="Agent free port.",
-    #     default=30000,
-    # )
-    free_ports = ArrayField(
-        models.IntegerField(blank=True),
-        help_text="Agent free ports.",
-        null=True,
-    )
-
-    def save(self, *args, **kwargs):
-        if not self.name:
-            self.name = random_name("agent")
-        super().save(*args, **kwargs)
-
-    def delete(self, using=None, keep_parents=False):
-        if self.config_file:
-            if os.path.isfile(self.config_file.path):
-                os.remove(self.config_file.path)
-                shutil.rmtree(
-                    os.path.dirname(self.config_file.path), ignore_errors=True
-                )
-
-        super(Agent, self).delete(using, keep_parents)
-
-    class Meta:
-        ordering = ("-created_at",)
-
-
-@receiver(post_save, sender=Agent)
-def extract_file(sender, instance, created, *args, **kwargs):
-    if created:
-        if instance.config_file:
-            file_format = instance.config_file.name.split(".")[-1]
-            if file_format in ["tgz", "gz"]:
-                tar = tarfile.open(instance.config_file.path)
-                tar.extractall(path=os.path.dirname(instance.config_file.path))
-            elif file_format == "zip":
-                with ZipFile(instance.config_file.path, "r") as zip_file:
-                    zip_file.extractall(
-                        path=os.path.dirname(instance.config_file.path)
-                    )
-
-
-class KubernetesConfig(models.Model):
-    credential_type = models.CharField(
-        help_text="Credential type of k8s",
-        choices=K8SCredentialType.to_choices(separate_class_name=True),
-        max_length=32,
-        default=separate_upper_class(K8SCredentialType.CertKey.name),
-    )
-    enable_ssl = models.BooleanField(
-        help_text="Whether enable ssl for api", default=False
-    )
-    ssl_ca = models.TextField(
-        help_text="Ca file content for ssl", default="", blank=True
-    )
-    nfs_server = models.CharField(
-        help_text="NFS server address for k8s",
-        default="",
-        max_length=256,
-        blank=True,
-    )
-    parameters = models.JSONField(
-        help_text="Extra parameters for kubernetes",
-        default=dict,
-        null=True,
-        blank=True,
-    )
-    cert = models.TextField(
-        help_text="Cert content for k8s", default="", blank=True
-    )
-    key = models.TextField(
-        help_text="Key content for k8s", default="", blank=True
-    )
-    username = models.CharField(
-        help_text="Username for k8s credential",
-        default="",
-        max_length=128,
-        blank=True,
-    )
-    password = models.CharField(
-        help_text="Password for k8s credential",
-        default="",
-        max_length=128,
-        blank=True,
-    )
-    agent = models.ForeignKey(
-        Agent,
-        help_text="Agent of kubernetes config",
-        on_delete=models.CASCADE,
-        null=True,
-    )
 
 
 class Network(models.Model):
@@ -508,12 +258,12 @@ class Node(models.Model):
         blank=True,
         default=dict,
     )
-    user = models.ForeignKey(
-        UserProfile,
-        help_text="User of node",
-        null=True,
-        on_delete=models.CASCADE,
-    )
+    # user = models.ForeignKey(
+    #     UserProfile,
+    #     help_text="User of node",
+    #     null=True,
+    #     on_delete=models.CASCADE,
+    # )
     organization = models.ForeignKey(
         Organization,
         help_text="Organization of node",
