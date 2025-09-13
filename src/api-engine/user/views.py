@@ -14,13 +14,15 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from api.common import ok
+from api.common.response import make_response_serializer
+
 from api.exceptions import CustomError
-from serializers import (
+from common.serializers import PageQuerySerializer
+from user.serializers import (
     UserCreateBody,
     UserIDSerializer,
-    UserQuerySerializer,
     UserListSerializer,
-    UserPasswordUpdateSerializer,
+    UserPasswordUpdateSerializer, UserInfoSerializer,
 )
 from api.utils.common import with_common_response
 from user.models import UserProfile
@@ -29,96 +31,92 @@ LOG = logging.getLogger(__name__)
 
 
 class UserViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
     @swagger_auto_schema(
-        query_serializer=UserQuerySerializer(),
+        operation_summary="List users in the current user's organization",
+        query_serializer=PageQuerySerializer(),
         responses=with_common_response(
-            {status.HTTP_200_OK: UserListSerializer}
+            {status.HTTP_200_OK: make_response_serializer(UserListSerializer)}
         ),
     )
     def list(self, request: Request) -> Response:
-        """
-        List Users
-
-        List user through query parameter
-        """
-        serializer = UserQuerySerializer(data=request.GET)
+        serializer = PageQuerySerializer(data=request.GET)
         serializer.is_valid(raise_exception=True)
         page = serializer.validated_data.get("page")
         per_page = serializer.validated_data.get("per_page")
 
-        users = UserProfile.objects.all()
-        p = Paginator(users, per_page)
+        p = Paginator(UserProfile.objects.filter(organization=request.user.organization), per_page)
         response = UserListSerializer(
             data = {
                 "total": p.count,
-                "data": list(p.page(page).object_list)
+                "data": UserInfoSerializer(p.page(page).object_list, many=True).data,
             })
         response.is_valid(raise_exception=True)
         return Response(
+            status = status.HTTP_200_OK,
             data = ok(response.validated_data),
-            status = status.HTTP_200_OK)
+        )
 
     @swagger_auto_schema(
+        operation_summary="Create a user in the current user's organization",
         request_body=UserCreateBody,
         responses=with_common_response(
-            {status.HTTP_201_CREATED: UserIDSerializer}
+            {status.HTTP_201_CREATED: make_response_serializer(UserIDSerializer)}
         ),
     )
     def create(self, request: Request) -> Response:
-        """
-        Create User
-
-        Create new user
-        """
-        serializer = UserCreateBody(data=request.data)
+        serializer = UserCreateBody(data=request.data, context={"organization": request.user.organization})
         serializer.is_valid(raise_exception=True)
         response = UserIDSerializer(data={"id": serializer.save().id})
         response.is_valid(raise_exception=True)
         return Response(
-            data = response.validated_data,
-            status = status.HTTP_201_CREATED
+            status = status.HTTP_201_CREATED,
+            data = ok(response.validated_data),
         )
 
     @swagger_auto_schema(
+        operation_summary="Delete a user in the current user's organization",
         responses=with_common_response(
             {status.HTTP_204_NO_CONTENT: "No Content"}
         )
     )
     def destroy(self, request: Request, pk: Optional[str] = None) -> Response:
-        """
-        Delete User
-
-        Delete user
-        """
         try:
-            UserProfile.objects.get(id=pk).delete()
+            UserProfile.objects.get(organzation=request.user.organization, id=pk).delete()
         except Exception as e:
             raise CustomError(detail=str(e))
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @swagger_auto_schema(
-        method="post",
+        method="PUT",
+        operation_summary="Update the current user's password",
         request_body=UserPasswordUpdateSerializer,
         responses=with_common_response({status.HTTP_204_NO_CONTENT: "No Content"}),
     )
     @action(
-        methods=["post"],
+        methods=["PUT"],
         detail=False,
         url_path="password",
-        permission_classes=[
-            IsAuthenticated,
-        ],
     )
     def password(self, request: Request) -> Response:
-        """
-        post:
-        Update/Reset Password
-
-        Update/Reset password for user
-        """
-        serializer = UserPasswordUpdateSerializer(data=request.data)
+        serializer = UserPasswordUpdateSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
-        serializer.update_password(request.user)
+        serializer.save()
+        return Response(status = status.HTTP_204_NO_CONTENT)
+
+    @swagger_auto_schema(
+        method="GET",
+        operation_summary="Get the current user",
+        responses=with_common_response({status.HTTP_200_OK: make_response_serializer(UserInfoSerializer)}),
+    )
+    @action(
+        methods=["GET"],
+        detail=False,
+        url_path="profile",
+    )
+    def profile(self, request: Request) -> Response:
         return Response(
-            status = status.HTTP_204_NO_CONTENT
+            status = status.HTTP_200_OK,
+            data=ok(UserInfoSerializer(request.user).data),
         )

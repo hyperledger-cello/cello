@@ -8,21 +8,12 @@ from requests import post
 from rest_framework import serializers
 
 from agent.enums import AgentType
-from api.common.serializers import PageQuerySerializer, ListResponseSerializer
+from api.common.serializers import ListResponseSerializer
 from api.config import CELLO_HOME
-from api.lib.agent.base import AgentBase
 from api.lib.agent.docker import DockerAgent
 from api.lib.pki import CryptoConfig, CryptoGen
 from node.enums import NodeType, NodeStatus
 from node.models import Node
-
-
-class NodeQuery(PageQuerySerializer):
-    class Meta:
-        fields = (
-            "page",
-            "per_page",
-        )
 
 
 class NodeIDSerializer(serializers.Serializer):
@@ -38,7 +29,6 @@ class NodeResponseSerializer(NodeIDSerializer, serializers.ModelSerializer):
             "name",
             "created_at",
             "status",
-            "organization",
             "cid",
         )
 

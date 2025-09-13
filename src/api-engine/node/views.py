@@ -5,9 +5,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.common import ok
-from api.models import Node
 from api.utils.common import with_common_response
-from node.serializers import NodeQuery, NodeListSerializer, NodeCreateBody, NodeIDSerializer
+from common.serializers import PageQuerySerializer
+from node.models import Node
+from node.serializers import NodeListSerializer, NodeCreateBody, NodeIDSerializer
 
 
 class NodeViewSet(viewsets.ViewSet):
@@ -16,13 +17,13 @@ class NodeViewSet(viewsets.ViewSet):
     ]
 
     @swagger_auto_schema(
-        query_serializer=NodeQuery(),
+        query_serializer=PageQuerySerializer(),
         responses=with_common_response(
             with_common_response({status.HTTP_200_OK: NodeListSerializer})
         ),
     )
     def list(self, request):
-        serializer = NodeQuery(data=request.GET)
+        serializer = PageQuerySerializer(data=request.GET)
         serializer.is_valid(raise_exception=True)
         page = serializer.validated_data.get("page")
         per_page = serializer.validated_data.get("per_page")

@@ -14,13 +14,10 @@ from rest_framework.permissions import IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.paginator import Paginator
 
 from api.config import CELLO_HOME
-from api.common.serializers import PageQuerySerializer
 from api.utils.common import (
     with_common_response,
-    parse_block_file,
     to_dict,
     json_filter,
     json_add_anchor_peer,
@@ -31,15 +28,10 @@ from api.lib.configtxgen import ConfigTX, ConfigTxGen
 from api.lib.peer.channel import Channel as PeerChannel
 from api.lib.configtxlator.configtxlator import ConfigTxLator
 from api.exceptions import ResourceNotFound, NoResource
-from api.models import (
-    Channel,
-    Node,
-    Organization,
-)
+
 from api.routes.channel.serializers import (
     ChannelCreateBody,
     ChannelIDSerializer,
-    ChannelListResponse,
     ChannelResponseSerializer,
     ChannelUpdateSerializer,
 )
@@ -49,6 +41,9 @@ from api.common.enums import (
     NodeStatus,
     FabricNodeType,
 )
+from channel.models import Channel
+from node.models import Node
+from organization.models import Organization
 
 LOG = logging.getLogger(__name__)
 
@@ -69,55 +64,6 @@ class ChannelViewSet(viewsets.ViewSet):
         IsAuthenticated,
     ]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
-
-    @swagger_auto_schema(
-        query_serializer=PageQuerySerializer,
-        responses=with_common_response(
-            {status.HTTP_201_CREATED: ChannelListResponse}
-        ),
-    )
-    def list(self, request):
-        """
-        List Channels
-        :param request: org_id
-        :return: channel list
-        :rtype: list
-        """
-        serializer = PageQuerySerializer(data=request.GET)
-        if serializer.is_valid(raise_exception=True):
-            page = serializer.validated_data.get("page")
-            per_page = serializer.validated_data.get("per_page")
-
-            try:
-                org = request.user.organization
-                channels = Channel.objects.filter(organizations=org).order_by(
-                    "create_ts"
-                )
-                p = Paginator(channels, per_page)
-                channels_pages = p.page(page)
-                channels_list = [
-                    {
-                        "id": channel.id,
-                        "name": channel.name,
-                        "network": channel.network.__dict__,
-                        "organizations": [
-                            {"id": org.id, "name": org.name}
-                            for org in channel.organizations.all()
-                        ],
-                        "create_ts": channel.create_ts,
-                    }
-                    for channel in channels_pages
-                ]
-                response = ChannelListResponse(
-                    {"data": channels_list, "total": channels.count()}
-                )
-                return Response(
-                    data=ok(response.data), status=status.HTTP_200_OK
-                )
-            except Exception as e:
-                return Response(
-                    err(e.args), status=status.HTTP_400_BAD_REQUEST
-                )
 
     @swagger_auto_schema(
         request_body=ChannelCreateBody,
