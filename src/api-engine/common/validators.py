@@ -1,10 +1,8 @@
-import re
 from urllib.parse import urlparse
-from fqdn import FQDN
 
-from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
-
+from django.core.validators import URLValidator
+from fqdn import FQDN
 
 _url_validator = URLValidator()
 
@@ -20,7 +18,10 @@ def validate_url(value):
             raise ValidationError(
                 "Invalid scheme. URLs must start with 'http' or 'https'"
             )
-        fqdn = FQDN(host, min_labels=1)
-        if not fqdn.is_valid:
-            raise ValidationError("Invalid hostname")
+        validate_host(host)
         return value
+
+def validate_host(value):
+    fqdn = FQDN(value, min_labels=1)
+    if not fqdn.is_valid:
+        raise ValidationError("Invalid hostname")

@@ -1,25 +1,28 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from api.models import Organization
 from common.utils import make_uuid
-from user.enums import UserRole
+from organization.models import Organization
 
 
 # Create your models here.
 
 class UserProfile(AbstractUser):
+    class Role(models.TextChoices):
+            ADMIN = "ADMIN", "Admin"
+            USER = "USER", "User"
+
     id = models.UUIDField(
         primary_key=True,
-        help_text="ID of user",
+        help_text="User ID",
         default=make_uuid,
     )
     email = models.EmailField(db_index=True, unique=True)
     role = models.CharField(
-        choices=UserRole.to_choices(string_as_value=True),
-        default=UserRole.User.value,
+        choices=Role.choices,
+        default=Role.USER,
         max_length=64,
-        help_text=UserRole.get_info("User roles:", list_str=True),
+        help_text="User Role",
     )
     organization = models.ForeignKey(
         Organization,
@@ -27,7 +30,9 @@ class UserProfile(AbstractUser):
         related_name="users",
     )
     created_at = models.DateTimeField(auto_now_add=True)
+
     USERNAME_FIELD = "email"
+
     REQUIRED_FIELDS = []
 
     class Meta:
@@ -40,12 +45,8 @@ class UserProfile(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == UserRole.Admin.name.lower()
-
-    @property
-    def is_operator(self):
-        return self.role == UserRole.Operator.name.lower()
+        return self.role == self.Role.ADMIN
 
     @property
     def is_common_user(self):
-        return self.role == UserRole.User.name.lower()
+        return self.role == self.Role.USER
