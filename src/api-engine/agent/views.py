@@ -5,9 +5,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from agent.models import Agent
-from agent.serializers import AgentQuery, AgentListResponse, AgentCreateBody, AgentIDSerializer
+from agent.serializers import AgentListResponse, AgentCreateBody, AgentIDSerializer
 from api.common import ok
 from api.utils.common import with_common_response
+from common.serializers import PageQuerySerializer
 
 
 # Create your views here.
@@ -19,13 +20,13 @@ class AgentViewSet(viewsets.ViewSet):
     ]
 
     @swagger_auto_schema(
-        query_serializer=AgentQuery(),
+        query_serializer=PageQuerySerializer(),
         responses=with_common_response(
             with_common_response({status.HTTP_200_OK: AgentListResponse})
         ),
     )
     def list(self, request):
-        serializer = AgentQuery(data=request.GET)
+        serializer = PageQuerySerializer(data=request.GET)
         serializer.is_valid(raise_exception=True)
         page = serializer.validated_data.get("page")
         per_page = serializer.validated_data.get("per_page")

@@ -1,10 +1,7 @@
-from enum import unique
-
-from common.enums import ExtraEnum
+from enum import unique, Enum, auto
 
 
 @unique
-class UserRole(ExtraEnum):
-    Admin = 0
-    Operator = 1
-    User = 2
+class UserRole(Enum):
+    ADMIN = auto()
+    USER = auto()

@@ -38,61 +38,47 @@ class CryptoConfig:
         self.enablenodeous = enablenodeous
         self.file = file
 
-    def create(self, peernum, orderernum) -> None:
+    def create(self) -> None:
         """create the crypto-config.yaml
         param
         return:
         """
         try:
-            network = {}
-            for item in ["Peer", "Orderer"]:
-                org = []
-                ca = dict(
-                    Country=self.country,
-                    Locality=self.locality,
-                    Province=self.province,
-                )
-                specs = []
-                # for host in org_info["Specs"]:
-                #     specs.append(dict(Hostname=host))
-
-                if item == "Peer":
-                    template = dict(Count=peernum)
-                    users = dict(Count=1)
-                    org.append(
-                        dict(
-                            Domain=self.name,
-                            Name=self.name.split(".")[0].capitalize(),
-                            CA=ca,
-                            Specs=specs,
-                            EnableNodeOUs=self.enablenodeous,
-                            Template=template,
-                            Users=users,
-                        )
-                    )
-                    network = {"PeerOrgs": org}
-                else:
-                    template = dict(Count=orderernum)
-                    org.append(
-                        dict(
-                            Domain=self.name.split(".", 1)[1],
-                            Name=item,
-                            CA=ca,
-                            Specs=specs,
-                            EnableNodeOUs=self.enablenodeous,
-                            Template=template,
-                        )
-                    )
-                    network["OrdererOrgs"] = org
-
-            os.system("mkdir -p {}/{}".format(self.filepath, self.name))
+            org_filepath = os.path.join(self.filepath, self.name)
+            os.makedirs(org_filepath, exist_ok=True)
 
             with open(
-                "{}/{}/{}".format(self.filepath, self.name, self.file),
-                "w",
-                encoding="utf-8",
+                    os.path.join(org_filepath, self.file),
+                    "w",
+                    encoding="utf-8",
             ) as f:
-                yaml.dump(network, f)
+                yaml.dump({
+                    "PeerOrgs": [dict(
+                        Domain=self.name,
+                        Name=self.name.split(".")[0].capitalize(),
+                        CA=dict(
+                            Country=self.country,
+                            Locality=self.locality,
+                            Province=self.province,
+                        ),
+                        Specs=[],
+                        EnableNodeOUs=self.enablenodeous,
+                        Template=dict(Count=0),
+                        Users=dict(Count=1),
+                    )],
+                    "OrdererOrgs": [dict(
+                        Domain=self.name.split(".", 1)[1],
+                        Name="Orderer",
+                        CA=dict(
+                            Country=self.country,
+                            Locality=self.locality,
+                            Province=self.province,
+                        ),
+                        Specs=[],
+                        EnableNodeOUs=self.enablenodeous,
+                        Template=dict(Count=0),
+                    )]
+                }, f)
         except Exception as e:
             err_msg = "CryptoConfig create failed for {}!".format(e)
             raise Exception(err_msg)

@@ -14,12 +14,14 @@ from api.common import err, ok
 from api.utils.common import with_common_response
 from auth.serializers import RegisterBody, RegisterResponse, LoginBody, LoginSuccessBody, TokenVerifyRequest
 from user.models import UserProfile
+from user.serializers import UserInfoSerializer
 
 LOG = logging.getLogger(__name__)
 
 
 class RegisterViewSet(viewsets.ViewSet):
     @swagger_auto_schema(
+        operation_summary="Create an organization and Register its first administrator",
         request_body=RegisterBody,
         responses=with_common_response(
             {status.HTTP_201_CREATED: RegisterResponse}
@@ -27,8 +29,7 @@ class RegisterViewSet(viewsets.ViewSet):
     )
     def create(self, request: Request) -> Response:
         serializer = RegisterBody(data=request.data)
-        if not serializer.is_valid():
-            return Response(err(serializer.errors), status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
 
         organization = serializer.save()
         response = RegisterResponse(data={
@@ -44,6 +45,7 @@ class RegisterViewSet(viewsets.ViewSet):
 
 class CelloTokenObtainPairView(TokenObtainPairView):
     @swagger_auto_schema(
+        operation_summary="User Login",
         request_body=LoginBody,
         responses=with_common_response(
             {status.HTTP_200_OK: LoginSuccessBody}
@@ -64,8 +66,8 @@ class CelloTokenObtainPairView(TokenObtainPairView):
 
         response = LoginSuccessBody(
             data={
-                "token": str(AccessToken.for_user(user).token),
-                "user": user,
+                "token": str(AccessToken.for_user(user)),
+                "user": UserInfoSerializer(user).data,
             })
         response.is_valid(raise_exception=True)
         return Response(
@@ -76,6 +78,7 @@ class CelloTokenObtainPairView(TokenObtainPairView):
 
 class CelloTokenVerifyView(TokenVerifyView):
     @swagger_auto_schema(
+        operation_summary="Verify User Token",
         request_body=TokenVerifyRequest,
         responses=with_common_response(
             {status.HTTP_200_OK: LoginSuccessBody}
@@ -98,7 +101,7 @@ class CelloTokenVerifyView(TokenVerifyView):
         response = LoginSuccessBody(
             data={
                 "token": str(access_token.token),
-                "user": user,
+                "user": UserInfoSerializer(user).data,
             })
         response.is_valid(raise_exception=True)
         return Response(

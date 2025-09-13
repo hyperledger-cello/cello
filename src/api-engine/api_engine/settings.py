@@ -52,6 +52,10 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "user.apps.UserConfig",
     "organization.apps.OrganizationConfig",
+    "agent.apps.AgentConfig",
+    "node.apps.NodeConfig",
+    "channel.apps.ChannelConfig",
+    "chaincode.apps.ChaincodeConfig"
 ]
 
 MIDDLEWARE = [
@@ -60,7 +64,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.user.middleware.AuthenticationMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -77,7 +81,7 @@ TEMPLATES = [
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
-                "django.contrib.user.context_processors.user",
+                "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
             ]
         },
@@ -96,7 +100,7 @@ DATABASES = {
         "NAME": os.getenv("DB_NAME", "postgres"),
         "USER": os.getenv("DB_USER", "postgres"),
         "PASSWORD": os.getenv("DB_PASSWORD", "postgres"),
-        "HOST": os.getenv("DB_HOST", "db"),
+        "HOST": os.getenv("DB_HOST", "localhost"),
         "PORT": os.getenv("DB_PORT", "5432"),
     }
 }
@@ -107,12 +111,12 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.user.password_validation.UserAttributeSimilarityValidator"
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
     },
-    {"NAME": "django.contrib.user.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.user.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {
-        "NAME": "django.contrib.user.password_validation.NumericPasswordValidator"
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"
     },
 ]
 
@@ -134,11 +138,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
-WEB_PREFIX = os.getenv("WEB_PREFIX", "api").strip("/")
+WEB_PREFIX = os.getenv("WEB_PREFIX", "").strip("/") + "api"
 API_VERSION = os.getenv("API_VERSION", "v1").strip("/")
 WEBROOT = "/" + "/".join([WEB_PREFIX, API_VERSION])
 STATIC_URL = "/".join([WEBROOT, "static"])
 STATIC_ROOT = "/var/www/server/static"
+WEBROOT = "/".join([WEB_PREFIX, API_VERSION]) + "/"
+STATIC_URL = "/static/"
 
 REST_FRAMEWORK = {
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.AcceptHeaderVersioning",
@@ -155,7 +161,7 @@ REST_FRAMEWORK = {
 }
 
 AUTHENTICATION_BACKENDS = (
-    "django.contrib.user.backends.ModelBackend",
+    "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 )
 
@@ -216,6 +222,7 @@ MAX_AGENT_CAPACITY = 100
 
 MEDIA_ROOT = "/var/www/media"
 MEDIA_URL = "/".join([WEBROOT, "media"])
+MEDIA_URL = "/media/"
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),

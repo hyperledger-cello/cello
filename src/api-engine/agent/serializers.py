@@ -1,13 +1,9 @@
 from rest_framework import serializers
 
 from agent.models import Agent
-from api.common.serializers import PageQuerySerializer, ListResponseSerializer
+from common.serializers import ListResponseSerializer
 
 IDHelpText = "ID of Agent"
-
-class AgentQuery(PageQuerySerializer, serializers.Serializer):
-    class Meta:
-        fields = ("page", "per_page")
 
 
 class AgentIDSerializer(serializers.Serializer):
@@ -23,7 +19,7 @@ class AgentResponseSerializer(AgentIDSerializer, serializers.ModelSerializer):
             "status",
             "created_at",
             "type",
-            "urls",
+            "url",
             "organization",
         )
 
@@ -38,11 +34,11 @@ class AgentCreateBody(serializers.ModelSerializer):
         fields = (
             "name",
             "type",
-            "urls",
+            "url",
         )
         extra_kwargs = {
             "type": {"required": True},
-            "urls": {"required": True},
+            "url": {"required": True},
             "name": {"required": True},
         }
 

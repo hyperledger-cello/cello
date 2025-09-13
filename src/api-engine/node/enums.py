@@ -11,5 +11,6 @@ class NodeType(ExtraEnum):
 
 @unique
 class NodeStatus(ExtraEnum):
-    Running = 1
-    Failed = 2
+    Created = 1
+    Running = 2
+    Failed = 3

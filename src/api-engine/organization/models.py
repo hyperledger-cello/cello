@@ -1,5 +1,6 @@
 from django.db import models
 
+from common.validators import validate_host
 from common.utils import make_uuid
 
 
@@ -12,7 +13,8 @@ class Organization(models.Model):
     name = models.CharField(
         max_length=64,
         help_text="Name of organization",
-        unique=True
+        unique=True,
+        validators=[validate_host]
     )
     created_at = models.DateTimeField(auto_now_add=True)
     msp = models.TextField(help_text="msp of organization", null=True)

@@ -63,20 +63,19 @@ router.register("register", RegisterViewSet, basename="register")
 router.register("channels", ChannelViewSet, basename="channel")
 router.register("chaincodes", ChainCodeViewSet, basename="chaincode")
 
-urlpatterns = router.urls
-
-urlpatterns += [
+urlpatterns = [path(WEBROOT, include(router.urls + [
     path(
         "login", CelloTokenObtainPairView.as_view(), name="token_obtain_pair"
     ),
-    path("login/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("login/refresh", TokenRefreshView.as_view(), name="token_refresh"),
     path("token-verify", CelloTokenVerifyView.as_view(), name="token_verify"),
-    path("docs/", schema_view.with_ui("swagger", cache_timeout=0), name="docs"),
-    path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="redoc"),
-]
+    path("docs", schema_view.with_ui("swagger", cache_timeout=0), name="docs"),
+    path("redoc", schema_view.with_ui("redoc", cache_timeout=0), name="redoc"),
+]))]
 
 if DEBUG:
-    urlpatterns = [path(WEBROOT, include(urlpatterns))]
     urlpatterns += static(
+        settings.STATIC_URL, document_root=settings.STATIC_ROOT
+    ) + static(
         settings.MEDIA_URL, document_root=settings.MEDIA_ROOT
     )

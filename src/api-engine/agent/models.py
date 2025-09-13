@@ -1,7 +1,7 @@
 from django.db import models
 
 from agent.enums import AgentStatus, AgentType
-from agent.validators import validate_url
+from common.validators import validate_url
 from common.utils import make_uuid
 from organization.models import Organization
 
