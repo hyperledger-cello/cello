@@ -219,7 +219,6 @@ LOGGING = {
 MAX_AGENT_CAPACITY = 100
 
 MEDIA_ROOT = "/var/www/media"
-MEDIA_URL = "/".join([WEBROOT, "media"])
 MEDIA_URL = "/media/"
 
 SIMPLE_JWT = {
