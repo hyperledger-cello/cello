@@ -140,8 +140,6 @@ USE_TZ = True
 
 WEB_PREFIX = os.getenv("WEB_PREFIX", "").strip("/") + "api"
 API_VERSION = os.getenv("API_VERSION", "v1").strip("/")
-WEBROOT = "/" + "/".join([WEB_PREFIX, API_VERSION])
-STATIC_URL = "/".join([WEBROOT, "static"])
 STATIC_ROOT = "/var/www/server/static"
 WEBROOT = "/".join([WEB_PREFIX, API_VERSION]) + "/"
 STATIC_URL = "/static/"
