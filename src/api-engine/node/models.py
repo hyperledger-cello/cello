@@ -1,8 +1,8 @@
 from django.db import models
 
-from agent.models import Agent
 from common.utils import make_uuid
 from node.enums import NodeType, NodeStatus
+from organization.models import Organization
 
 
 # Create your models here.
@@ -10,47 +10,47 @@ from node.enums import NodeType, NodeStatus
 class Node(models.Model):
     id = models.UUIDField(
         primary_key=True,
-        help_text="ID of node",
+        help_text="Node ID",
         default=make_uuid,
     )
     name = models.CharField(
-        help_text="Node name",
+        help_text="Node Name",
         max_length=64,
     )
     type = models.CharField(
-        help_text="Node type",
+        help_text="Node Type",
         choices=NodeType.to_choices(True),
         max_length=64,
     )
-    agent = models.ForeignKey(
-        Agent,
-        help_text="Agent of node",
+    organization = models.ForeignKey(
+        Organization,
+        help_text="Organization Nodes",
         related_name="nodes",
         on_delete=models.CASCADE,
     )
     created_at = models.DateTimeField(
-        help_text="Create time of network", auto_now_add=True
+        help_text="Node Creation Timestamp", auto_now_add=True
     )
     status = models.CharField(
-        help_text="Status of node",
+        help_text="Node Status",
         choices=NodeStatus.to_choices(True),
         max_length=64,
         default=NodeStatus.Created.name.lower(),
     )
     config_file = models.TextField(
-        help_text="Config file of node",
+        help_text="Node Config File",
         null=True,
     )
     msp = models.TextField(
-        help_text="msp of node",
+        help_text="Node MSP",
         null=True,
     )
     tls = models.TextField(
-        help_text="tls of node",
+        help_text="Node TLS",
         null=True,
     )
     cid = models.CharField(
-        help_text="id used in agent, such as container id",
+        help_text="Node Container ID",
         max_length=256,
         default="",
     )
