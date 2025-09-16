@@ -34,10 +34,7 @@ class NodeResponseSerializer(NodeIDSerializer, serializers.ModelSerializer):
 
 
 class NodeListSerializer(ListResponseSerializer):
-    total = serializers.IntegerField(
-        help_text="Total number of node", min_value=0
-    )
-    data = NodeResponseSerializer(many=True, help_text="Nodes list")
+    data = NodeResponseSerializer(many=True, help_text="Node list")
 
 
 class NodeCreateBody(serializers.ModelSerializer):
