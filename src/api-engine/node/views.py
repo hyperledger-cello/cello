@@ -8,7 +8,7 @@ from api.common import ok
 from api.utils.common import with_common_response
 from common.serializers import PageQuerySerializer
 from node.models import Node
-from node.serializers import NodeListSerializer, NodeCreateBody, NodeIDSerializer
+from node.serializers import NodeListSerializer, NodeCreateBody, NodeIDSerializer, NodeResponseSerializer
 
 
 class NodeViewSet(viewsets.ViewSet):
@@ -17,6 +17,7 @@ class NodeViewSet(viewsets.ViewSet):
     ]
 
     @swagger_auto_schema(
+        operation_summary="List all nodes of the current organization",
         query_serializer=PageQuerySerializer(),
         responses=with_common_response(
             with_common_response({status.HTTP_200_OK: NodeListSerializer})
@@ -24,13 +25,10 @@ class NodeViewSet(viewsets.ViewSet):
     )
     def list(self, request):
         serializer = PageQuerySerializer(data=request.GET)
-        serializer.is_valid(raise_exception=True)
-        page = serializer.validated_data.get("page")
-        per_page = serializer.validated_data.get("per_page")
-        p = Paginator(Node.objects.filter(organization=request.user.organization), per_page)
-        response = NodeListSerializer({
+        p = serializer.get_paginator(Node.objects.filter(organization=request.user.organization))
+        response = NodeListSerializer(data={
             "total": p.count,
-            "data": p.page(page).object_list
+            "data": NodeResponseSerializer(p.page(serializer.data.page).object_list, many=True).data
         })
         response.is_valid(raise_exception=True)
         return Response(
@@ -39,6 +37,7 @@ class NodeViewSet(viewsets.ViewSet):
         )
 
     @swagger_auto_schema(
+        operation_summary="Create a new node of the current organization",
         request_body=NodeCreateBody,
         responses=with_common_response(
             {status.HTTP_201_CREATED: NodeIDSerializer}

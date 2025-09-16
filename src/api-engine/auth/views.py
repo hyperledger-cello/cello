@@ -38,7 +38,7 @@ class RegisterViewSet(viewsets.ViewSet):
         })
         response.is_valid(raise_exception=True)
         return Response(
-            data=ok(response.validated_data),
+            data=ok(response.data),
             status=status.HTTP_201_CREATED,
         )
 
@@ -71,7 +71,7 @@ class CelloTokenObtainPairView(TokenObtainPairView):
             })
         response.is_valid(raise_exception=True)
         return Response(
-            data=ok(response.validated_data),
+            data=ok(response.data),
             status=status.HTTP_200_OK,
         )
 

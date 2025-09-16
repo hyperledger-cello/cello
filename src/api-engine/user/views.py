@@ -34,7 +34,7 @@ class UserViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
-        operation_summary="List users in the current user's organization",
+        operation_summary="List users in the current organization",
         query_serializer=PageQuerySerializer(),
         responses=with_common_response(
             {status.HTTP_200_OK: make_response_serializer(UserListSerializer)}
@@ -42,24 +42,24 @@ class UserViewSet(viewsets.ViewSet):
     )
     def list(self, request: Request) -> Response:
         serializer = PageQuerySerializer(data=request.GET)
-        serializer.is_valid(raise_exception=True)
-        page = serializer.validated_data.get("page")
-        per_page = serializer.validated_data.get("per_page")
+        p = serializer.get_paginator(UserProfile.objects.filter(organization=request.user.organization))
 
-        p = Paginator(UserProfile.objects.filter(organization=request.user.organization), per_page)
         response = UserListSerializer(
             data = {
                 "total": p.count,
-                "data": UserInfoSerializer(p.page(page).object_list, many=True).data,
+                "data": UserInfoSerializer(
+                    p.page(serializer.data.page).object_list,
+                    many=True
+                ).data,
             })
         response.is_valid(raise_exception=True)
         return Response(
             status = status.HTTP_200_OK,
-            data = ok(response.validated_data),
+            data = ok(response.data),
         )
 
     @swagger_auto_schema(
-        operation_summary="Create a user in the current user's organization",
+        operation_summary="Create a user in the current organization",
         request_body=UserCreateBody,
         responses=with_common_response(
             {status.HTTP_201_CREATED: make_response_serializer(UserIDSerializer)}
@@ -72,11 +72,11 @@ class UserViewSet(viewsets.ViewSet):
         response.is_valid(raise_exception=True)
         return Response(
             status = status.HTTP_201_CREATED,
-            data = ok(response.validated_data),
+            data = ok(response.data),
         )
 
     @swagger_auto_schema(
-        operation_summary="Delete a user in the current user's organization",
+        operation_summary="Delete a user in the current organization",
         responses=with_common_response(
             {status.HTTP_204_NO_CONTENT: "No Content"}
         )

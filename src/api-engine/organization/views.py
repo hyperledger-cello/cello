@@ -29,24 +29,16 @@ class OrganizationViewSet(viewsets.ViewSet):
     )
     def list(self, request):
         serializer = PageQuerySerializer(data=request.GET)
-        serializer.is_valid(raise_exception=True)
-        page = serializer.validated_data.get("page", 1)
-        per_page = serializer.validated_data.get("per_page", 10)
-        organizations = Organization.objects.all()
-        p = Paginator(organizations, per_page)
-        if page > p.num_pages:
-            return Response(
-                err(f"Page {page} doesn't exist."), status=status.HTTP_400_BAD_REQUEST
-            )
+        p = serializer.get_paginator(Organization.objects.all())
         response = OrganizationList(
             data={
                 "total": p.count,
-                "data": OrganizationResponse(p.page(page).object_list, many=True).data
+                "data": OrganizationResponse(p.page(serializer.data.page).object_list, many=True).data
             }
         )
         response.is_valid(raise_exception=True)
         return Response(
-            ok(response.validated_data), status=status.HTTP_200_OK
+            ok(response.data), status=status.HTTP_200_OK
         )
 
     @swagger_auto_schema(
