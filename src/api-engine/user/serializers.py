@@ -33,11 +33,10 @@ class UserCreateBody(serializers.ModelSerializer):
 
 
 class UserIDSerializer(serializers.Serializer):
-    id = serializers.UUIDField(help_text="ID of user")
-
-
-class UserInfoSerializer(serializers.Serializer):
     id = serializers.UUIDField(help_text="User ID")
+
+
+class UserInfoSerializer(UserIDSerializer, serializers.Serializer):
     email = serializers.EmailField(help_text="User Email")
     role = serializers.CharField(help_text="User Role")
     organization = OrganizationResponse(help_text="User Organization")
