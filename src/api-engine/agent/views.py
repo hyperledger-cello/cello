@@ -1,11 +1,10 @@
-from django.core.paginator import Paginator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from agent.models import Agent
-from agent.serializers import AgentListResponse, AgentCreateBody, AgentIDSerializer
+from agent.serializers import AgentListResponse, AgentCreateBody, AgentIDSerializer, AgentResponseSerializer
 from api.common import ok
 from api.utils.common import with_common_response
 from common.serializers import PageQuerySerializer
@@ -27,19 +26,17 @@ class AgentViewSet(viewsets.ViewSet):
     )
     def list(self, request):
         serializer = PageQuerySerializer(data=request.GET)
-        serializer.is_valid(raise_exception=True)
-        page = serializer.validated_data.get("page")
-        per_page = serializer.validated_data.get("per_page")
 
-        p = Paginator(Agent.objects.filter(organization=request.user.organization), per_page)
+        p = serializer.get_paginator(Agent.objects.filter(organization=request.user.organization))
         response = AgentListResponse(
             data={
-                "data": list(p.page(page).object_list),
-                "total": p.count}
+                "total": p.count,
+                "data": AgentResponseSerializer(p.page(serializer.data.page).object_list, many=True).data,
+            }
         )
         response.is_valid(raise_exception=True)
         return Response(
-            ok(response.validated_data),
+            ok(response.data),
             status=status.HTTP_200_OK,
         )
 
