@@ -48,7 +48,7 @@ class UserViewSet(viewsets.ViewSet):
             data = {
                 "total": p.count,
                 "data": UserInfoSerializer(
-                    p.page(serializer.data.page).object_list,
+                    p.page(serializer.data['page']).object_list,
                     many=True
                 ).data,
             })

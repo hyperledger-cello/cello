@@ -15,7 +15,6 @@ from drf_yasg.utils import swagger_auto_schema
 
 from django.core.exceptions import ObjectDoesNotExist
 
-from api.config import CELLO_HOME
 from api.utils.common import (
     with_common_response,
     to_dict,
@@ -37,10 +36,6 @@ from api.routes.channel.serializers import (
 )
 
 from api.common import ok, err
-from api.common.enums import (
-    NodeStatus,
-    FabricNodeType,
-)
 from channel.models import Channel
 from node.models import Node
 from organization.models import Organization

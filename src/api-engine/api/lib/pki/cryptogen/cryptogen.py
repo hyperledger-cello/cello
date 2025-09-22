@@ -3,9 +3,11 @@
 #
 import os
 from subprocess import check_call
-from api.config import CELLO_HOME, FABRIC_TOOL, FABRIC_VERSION
+
 
 import logging
+
+from api_engine.settings import CELLO_HOME, FABRIC_TOOL, FABRIC_VERSION
 
 LOG = logging.getLogger(__name__)
 

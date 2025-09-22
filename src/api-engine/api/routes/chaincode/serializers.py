@@ -2,11 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 from rest_framework import serializers
-from api.config import FABRIC_CHAINCODE_STORE
+
 
 from api.models import ChainCode
 from api.common.serializers import ListResponseSerializer
-import os
+
+from api_engine.settings import FABRIC_CHAINCODE_STORE
 
 
 def upload_to(instance, filename):

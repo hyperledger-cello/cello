@@ -4,7 +4,8 @@
 import yaml
 import os
 from copy import deepcopy
-from api.config import CELLO_HOME
+
+from api_engine.settings import CELLO_HOME
 
 
 def load_configtx(filepath):

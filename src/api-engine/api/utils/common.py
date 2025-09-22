@@ -13,7 +13,6 @@ from api.common.serializers import BadResponseSerializer
 import uuid
 from zipfile import ZipFile
 from json import loads
-from api.config import CELLO_HOME
 import json
 import logging
 

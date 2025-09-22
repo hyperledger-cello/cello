@@ -8,6 +8,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from api.common import ok
+from api.common.response import make_response_serializer
 from api.exceptions import CustomError
 from api.utils.common import with_common_response
 from common.responses import err
@@ -24,7 +25,7 @@ class OrganizationViewSet(viewsets.ViewSet):
         operation_summary="Get Organizations",
         query_serializer=PageQuerySerializer(),
         responses=with_common_response(
-            with_common_response({status.HTTP_200_OK: OrganizationList})
+            with_common_response({status.HTTP_200_OK: make_response_serializer(OrganizationList)})
         ),
     )
     def list(self, request):
