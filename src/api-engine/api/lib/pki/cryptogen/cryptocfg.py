@@ -3,8 +3,8 @@
 #
 import yaml
 import os
-from api.config import CELLO_HOME
 
+from api_engine.settings import CELLO_HOME
 
 class CryptoConfig:
     """Class represents crypto-config yaml."""
@@ -96,7 +96,7 @@ class CryptoConfig:
                 encoding="utf-8",
             ) as f:
                 network = yaml.load(f, Loader=yaml.FullLoader)
-                if org_info["type"] == "peer":
+                if org_info["type"].lower() == "peer":
                     orgs = network["PeerOrgs"]
                 else:
                     orgs = network["OrdererOrgs"]
@@ -105,7 +105,13 @@ class CryptoConfig:
                     # org["Template"]["Count"] += 1
                     specs = org["Specs"]
                     for host in org_info["Specs"]:
-                        specs.append(dict(Hostname=host))
+                        host_exists = False
+                        for spec in specs:
+                            if spec["Hostname"] == host:
+                                host_exists = True
+                                break
+                        if not host_exists:
+                            specs.append(dict(Hostname=host))
 
             with open(
                 "{}/{}/{}".format(self.filepath, self.name, self.file),

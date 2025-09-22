@@ -2,9 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 from subprocess import call, run
-from api.config import FABRIC_TOOL, FABRIC_VERSION
+
 
 import logging
+
+from api_engine.settings import FABRIC_TOOL, FABRIC_VERSION
 
 LOG = logging.getLogger(__name__)
 

@@ -7,10 +7,11 @@ from rest_framework import viewsets, status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenVerifyView
 
 from api.common import err, ok
+from api.common.response import make_response_serializer
 from api.utils.common import with_common_response
 from auth.serializers import RegisterBody, RegisterResponse, LoginBody, LoginSuccessBody, TokenVerifyRequest
 from user.models import UserProfile
@@ -24,7 +25,7 @@ class RegisterViewSet(viewsets.ViewSet):
         operation_summary="Create an organization and Register its first administrator",
         request_body=RegisterBody,
         responses=with_common_response(
-            {status.HTTP_201_CREATED: RegisterResponse}
+            {status.HTTP_201_CREATED: make_response_serializer(RegisterResponse)}
         ),
     )
     def create(self, request: Request) -> Response:
@@ -48,7 +49,7 @@ class CelloTokenObtainPairView(TokenObtainPairView):
         operation_summary="User Login",
         request_body=LoginBody,
         responses=with_common_response(
-            {status.HTTP_200_OK: LoginSuccessBody}
+            {status.HTTP_200_OK: make_response_serializer(LoginSuccessBody)}
         ),
     )
     def post(self, request, *args, **kwargs):

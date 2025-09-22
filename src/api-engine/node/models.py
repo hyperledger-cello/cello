@@ -1,13 +1,21 @@
 from django.db import models
 
 from common.utils import make_uuid
-from node.enums import NodeType, NodeStatus
 from organization.models import Organization
 
 
 # Create your models here.
 
 class Node(models.Model):
+    class Type(models.TextChoices):
+        PEER = "PEER", "Peer"
+        ORDERER = "ORDERER", "Orderer"
+
+    class Status(models.TextChoices):
+        CREATED = "CREATED", "Created"
+        RUNNING = "RUNNING", "Running"
+        FAILED = "FAILED", "Failed"
+
     id = models.UUIDField(
         primary_key=True,
         help_text="Node ID",
@@ -19,7 +27,7 @@ class Node(models.Model):
     )
     type = models.CharField(
         help_text="Node Type",
-        choices=NodeType.to_choices(True),
+        choices=Type.choices,
         max_length=64,
     )
     organization = models.ForeignKey(
@@ -33,9 +41,9 @@ class Node(models.Model):
     )
     status = models.CharField(
         help_text="Node Status",
-        choices=NodeStatus.to_choices(True),
+        choices=Status.choices,
         max_length=64,
-        default=NodeStatus.Created.name.lower(),
+        default=Status.CREATED,
     )
     config_file = models.TextField(
         help_text="Node Config File",

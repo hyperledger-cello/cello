@@ -52,7 +52,6 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "user.apps.UserConfig",
     "organization.apps.OrganizationConfig",
-    "agent.apps.AgentConfig",
     "node.apps.NodeConfig",
     "channel.apps.ChannelConfig",
     "chaincode.apps.ChaincodeConfig"
@@ -137,12 +136,9 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
-
-WEB_PREFIX = os.getenv("WEB_PREFIX", "").strip("/") + "api"
-API_VERSION = os.getenv("API_VERSION", "v1").strip("/")
-STATIC_ROOT = "/var/www/server/static"
-WEBROOT = "/".join([WEB_PREFIX, API_VERSION]) + "/"
+WEBROOT = os.path.join(os.getenv("WEB_PREFIX", ""), "api", os.getenv("API_VERSION", "v1")) + "/"
 STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, STATIC_URL)
 
 REST_FRAMEWORK = {
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.AcceptHeaderVersioning",
@@ -218,8 +214,8 @@ LOGGING = {
 
 MAX_AGENT_CAPACITY = 100
 
-MEDIA_ROOT = "/var/www/media"
 MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, MEDIA_URL)
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
@@ -248,3 +244,14 @@ SIMPLE_JWT = {
 }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CELLO_HOME = os.path.join(BASE_DIR, "cello")
+FABRIC_TOOL = os.path.join(CELLO_HOME, "bin")
+FABRIC_CFG = os.path.join(CELLO_HOME, "node")
+
+FABRIC_PEER_CFG = os.path.join(FABRIC_CFG, "core.yaml.bak")
+FABRIC_ORDERER_CFG = os.path.join(FABRIC_CFG, "orderer.yaml.bak")
+
+FABRIC_CHAINCODE_STORE = os.path.join(CELLO_HOME, "chaincode")
+
+FABRIC_VERSION = "2.5.10"
