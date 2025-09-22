@@ -90,32 +90,6 @@ class LogLevel(ExtraEnum):
     Error = 3
     Critical = 4
 
-
-@unique
-class Operation(ExtraEnum):
-    Start = 0
-    Stop = 1
-    Restart = 2
-
-
-@unique
-class NetworkOperation(ExtraEnum):
-    Join = 0
-    Leave = 1
-
-
-@unique
-class HostType(ExtraEnum):
-    Docker = 0
-    Kubernetes = 1
-
-
-@unique
-class ChannelType(ExtraEnum):
-    System = 0
-    Normal = 1
-
-
 @unique
 class NetworkType(ExtraEnum):
     Fabric = "fabric"
@@ -132,24 +106,6 @@ class FabricCAServerType(ExtraEnum):
 class FabricVersions(ExtraEnum):
     V1_4 = "1.4.2"
     V1_5 = "1.5"
-
-
-@unique
-class FabricNodeType(ExtraEnum):
-    Ca = 0
-    Orderer = 1
-    Peer = 2
-
-
-@unique
-class NodeStatus(ExtraEnum):
-    Created = 0
-    Restarting = 1
-    Running = 2
-    Removing = 3
-    Paused = 4
-    Exited = 5
-    Dead = 6
 
 
 @unique

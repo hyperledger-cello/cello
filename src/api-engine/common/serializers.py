@@ -13,7 +13,7 @@ class PageQuerySerializer(serializers.Serializer):
 
     def get_paginator(self, q: QuerySet) -> Paginator:
         self.is_valid(raise_exception=True)
-        return Paginator(q, self.data.per_page)
+        return Paginator(q, self.data['per_page'])
 
 class ListResponseSerializer(serializers.Serializer):
     total = serializers.IntegerField(

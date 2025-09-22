@@ -9,8 +9,8 @@ from organization.models import Organization
 
 class UserProfile(AbstractUser):
     class Role(models.TextChoices):
-            ADMIN = "ADMIN", "Admin"
-            USER = "USER", "User"
+        ADMIN = "ADMIN", "Admin"
+        USER = "USER", "User"
 
     id = models.UUIDField(
         primary_key=True,
