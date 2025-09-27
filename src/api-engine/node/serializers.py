@@ -19,7 +19,6 @@ class NodeResponseSerializer(NodeIDSerializer, serializers.ModelSerializer):
             "name",
             "created_at",
             "status",
-            "cid",
         )
 
 

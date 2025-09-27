@@ -57,11 +57,6 @@ class Node(models.Model):
         help_text="Node TLS",
         null=True,
     )
-    cid = models.CharField(
-        help_text="Node Container ID",
-        max_length=256,
-        default="",
-    )
 
     class Meta:
         ordering = ("-created_at",)

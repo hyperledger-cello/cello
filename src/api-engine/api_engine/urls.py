@@ -28,11 +28,11 @@ from rest_framework_simplejwt.views import (
 from django.conf.urls.static import static
 from api_engine.settings import DEBUG, WEBROOT
 from auth.views import RegisterViewSet, CelloTokenObtainPairView, CelloTokenVerifyView
+from chaincode.views import ChaincodeViewSet
 from channel.views import ChannelViewSet
 from node.views import NodeViewSet
 from organization.views import OrganizationViewSet
 from user.views import UserViewSet
-from api.routes.chaincode.views import ChainCodeViewSet
 
 swagger_info = openapi.Info(
     title="Cello API Engine Service",
@@ -55,7 +55,7 @@ router.register("users", UserViewSet, basename="user")
 router.register("node", NodeViewSet, basename="node")
 router.register("register", RegisterViewSet, basename="register")
 router.register("channels", ChannelViewSet, basename="channel")
-router.register("chaincodes", ChainCodeViewSet, basename="chaincode")
+router.register("chaincodes", ChaincodeViewSet, basename="chaincode")
 
 urlpatterns = [path(WEBROOT, include(router.urls + [
     path(
