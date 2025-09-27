@@ -25,7 +25,7 @@ class OrganizationViewSet(viewsets.ViewSet):
         operation_summary="Get Organizations",
         query_serializer=PageQuerySerializer(),
         responses=with_common_response(
-            with_common_response({status.HTTP_200_OK: make_response_serializer(OrganizationList)})
+            {status.HTTP_200_OK: make_response_serializer(OrganizationList)}
         ),
     )
     def list(self, request):

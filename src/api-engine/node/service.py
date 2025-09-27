@@ -17,7 +17,7 @@ from organization.models import Organization
 def create(organization: Organization, node_type: Node.Type, node_name: str) -> Node:
     CryptoConfig(organization.name).update({"type": node_type, "Specs": [node_name]})
     CryptoGen(organization.name).extend()
-    node_domain_name = _get_domain_name(organization.name, node_type, node_name)
+    node_domain_name = get_domain_name(organization.name, node_type, node_name)
     _generate_node_config(organization.name, node_type, node_domain_name)
     msp = _get_msp(organization.name, node_type, node_domain_name)
     tls = _get_tls(organization.name, node_type, node_domain_name)
@@ -56,7 +56,7 @@ def create(organization: Organization, node_type: Node.Type, node_name: str) -> 
     node.save()
     return node
 
-def _get_domain_name(organization_name: str, node_type: Node.Type, node_name: str) -> str:
+def get_domain_name(organization_name: str, node_type: Node.Type, node_name: str) -> str:
     return "{}.{}".format(
         node_name,
         organization_name
@@ -75,7 +75,7 @@ def _generate_peer_config(organization_name: str, peer_domain_name: str) -> None
     _generate_config(
         FABRIC_PEER_CFG,
         os.path.join(
-            _get_peer_directory(organization_name, peer_domain_name),
+            get_peer_directory(organization_name, peer_domain_name),
             "core.yaml"),
         **{
             "peer_tls_enabled": True,
@@ -84,7 +84,7 @@ def _generate_peer_config(organization_name: str, peer_domain_name: str) -> None
             "peer_gossip_bootstrap": "{}:7051".format(peer_domain_name),
             "peer_gossip_externalEndpoint": "{}:7051".format(peer_domain_name),
             "peer_id": peer_domain_name,
-            "peer_localMspId": "{}MSP".format(organization_name.capitalize()),
+            "peer_localMspId": "{}MSP".format(organization_name.split(".", 1)[0].capitalize()),
             "peer_mspConfigPath": "/etc/hyperledger/fabric/msp",
             "peer_tls_cert_file": "/etc/hyperledger/fabric/tls/server.crt",
             "peer_tls_key_file": "/etc/hyperledger/fabric/tls/server.key",
@@ -98,7 +98,7 @@ def _generate_orderer_config(organization_name: str, orderer_domain_name: str) -
     _generate_config(
         FABRIC_ORDERER_CFG,
         os.path.join(
-            _get_orderer_directory(organization_name, orderer_domain_name),
+            get_orderer_directory(organization_name, orderer_domain_name),
             "orderer.yaml"),
         **{
             "Admin_TLS_Enabled": True,
@@ -166,7 +166,7 @@ def _get_cfg(organization_name: str, node_type: Node.Type, node_domain_name: str
     return None
 
 def _get_peer_cfg(organization_name: str, peer_domain_name: str):
-    directory_path = _get_peer_directory(organization_name, peer_domain_name)
+    directory_path = get_peer_directory(organization_name, peer_domain_name)
     cfg_zip_path = os.path.join(directory_path, "peer_config.zip")
     _zip_directory(
         os.path.join(directory_path, "core.yaml"),
@@ -176,7 +176,7 @@ def _get_peer_cfg(organization_name: str, peer_domain_name: str):
         return base64.b64encode(cfg_zip_input_stream.read())
 
 def _get_orderer_cfg(organization_name: str, orderer_domain_name: str):
-    directory_path = _get_orderer_directory(organization_name, orderer_domain_name)
+    directory_path = get_orderer_directory(organization_name, orderer_domain_name)
     cfg_zip_path = os.path.join(directory_path, "orderer_config.zip")
     _zip_directory(
         os.path.join(directory_path, "orderer.yaml"),
@@ -201,24 +201,28 @@ def _zip_directory(directory_path:str, output_file_path: str) -> None:
                     str(os.path.join(path_inside_zip, sud_directory))
                 )
 
-def _get_peer_directory(organization_name: str, peer_domain_name: str):
+def get_peer_directory(organization_name: str, peer_domain_name: str):
     return _get_node_directory(organization_name, Node.Type.PEER, peer_domain_name)
 
-def _get_orderer_directory(organization_name: str, orderer_domain_name: str):
+def get_orderer_directory(organization_name: str, orderer_domain_name: str):
     return _get_node_directory(organization_name, Node.Type.ORDERER, orderer_domain_name)
 
-def _get_node_directory(organization_name: str, node_type: Node.Type, node_domain_name: str):
-    return ("{}/{}/crypto-config/{}Organizations/{}/{}s/{}"
-        .format(
-            CELLO_HOME,
-            organization_name,
-            node_type.lower(),
-            organization_name.split(".", 1)[1]
-                if node_type == Node.Type.ORDERER
-                else organization_name,
-            node_type.lower(),
-            node_domain_name,
-        ))
+def _get_node_directory(organization_name: str, node_type: Node.Type, node_domain_name: str) -> str:
+    return "{}/{}s/{}".format(
+        get_org_directory(organization_name, node_type),
+        node_type.lower(),
+        node_domain_name,
+    )
+
+def get_org_directory(organization_name: str, node_type: Node.Type) -> str:
+    return "{}/{}/crypto-config/{}Organizations/{}".format(
+        CELLO_HOME,
+        organization_name,
+        node_type.lower(),
+        organization_name.split(".", 1)[1]
+            if node_type == Node.Type.ORDERER
+            else organization_name,
+    )
 
 def _get_node_env(node_type: Node.Type, node_domain_name: str, msp, tls, cfg) -> Optional[Dict[str, Any]]:
     if node_type == Node.Type.PEER:

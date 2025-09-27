@@ -1,8 +1,10 @@
+from typing import Dict, Any
+
 from rest_framework import serializers
 
 from channel.models import Channel
+from channel.service import create
 from common.serializers import ListResponseSerializer
-from node.enums import NodeStatus
 from node.models import Node
 
 
@@ -15,7 +17,7 @@ class ChannelResponse(
 ):
     class Meta:
         model = Channel
-        fields = ("id", "name", "organizations", "create_ts")
+        fields = ("id", "name", "organizations", "created_at")
 
 
 class ChannelList(ListResponseSerializer):
@@ -41,7 +43,14 @@ class ChannelCreateBody(serializers.Serializer):
             raise serializers.ValidationError("Invalid orderers")
 
         for node in Node.objects.filter(id__in=(peer_ids + orderer_ids)):
-            if node.status != NodeStatus.Running:
+            if node.status != Node.Status.RUNNING:
                 raise serializers.ValidationError("Node {} is not running".format(node.name))
 
         return data
+
+    def create(self, validated_data:Dict[str, Any]) -> ChannelID:
+        return ChannelID(create(
+            self.context["organization"],
+            validated_data["name"],
+            validated_data["peer_ids"],
+            validated_data["orderer_ids"]))
