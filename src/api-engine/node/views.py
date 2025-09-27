@@ -1,4 +1,3 @@
-from django.core.paginator import Paginator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
@@ -21,7 +20,7 @@ class NodeViewSet(viewsets.ViewSet):
         operation_summary="List all nodes of the current organization",
         query_serializer=PageQuerySerializer(),
         responses=with_common_response(
-            with_common_response({status.HTTP_200_OK: make_response_serializer(NodeListSerializer)})
+            {status.HTTP_200_OK: make_response_serializer(NodeListSerializer)}
         ),
     )
     def list(self, request):

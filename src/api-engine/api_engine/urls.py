@@ -26,17 +26,13 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from django.conf.urls.static import static
-
+from api_engine.settings import DEBUG, WEBROOT
 from auth.views import RegisterViewSet, CelloTokenObtainPairView, CelloTokenVerifyView
+from channel.views import ChannelViewSet
 from node.views import NodeViewSet
 from organization.views import OrganizationViewSet
 from user.views import UserViewSet
-from api.routes.channel.views import ChannelViewSet
 from api.routes.chaincode.views import ChainCodeViewSet
-
-
-DEBUG = settings.DEBUG
-WEBROOT = settings.WEBROOT
 
 swagger_info = openapi.Info(
     title="Cello API Engine Service",
@@ -54,9 +50,9 @@ schema_view = get_schema_view(
 
 # define and register routers of api
 router = DefaultRouter(trailing_slash=False)
-router.register("nodes", NodeViewSet, basename="node")
 router.register("organizations", OrganizationViewSet, basename="organization")
 router.register("users", UserViewSet, basename="user")
+router.register("node", NodeViewSet, basename="node")
 router.register("register", RegisterViewSet, basename="register")
 router.register("channels", ChannelViewSet, basename="channel")
 router.register("chaincodes", ChainCodeViewSet, basename="chaincode")
