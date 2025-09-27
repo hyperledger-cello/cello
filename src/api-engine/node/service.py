@@ -13,6 +13,11 @@ from api_engine.settings import CELLO_HOME, FABRIC_PEER_CFG, FABRIC_ORDERER_CFG,
 from node.models import Node
 from organization.models import Organization
 
+def get_node(node_id: str) -> Optional[Node]:
+    try:
+        return Node.objects.get(id=node_id)
+    except Node.DoesNotExist:
+        return None
 
 def create(organization: Organization, node_type: Node.Type, node_name: str) -> Node:
     CryptoConfig(organization.name).update({"type": node_type, "Specs": [node_name]})
