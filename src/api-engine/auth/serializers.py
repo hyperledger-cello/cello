@@ -6,7 +6,7 @@ from common.validators import validate_host
 from api.lib.pki import CryptoConfig, CryptoGen
 from organization.models import Organization
 from user.models import UserProfile
-from user.serializers import UserInfoSerializer
+from user.serializers import UserInfo
 
 
 class RegisterBody(serializers.Serializer):
@@ -59,7 +59,7 @@ class LoginBody(serializers.Serializer):
 
 class LoginSuccessBody(serializers.Serializer):
     token = serializers.CharField(help_text="access token")
-    user = UserInfoSerializer()
+    user = UserInfo()
 
 class TokenVerifyRequest(serializers.Serializer):
     token = serializers.CharField(help_text="access token")

@@ -15,7 +15,7 @@ from api.common.response import make_response_serializer
 from api.utils.common import with_common_response
 from auth.serializers import RegisterBody, RegisterResponse, LoginBody, LoginSuccessBody, TokenVerifyRequest
 from user.models import UserProfile
-from user.serializers import UserInfoSerializer
+from user.serializers import UserInfo
 
 LOG = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class CelloTokenObtainPairView(TokenObtainPairView):
             {status.HTTP_200_OK: make_response_serializer(LoginSuccessBody)}
         ),
     )
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Request, *args, **kwargs):
         serializer = LoginBody(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = authenticate(
@@ -65,14 +65,11 @@ class CelloTokenObtainPairView(TokenObtainPairView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        response = LoginSuccessBody(
-            data={
-                "token": str(AccessToken.for_user(user)),
-                "user": UserInfoSerializer(user).data,
-            })
-        response.is_valid(raise_exception=True)
         return Response(
-            data=ok(response.data),
+            data=ok(LoginSuccessBody({
+                    "token": str(AccessToken.for_user(user)),
+                    "user": UserInfo(user).data,
+                }).data),
             status=status.HTTP_200_OK,
         )
 
@@ -99,13 +96,10 @@ class CelloTokenVerifyView(TokenVerifyView):
                 data=err(msg="invalid token"),
                 status=status.HTTP_400_BAD_REQUEST)
 
-        response = LoginSuccessBody(
-            data={
-                "token": str(access_token.token),
-                "user": UserInfoSerializer(user).data,
-            })
-        response.is_valid(raise_exception=True)
         return Response(
-            data=ok(response.data),
+            data=ok(LoginSuccessBody({
+                    "token": str(access_token.token),
+                    "user": UserInfo(user).data,
+                }).data),
             status=status.HTTP_200_OK,
         )

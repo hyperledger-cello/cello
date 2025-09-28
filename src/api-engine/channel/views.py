@@ -29,13 +29,12 @@ class ChannelViewSet(viewsets.ViewSet):
     def list(self, request):
         serializer = PageQuerySerializer(data=request.GET)
         p = serializer.get_paginator(Channel.objects.filter(organizations__id__contains=request.user.organization.id))
-        response = ChannelList({
-            "total": p.count,
-            "data": ChannelResponse(p.page(serializer.data["page"]).object_list, many=True).data,
-        })
         return Response(
             status=status.HTTP_200_OK,
-            data=ok(response.data),
+            data=ChannelList({
+                "total": p.count,
+                "data": ChannelResponse(p.page(serializer.data["page"]).object_list, many=True).data,
+            }).data,
         )
 
     @swagger_auto_schema(

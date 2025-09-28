@@ -8,11 +8,9 @@ from rest_framework.response import Response
 
 from api.common.response import make_response_serializer
 from chaincode.models import Chaincode
-from chaincode.serializers import ChaincodeList, ChaincodeCreateBody, ChaincodeID
-from channel.serializers import ChannelResponse
+from chaincode.serializers import ChaincodeList, ChaincodeCreateBody, ChaincodeID, ChaincodeResponse
 from common.responses import with_common_response, ok
 from common.serializers import PageQuerySerializer
-from common.utils import make_uuid
 
 
 # Create your views here.
@@ -42,8 +40,9 @@ class ChaincodeViewSet(viewsets.ViewSet):
             status=status.HTTP_200_OK,
             data=ok(ChaincodeList({
                 "total": p.count,
-                "data": ChannelResponse(
-                    p.get_page(serializer.data["page"]).object_list,
+                "data": ChaincodeResponse(
+                    p.get_page(serializer.data["page"])
+                        .object_list,
                     many=True
                 ).data,
             }).data),
@@ -57,9 +56,12 @@ class ChaincodeViewSet(viewsets.ViewSet):
         ),
     )
     def create(self, request):
-        serializer = ChaincodeCreateBody(data=request.data)
+        serializer = ChaincodeCreateBody(data=request.data, context={
+            "user": request.user,
+            "organization": request.user.organization,
+        })
         serializer.is_valid(raise_exception=True)
         return Response(
             status=status.HTTP_201_CREATED,
-            data=ok(ChaincodeID({"id": make_uuid()}).data)
+            data=ok(serializer.save().data)
         )

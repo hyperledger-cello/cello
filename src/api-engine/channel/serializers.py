@@ -7,15 +7,16 @@ from channel.service import create
 from common.serializers import ListResponseSerializer
 from node.models import Node
 from node.service import get_node
+from organization.serializeres import OrganizationID
 
 
-class ChannelID(serializers.Serializer):
-    id = serializers.UUIDField(help_text="Channel ID")
+class ChannelID(serializers.ModelSerializer):
+    class Meta:
+        model = Channel
+        fields = ("id",)
 
-
-class ChannelResponse(
-    ChannelID, serializers.ModelSerializer
-):
+class ChannelResponse(serializers.ModelSerializer):
+    organizations = OrganizationID(many=True)
     class Meta:
         model = Channel
         fields = (

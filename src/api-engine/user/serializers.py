@@ -32,11 +32,11 @@ class UserCreateBody(serializers.ModelSerializer):
         return user
 
 
-class UserIDSerializer(serializers.Serializer):
+class UserID(serializers.Serializer):
     id = serializers.UUIDField(help_text="User ID")
 
 
-class UserInfoSerializer(UserIDSerializer, serializers.Serializer):
+class UserInfo(UserID, serializers.Serializer):
     email = serializers.EmailField(help_text="User Email")
     role = serializers.CharField(help_text="User Role")
     organization = OrganizationResponse(help_text="User Organization")
@@ -46,11 +46,11 @@ class UserInfoSerializer(UserIDSerializer, serializers.Serializer):
         fields = ("id", "email", "role", "organization", "created_at")
 
 
-class UserListSerializer(ListResponseSerializer):
-    data = UserInfoSerializer(many=True, help_text="Users list")
+class UserList(ListResponseSerializer):
+    data = UserInfo(many=True, help_text="Users list")
 
 
-class UserPasswordUpdateSerializer(serializers.Serializer):
+class UserPasswordUpdate(serializers.Serializer):
     password = serializers.CharField(
         help_text="New password for login", max_length=64
     )
