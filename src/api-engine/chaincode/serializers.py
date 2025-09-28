@@ -3,7 +3,14 @@ import tarfile
 from rest_framework import serializers
 
 from chaincode.models import Chaincode
+from chaincode.service import create_chaincode, get_metadata_label
+from channel.models import Channel
+from channel.serializers import ChannelID
 from common.serializers import ListResponseSerializer
+from node.models import Node
+from node.serializers import NodeID
+from user.serializers import UserID
+
 
 class ChaincodeID(serializers.ModelSerializer):
     class Meta:
@@ -11,6 +18,9 @@ class ChaincodeID(serializers.ModelSerializer):
         fields = ("id",)
 
 class ChaincodeResponse(ChaincodeID):
+    channel = ChannelID()
+    creator = UserID()
+
     class Meta:
         model = Chaincode
         fields = (
@@ -18,7 +28,9 @@ class ChaincodeResponse(ChaincodeID):
             "package_id",
             "label",
             "creator",
+            "channel",
             "language",
+            "status",
             "created_at",
             "description",
         )
@@ -26,12 +38,25 @@ class ChaincodeResponse(ChaincodeID):
 class ChaincodeList(ListResponseSerializer):
     data = ChaincodeResponse(many=True, help_text="Chaincode data")
 
-class ChaincodeCreateBody(serializers.Serializer):
-    file = serializers.FileField()
-    description = serializers.CharField(max_length=128, required=False)
+class ChaincodeCreateBody(serializers.ModelSerializer):
+    peers = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Node.objects.filter(type=Node.Type.PEER),
+        help_text="Chaincode Peers"
+    )
+
+
+    class Meta:
+        model = Chaincode
+        fields = (
+            "package",
+            "channel",
+            "peers",
+            "description",
+        )
 
     @staticmethod
-    def validate_file(value):
+    def validate_package(value):
         if not value.name.endswith(".tar.gz"):
             raise serializers.ValidationError("Chaincode Package must be a '.tar.gz' file.")
 
@@ -42,11 +67,19 @@ class ChaincodeCreateBody(serializers.Serializer):
             )
 
         try:
-            value.seek(0)
-            with tarfile.open(fileobj=value, mode='r:gz') as tar:
-                tar.getmembers()
-            value.seek(0)
+            metadata = get_metadata_label(value)
+            if metadata is None:
+                raise serializers.ValidationError("Metadata not found.")
         except tarfile.TarError:
             raise serializers.ValidationError("Failed to open the chaincode tar package.")
 
         return value
+
+    def validate_channel(self, value: Channel):
+        if not value.organizations.contains(self.context["organization"]):
+            raise serializers.ValidationError("You can only install chaincodes on your organization.")
+        return value
+
+    def create(self, validated_data) -> ChaincodeID:
+        validated_data["user"] = self.context["user"]
+        return ChaincodeID({"id": create_chaincode(**validated_data).id})

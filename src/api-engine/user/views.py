@@ -20,9 +20,9 @@ from api.exceptions import CustomError
 from common.serializers import PageQuerySerializer
 from user.serializers import (
     UserCreateBody,
-    UserIDSerializer,
-    UserListSerializer,
-    UserPasswordUpdateSerializer, UserInfoSerializer,
+    UserID,
+    UserList,
+    UserPasswordUpdate, UserInfo,
 )
 from api.utils.common import with_common_response
 from user.models import UserProfile
@@ -37,17 +37,17 @@ class UserViewSet(viewsets.ViewSet):
         operation_summary="List users in the current organization",
         query_serializer=PageQuerySerializer(),
         responses=with_common_response(
-            {status.HTTP_200_OK: make_response_serializer(UserListSerializer)}
+            {status.HTTP_200_OK: make_response_serializer(UserList)}
         ),
     )
     def list(self, request: Request) -> Response:
         serializer = PageQuerySerializer(data=request.GET)
         p = serializer.get_paginator(UserProfile.objects.filter(organization=request.user.organization))
 
-        response = UserListSerializer(
+        response = UserList(
             data = {
                 "total": p.count,
-                "data": UserInfoSerializer(
+                "data": UserInfo(
                     p.page(serializer.data['page']).object_list,
                     many=True
                 ).data,
@@ -62,13 +62,13 @@ class UserViewSet(viewsets.ViewSet):
         operation_summary="Create a user in the current organization",
         request_body=UserCreateBody,
         responses=with_common_response(
-            {status.HTTP_201_CREATED: make_response_serializer(UserIDSerializer)}
+            {status.HTTP_201_CREATED: make_response_serializer(UserID)}
         ),
     )
     def create(self, request: Request) -> Response:
         serializer = UserCreateBody(data=request.data, context={"organization": request.user.organization})
         serializer.is_valid(raise_exception=True)
-        response = UserIDSerializer(data={"id": serializer.save().id})
+        response = UserID(data={"id": serializer.save().id})
         response.is_valid(raise_exception=True)
         return Response(
             status = status.HTTP_201_CREATED,
@@ -91,7 +91,7 @@ class UserViewSet(viewsets.ViewSet):
     @swagger_auto_schema(
         method="PUT",
         operation_summary="Update the current user's password",
-        request_body=UserPasswordUpdateSerializer,
+        request_body=UserPasswordUpdate,
         responses=with_common_response({status.HTTP_204_NO_CONTENT: "No Content"}),
     )
     @action(
@@ -100,7 +100,7 @@ class UserViewSet(viewsets.ViewSet):
         url_path="password",
     )
     def password(self, request: Request) -> Response:
-        serializer = UserPasswordUpdateSerializer(data=request.data, context={"request": request})
+        serializer = UserPasswordUpdate(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status = status.HTTP_204_NO_CONTENT)
@@ -108,7 +108,7 @@ class UserViewSet(viewsets.ViewSet):
     @swagger_auto_schema(
         method="GET",
         operation_summary="Get the current user",
-        responses=with_common_response({status.HTTP_200_OK: make_response_serializer(UserInfoSerializer)}),
+        responses=with_common_response({status.HTTP_200_OK: make_response_serializer(UserInfo)}),
     )
     @action(
         methods=["GET"],
@@ -118,5 +118,5 @@ class UserViewSet(viewsets.ViewSet):
     def profile(self, request: Request) -> Response:
         return Response(
             status = status.HTTP_200_OK,
-            data=ok(UserInfoSerializer(request.user).data),
+            data=ok(UserInfo(request.user).data),
         )

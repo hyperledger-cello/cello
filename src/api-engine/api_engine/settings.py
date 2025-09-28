@@ -137,7 +137,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 WEBROOT = os.path.join(os.getenv("WEB_PREFIX", ""), "api", os.getenv("API_VERSION", "v1")) + "/"
-STATIC_URL = "/static/"
+STATIC_URL = "static/"
 STATIC_ROOT = os.path.join(BASE_DIR, STATIC_URL)
 
 REST_FRAMEWORK = {
@@ -214,7 +214,7 @@ LOGGING = {
 
 MAX_AGENT_CAPACITY = 100
 
-MEDIA_URL = "/media/"
+MEDIA_URL = "media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, MEDIA_URL)
 
 SIMPLE_JWT = {

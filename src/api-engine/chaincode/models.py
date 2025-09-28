@@ -1,12 +1,24 @@
+import os.path
+
 from django.db import models
 
 from channel.models import Channel
 from common.utils import make_uuid
+from node.models import Node
 from user.models import UserProfile
 
-
+def get_package_path(instance, filename) -> str:
+    return str(os.path.join(instance.channel.name, filename))
 # Create your models here.
+
+
 class Chaincode(models.Model):
+    class Status(models.TextChoices):
+        CREATED = "CREATED", "Created"
+        INSTALLED = "INSTALLED", "Installed"
+        APPROVED = "APPROVED", "Approved"
+        COMMITTED = "COMMITTED", "Committed"
+
     id = models.UUIDField(
         primary_key=True,
         help_text="Chaincode ID",
@@ -19,6 +31,10 @@ class Chaincode(models.Model):
         max_length=128,
         editable=False,
         unique=True,
+    )
+    package = models.FileField(
+        help_text="Chaincode Package",
+        upload_to=get_package_path,
     )
     label = models.CharField(
         help_text="Chaincode Label",
@@ -39,6 +55,16 @@ class Chaincode(models.Model):
     language = models.CharField(
         help_text="Chaincode Language",
         max_length=128,
+    )
+    status = models.CharField(
+        help_text="Chaincode Status",
+        choices=Status.choices,
+        default=Status.CREATED,
+        max_length=16,
+    )
+    peers = models.ManyToManyField(
+        to=Node,
+        help_text="Chaincode Installed Peers",
     )
     description = models.CharField(
         help_text="Chaincode Description",
