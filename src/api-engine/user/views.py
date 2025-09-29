@@ -5,7 +5,6 @@
 import logging
 from typing import Optional
 
-from django.core.paginator import Paginator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets, status
 from rest_framework.decorators import action

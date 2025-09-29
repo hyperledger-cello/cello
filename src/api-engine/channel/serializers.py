@@ -66,7 +66,7 @@ class ChannelCreateBody(serializers.Serializer):
             node = get_node(orderer_id)
             if node is None:
                 raise serializers.ValidationError("Orderer {} not found.".format(orderer_id))
-            if node.type != Node.Type.PEER:
+            if node.type != Node.Type.ORDERER:
                 raise serializers.ValidationError(
                     "Node {} is not an orderer but {} instead.".format(orderer_id, node.type))
             if node.status != Node.Status.RUNNING:
