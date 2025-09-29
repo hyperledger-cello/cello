@@ -5,7 +5,7 @@ from typing import Dict, Any
 
 from rest_framework import serializers
 from api.common.serializers import ListResponseSerializer
-from organization.serializeres import OrganizationResponse
+from organization.serializeres import OrganizationID
 from user.models import UserProfile
 
 
@@ -32,18 +32,23 @@ class UserCreateBody(serializers.ModelSerializer):
         return user
 
 
-class UserID(serializers.Serializer):
-    id = serializers.UUIDField(help_text="User ID")
-
-
-class UserInfo(UserID, serializers.Serializer):
-    email = serializers.EmailField(help_text="User Email")
-    role = serializers.CharField(help_text="User Role")
-    organization = OrganizationResponse(help_text="User Organization")
-    created_at = serializers.DateTimeField(help_text="User Creation Timestamp")
-
+class UserID(serializers.ModelSerializer):
     class Meta:
-        fields = ("id", "email", "role", "organization", "created_at")
+        model = UserProfile
+        fields = ("id",)
+
+
+class UserInfo(serializers.ModelSerializer):
+    organization = OrganizationID()
+    class Meta:
+        model = UserProfile
+        fields = (
+            "id",
+            "email",
+            "role",
+            "organization",
+            "created_at"
+        )
 
 
 class UserList(ListResponseSerializer):

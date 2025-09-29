@@ -1,9 +1,9 @@
 import tarfile
 
+from django.core.validators import MinValueValidator
 from rest_framework import serializers
-
 from chaincode.models import Chaincode
-from chaincode.service import create_chaincode, get_metadata_label
+from chaincode.service import create_chaincode, get_metadata
 from channel.models import Channel
 from channel.serializers import ChannelID
 from common.serializers import ListResponseSerializer
@@ -49,11 +49,23 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
     class Meta:
         model = Chaincode
         fields = (
+            "name",
+            "version",
+            "sequence",
+            "init_required",
+            "signature_policy",
             "package",
             "channel",
             "peers",
             "description",
         )
+        extra_kwargs = {
+            "sequence": {
+                "validators": [MinValueValidator(1)]
+            },
+            "init_required": {"required": False},
+            "signature_policy": {"required": False},
+        }
 
     @staticmethod
     def validate_package(value):
@@ -67,7 +79,7 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
             )
 
         try:
-            metadata = get_metadata_label(value)
+            metadata = get_metadata(value)
             if metadata is None:
                 raise serializers.ValidationError("Metadata not found.")
         except tarfile.TarError:
@@ -82,4 +94,5 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
 
     def create(self, validated_data) -> ChaincodeID:
         validated_data["user"] = self.context["user"]
+        validated_data["organization"] = self.context["organization"]
         return ChaincodeID({"id": create_chaincode(**validated_data).id})
