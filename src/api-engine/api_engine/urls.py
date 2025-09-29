@@ -52,7 +52,7 @@ schema_view = get_schema_view(
 router = DefaultRouter(trailing_slash=False)
 router.register("organizations", OrganizationViewSet, basename="organization")
 router.register("users", UserViewSet, basename="user")
-router.register("node", NodeViewSet, basename="node")
+router.register("nodes", NodeViewSet, basename="node")
 router.register("register", RegisterViewSet, basename="register")
 router.register("channels", ChannelViewSet, basename="channel")
 router.register("chaincodes", ChaincodeViewSet, basename="chaincode")
