@@ -1,6 +1,5 @@
 import React, { PureComponent } from 'react';
 import { injectIntl, setLocale, getLocale } from 'umi';
-import { Menu } from 'antd';
 import { GlobalOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import HeaderDropdown from '../HeaderDropdown';
@@ -14,7 +13,6 @@ class SelectLang extends PureComponent {
 
   render() {
     const { className, intl } = this.props;
-    const selectedLang = getLocale();
     const locales = ['zh-CN', 'en-US'];
     const languageLabels = {
       'zh-CN': '简体中文',
@@ -24,22 +22,23 @@ class SelectLang extends PureComponent {
       'zh-CN': '🇨🇳',
       'en-US': '🇬🇧',
     };
-    const langMenu = (
-      <Menu className={styles.menu} selectedKeys={[selectedLang]} onClick={this.changeLang}>
-        {locales.map(locale => (
-          <Menu.Item key={locale}>
-            <span role="img" aria-label={languageLabels[locale]}>
-              {languageIcons[locale]}
-            </span>{' '}
-            {languageLabels[locale]}
-          </Menu.Item>
-        ))}
-      </Menu>
-    );
+    const langMenuItems = locales.map(locale => ({
+      key: locale,
+      label: (
+        <span>
+          {languageIcons[locale]} {languageLabels[locale]}
+        </span>
+      ),
+      onClick: this.changeLang
+    }));
     return (
-      <HeaderDropdown overlay={langMenu} placement="bottomRight">
+      <HeaderDropdown 
+        menu={{ items: langMenuItems }} 
+        placement="bottomRight"
+      >
         <span className={classNames(styles.dropDown, className)}>
-          <GlobalOutlined title={intl.formatMessage({ id: 'navBar.lang' })} />
+          <GlobalOutlined />
+          <span>{intl.formatMessage({ id: 'navBar.lang' })}</span>
         </span>
       </HeaderDropdown>
     );

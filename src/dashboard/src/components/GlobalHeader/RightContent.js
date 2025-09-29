@@ -9,28 +9,28 @@ import styles from './index.less';
 class GlobalHeaderRight extends PureComponent {
   render() {
     const { currentUser, onMenuClick, intl } = this.props;
-    const menu = (
-      <Menu className={styles.menu} selectedKeys={[]} onClick={onMenuClick}>
-        <Menu.Item key="logout">
-          <LogoutOutlined />
+    const menuItems = [{
+      key: "logout",
+      icon: <LogoutOutlined />,
+      label: (
+        <span>
           {intl.formatMessage({
             id: 'menu.account.logout',
             defaultMessage: 'logout',
           })}
-        </Menu.Item>
-      </Menu>
-    );
+        </span>
+      ),
+      onClick: onMenuClick
+    }];
     const className = styles.right;
-    // if (theme === 'dark') {
-    //   className = `${styles.right}  ${styles.dark}`;
-    // }
+
     return (
       <div className={className}>
-        {currentUser.username ? (
-          <HeaderDropdown overlay={menu}>
+        {currentUser.id ? (
+          <HeaderDropdown menu={{ items: menuItems }}>
             <span className={`${styles.action} ${styles.account}`}>
               <Avatar size="small" className={styles.avatar} src="/avatar.png" alt="avatar" />
-              <span className={styles.name}>{currentUser.username}</span>
+              <span className={styles.name}>{currentUser.email}</span>
             </span>
           </HeaderDropdown>
         ) : (
