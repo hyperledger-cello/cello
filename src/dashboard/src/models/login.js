@@ -1,6 +1,6 @@
 import { history } from 'umi';
 import { stringify } from 'qs';
-import { fakeAccountLogin, register } from '@/services/api';
+import { login, register } from '@/services/api';
 import { setAuthority } from '@/utils/authority';
 import { getPageQuery } from '@/utils/utils';
 import { reloadAuthorized } from '@/utils/Authorized';
@@ -18,7 +18,7 @@ export default {
 
   effects: {
     *login({ payload }, { call, put }) {
-      const response = yield call(fakeAccountLogin, payload);
+      const response = yield call(login, payload);
       // Login successfully
       if (response.data.token) {
         const { user, token } = response.data;
