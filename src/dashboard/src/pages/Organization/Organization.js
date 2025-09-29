@@ -355,13 +355,13 @@ class Organization extends PureComponent {
         }),
         render: (text, record) => (
           <Fragment>
-            <a onClick={() => this.showUpdate(record)}>
+            {/* <a onClick={() => this.showUpdate(record)}>
               {intl.formatMessage({ id: 'form.menu.item.update', defaultMessage: 'Update' })}
-            </a>
+            </a> */}
             <Divider type="vertical" />
-            <a className={styles.danger} onClick={() => this.handleDelete(record)}>
+            {/* <a className={styles.danger} onClick={() => this.handleDelete(record)}>
               {intl.formatMessage({ id: 'form.menu.item.delete', defaultMessage: 'Delete' })}
-            </a>
+            </a> */}
           </Fragment>
         ),
       },
