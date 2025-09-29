@@ -185,20 +185,19 @@ def create(
         ]
         LOG.info(" ".join(command))
         peer_dir = get_peer_directory(channel_organization.name, peer_domain_name)
-        env = {
-            "CORE_PEER_TLS_ENABLED": "true",
-            "CORE_PEER_LOCALMSPID": peer_msp,
-            "CORE_PEER_TLS_ROOTCERT_FILE": "{}/tls/ca.crt".format(peer_dir),
-            "CORE_PEER_MSPCONFIGPATH": "{}/users/Admin@{}/msp".format(
-                get_org_directory(channel_organization.name, Node.Type.PEER),
-                channel_organization.name
-            ),
-            "CORE_PEER_ADDRESS": "{}:7051".format(peer_domain_name),
-            "FABRIC_CFG_PATH": peer_dir,
-        }
         subprocess.run(
             command,
-            env=env,
+            env={
+                "CORE_PEER_TLS_ENABLED": "true",
+                "CORE_PEER_LOCALMSPID": peer_msp,
+                "CORE_PEER_TLS_ROOTCERT_FILE": "{}/tls/ca.crt".format(peer_dir),
+                "CORE_PEER_MSPCONFIGPATH": "{}/users/Admin@{}/msp".format(
+                    get_org_directory(channel_organization.name, Node.Type.PEER),
+                    channel_organization.name
+                ),
+                "CORE_PEER_ADDRESS": "{}:7051".format(peer_domain_name),
+                "FABRIC_CFG_PATH": peer_dir,
+            },
             check=True)
 
     command = [

@@ -47,8 +47,9 @@ def create(organization: Organization, node_type: Node.Type, node_name: str) -> 
             stdin_open=True,
             network="cello-net",
             name=node_domain_name,
-            dns_search=["."],
-            # volumes=volumes,
+            volumes=[
+                "/var/run/docker.sock:/host/var/run/docker.sock"
+            ],
             environment=_get_node_env(node_type, node_domain_name, msp, tls, cfg),
             # ports=port_map,
         )

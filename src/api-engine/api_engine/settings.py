@@ -209,6 +209,12 @@ LOGGING = {
             "propagate": False,
         },
         "api": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        "auth": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        "user": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        "organization": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        "node": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        "channel": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        "chaincode": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
     },
 }
 

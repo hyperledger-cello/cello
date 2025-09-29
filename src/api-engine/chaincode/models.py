@@ -1,5 +1,6 @@
 import os.path
 
+from django.core.validators import MinValueValidator
 from django.db import models
 
 from channel.models import Channel
@@ -36,6 +37,18 @@ class Chaincode(models.Model):
         help_text="Chaincode Package",
         upload_to=get_package_path,
     )
+    name = models.CharField(
+        help_text="Chaincode Name",
+        max_length=128,
+    )
+    version = models.CharField(
+        help_text="Chaincode Version",
+        max_length=128,
+    )
+    sequence = models.IntegerField(
+        help_text="Chaincode Sequence",
+        validators=[MinValueValidator(1)],
+    )
     label = models.CharField(
         help_text="Chaincode Label",
         max_length=128,
@@ -55,6 +68,15 @@ class Chaincode(models.Model):
     language = models.CharField(
         help_text="Chaincode Language",
         max_length=128,
+    )
+    init_required = models.BooleanField(
+        help_text="Whether Chaincode Initialization Required",
+        default=False,
+    )
+    signature_policy = models.CharField(
+        help_text="Chaincode Signature Policy",
+        null=True,
+        blank=True,
     )
     status = models.CharField(
         help_text="Chaincode Status",

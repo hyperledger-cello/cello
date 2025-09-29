@@ -49,7 +49,7 @@ class ChaincodeViewSet(viewsets.ViewSet):
         )
 
     @swagger_auto_schema(
-        operation_summary="Create a chaincode of the current organization",
+        operation_summary="Create (Install, Approve, and Commit) a chaincode of the current organization",
         request_body=ChaincodeCreateBody(),
         responses=with_common_response(
             {status.HTTP_201_CREATED: make_response_serializer(ChaincodeID)}
