@@ -550,13 +550,13 @@ class Channel extends PureComponent {
         // eslint-disable-next-line no-unused-vars
         render: (text, record) => (
           <Fragment>
-            <a onClick={() => this.onUpdateChannel(record)}>
+            {/* <a onClick={() => this.onUpdateChannel(record)}>
               {intl.formatMessage({ id: 'form.menu.item.update', defaultMessage: 'Update' })}
             </a>
             <Divider type="vertical" />
             <a onClick={() => this.handleDownloadConfig(record)}>
               {intl.formatMessage({ id: 'form.menu.item.download', defaultMessage: 'Download' })}
-            </a>
+            </a> */}
           </Fragment>
         ),
       },
