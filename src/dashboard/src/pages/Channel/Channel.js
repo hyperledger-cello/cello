@@ -372,10 +372,19 @@ class Channel extends PureComponent {
   }
 
   fetchChannels = () => {
-    const { dispatch } = this.props;
+    const {
+      dispatch,
+      channel: { pagination },
+    } = this.props;
+    const { formValues } = this.state;
 
     dispatch({
       type: 'channel/listChannel',
+      payload: {
+        ...formValues,
+        per_page: pagination.pageSize,
+        page: pagination.current,
+      },
     });
 
     dispatch({
@@ -526,13 +535,13 @@ class Channel extends PureComponent {
         }),
         dataIndex: 'name',
       },
-      {
-        title: intl.formatMessage({
-          id: 'app.channel.table.header.network',
-          defaultMessage: 'Network',
-        }),
-        render: (text, record) => record.network.name,
-      },
+      // {
+      //   title: intl.formatMessage({
+      //     id: 'app.channel.table.header.network',
+      //     defaultMessage: 'Network',
+      //   }),
+      //   render: (text, record) => record.network.name,
+      // },
       {
         title: intl.formatMessage({
           id: 'form.table.header.operation',
