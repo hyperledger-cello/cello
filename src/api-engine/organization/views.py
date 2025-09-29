@@ -31,15 +31,19 @@ class OrganizationViewSet(viewsets.ViewSet):
     def list(self, request):
         serializer = PageQuerySerializer(data=request.GET)
         p = serializer.get_paginator(Organization.objects.all())
-        response = OrganizationList(
-            data={
-                "total": p.count,
-                "data": OrganizationResponse(p.page(serializer.data.page).object_list, many=True).data
-            }
-        )
-        response.is_valid(raise_exception=True)
+        response = OrganizationList({
+            "total": p.count,
+            "data": OrganizationResponse(p.page(serializer.data["page"]).object_list, many=True).data
+        })
         return Response(
-            ok(response.data), status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
+            data=ok(OrganizationList({
+                "total": p.count,
+                "data": OrganizationResponse(
+                    p.page(serializer.data["page"]).object_list,
+                    many=True
+                ).data
+            }).data)
         )
 
     @swagger_auto_schema(
