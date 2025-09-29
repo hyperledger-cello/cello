@@ -20,14 +20,14 @@ export default {
       const pageSize = payload ? payload.per_page || pagination.pageSize : pagination.pageSize;
       const current = payload ? payload.page || pagination.current : pagination.current;
 
-      pagination.total = response.data.total;
+      pagination.total = response.total;
       pagination.pageSize = pageSize;
       pagination.current = current;
       yield put({
         type: 'save',
         payload: {
           pagination,
-          channels: response.data.data,
+          channels: response.data,
         },
       });
     },
