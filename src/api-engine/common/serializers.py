@@ -15,6 +15,7 @@ class PageQuerySerializer(serializers.Serializer):
         self.is_valid(raise_exception=True)
         return Paginator(q, self.data['per_page'])
 
+
 class ListResponseSerializer(serializers.Serializer):
     total = serializers.IntegerField(
         help_text="Total number of data", min_value=0
