@@ -477,24 +477,20 @@ class UserManagement extends PureComponent {
   render() {
     const { modalVisible, modalMethod, selectedRows } = this.state;
     const {
-      user: { users, pagination, currentUser },
+      user: { users, pagination },
       organization: { organizations },
       loadingUsers,
       creatingUser,
       dispatch,
       intl,
     } = this.props;
-    const data = users.map(user => ({
-      ...user,
-      disabled: user.username === currentUser.username,
-    }));
     const columns = [
       {
         title: intl.formatMessage({
           id: 'app.user.table.header.name',
           defaultMessage: 'User Name',
         }),
-        dataIndex: 'username',
+        dataIndex: 'email',
       },
       {
         title: intl.formatMessage({
@@ -504,7 +500,7 @@ class UserManagement extends PureComponent {
         dataIndex: 'role',
         render: text =>
           intl.formatMessage({
-            id: `app.user.role.${text}`,
+            id: `app.user.role.${text.toLowerCase()}`,
             defaultMessage: 'User',
           }),
       },
@@ -610,7 +606,7 @@ class UserManagement extends PureComponent {
               loading={loadingUsers}
               rowKey="id"
               data={{
-                list: data,
+                list: users.data,
                 pagination,
               }}
               columns={columns}
