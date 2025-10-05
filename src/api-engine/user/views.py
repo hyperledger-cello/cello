@@ -42,19 +42,15 @@ class UserViewSet(viewsets.ViewSet):
     def list(self, request: Request) -> Response:
         serializer = PageQuerySerializer(data=request.GET)
         p = serializer.get_paginator(UserProfile.objects.filter(organization=request.user.organization))
-
-        response = UserList(
-            data = {
+        return Response(
+            status = status.HTTP_200_OK,
+            data = ok(UserList({
                 "total": p.count,
                 "data": UserInfo(
                     p.page(serializer.data['page']).object_list,
                     many=True
                 ).data,
-            })
-        response.is_valid(raise_exception=True)
-        return Response(
-            status = status.HTTP_200_OK,
-            data = ok(response.data),
+            }).data),
         )
 
     @swagger_auto_schema(
