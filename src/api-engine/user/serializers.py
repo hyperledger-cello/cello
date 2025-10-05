@@ -5,7 +5,7 @@ from typing import Dict, Any
 
 from rest_framework import serializers
 from api.common.serializers import ListResponseSerializer
-from organization.serializeres import OrganizationID
+from organization.serializeres import OrganizationID, OrganizationResponse
 from user.models import UserProfile
 
 
@@ -39,7 +39,7 @@ class UserID(serializers.ModelSerializer):
 
 
 class UserInfo(serializers.ModelSerializer):
-    organization = OrganizationID()
+    organization = OrganizationResponse()
     class Meta:
         model = UserProfile
         fields = (

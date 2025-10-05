@@ -90,7 +90,7 @@ class CelloTokenVerifyView(TokenVerifyView):
                 token=serializer.validated_data["token"],
             )
             user = UserProfile.objects.get(pk=access_token["user_id"])
-        except Union[TokenError, UserProfile.DoesNotExist]:
+        except (TokenError, UserProfile.DoesNotExist):
             LOG.exception("invalid token error")
             return Response(
                 data=err(msg="invalid token"),

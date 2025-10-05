@@ -1,4 +1,5 @@
 import {
+  getOrganization,
   listOrganization,
   createOrganization,
   updateOrganization,
@@ -19,6 +20,12 @@ export default {
   },
 
   effects: {
+    *getOrganization({ payload, callback }, { call }) {
+      const response = yield call(getOrganization, payload);
+      if (callback) {
+        callback(response);
+      }
+    },
     *listOrganization({ payload, callback }, { call, put, select }) {
       const response = yield call(listOrganization, payload);
       const pagination = yield select(state => state.organization.pagination);
