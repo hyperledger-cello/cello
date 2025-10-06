@@ -113,7 +113,7 @@ def create_chaincode(
     orderer_domain_name = get_domain_name(
         organization.name,
         Node.Type.ORDERER,
-        Node.objects.filter(organization=organization).first().name
+        Node.objects.filter(type=Node.Type.ORDERER, organization=organization).first().name
     )
     command = [
         peer_command,

@@ -1,5 +1,6 @@
 import {
   listChainCode,
+  createChainCode,
   uploadChainCode,
   installChainCode,
   approveChainCode,
@@ -35,6 +36,12 @@ export default {
           chainCodes: response.data.data,
         },
       });
+    },
+    *createChainCode({ payload, callback }, { call }) {
+      const response = yield call(createChainCode, payload);
+      if (callback) {
+        callback(response);
+      }
     },
     *uploadChainCode({ payload, callback }, { call }) {
       const response = yield call(uploadChainCode, payload);

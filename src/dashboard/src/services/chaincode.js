@@ -6,6 +6,13 @@ export async function listChainCode(params) {
   return request('/api/v1/chaincodes');
 }
 
+export async function createChainCode(params) {
+  return request('/api/v1/chaincodes', {
+    method: 'POST',
+    body: params,
+  });
+}
+
 export async function uploadChainCode(params) {
   return request('/api/v1/chaincodes/chaincodeRepo', {
     method: 'POST',

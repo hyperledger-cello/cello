@@ -52,11 +52,12 @@ export default {
 
     *register({ payload }, { call, put }) {
       const response = yield call(register, payload);
+      const isSuccessful = response.status.toLowerCase() === 'successful';
       yield put({
         type: 'changeRegisterStatus',
         payload: {
-          success: response.status === 'successful',
-          msg: response.status === 'successful' ? 'Register successfully!' : response.msg,
+          success: isSuccessful,
+          msg: isSuccessful ? 'Register successfully!' : response.msg,
         },
       });
     },
