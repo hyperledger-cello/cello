@@ -1,4 +1,5 @@
 import tarfile
+from typing import List
 
 from django.core.validators import MinValueValidator
 from rest_framework import serializers
@@ -90,6 +91,18 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
     def validate_channel(self, value: Channel):
         if not value.organizations.contains(self.context["organization"]):
             raise serializers.ValidationError("You can only install chaincodes on your organization.")
+        return value
+
+    def validate_peers(self, value: List[Node]):
+        for node in value:
+            if Node.Type.PEER != node.type:
+                raise serializers.ValidationError(
+                    "Node {} is not a peer but a/an {} instead.".format(node.id, node.type)
+                )
+            if node.organization != self.context["organization"]:
+                raise serializers.ValidationError(
+                    "Node {} does not belong to your organization.".format(node.id)
+                )
         return value
 
     def create(self, validated_data) -> ChaincodeID:

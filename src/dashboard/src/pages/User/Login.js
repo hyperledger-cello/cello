@@ -8,7 +8,6 @@ import Login from '@/components/Login';
 import styles from './Login.less';
 
 const { Email, Password, Submit, OrgName } = Login;
-const { TabPane } = Tabs;
 
 @connect(({ login, loading }) => ({
   login,
@@ -118,7 +117,7 @@ class LoginPage extends Component {
               })}
             </Submit>
           </Login>
-        )
+        ),
       },
       {
         key: '2',
@@ -140,7 +139,7 @@ class LoginPage extends Component {
               text={intl.formatMessage({ id: 'app.register.orgName.example' })}
             >
               <OrgName
-                name="orgName"
+                name="org_name"
                 placeholder={intl.formatMessage({ id: 'app.register.orgName' })}
                 rules={[
                   {
@@ -200,15 +199,13 @@ class LoginPage extends Component {
               })}
             </Submit>
           </Login>
-        )
-      }
-    ]
-
+        ),
+      },
+    ];
 
     return (
       <div className={styles.main}>
-        <Tabs defaultActiveKey="1" centered items={tabItems}>
-        </Tabs>
+        <Tabs defaultActiveKey="1" centered items={tabItems} />
       </div>
     );
   }
