@@ -27,7 +27,7 @@ export default {
         type: 'save',
         payload: {
           pagination,
-          channels: response.data,
+          channels: response.data.data,
         },
       });
     },

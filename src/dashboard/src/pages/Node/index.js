@@ -182,7 +182,7 @@ const CreateNode = props => {
   const { createModalVisible, handleCreate, handleModalVisible, creating, queryNodeList } = props;
 
   const createCallback = response => {
-    if (response.status !== 'successful') {
+    if (response.status.toLowerCase() !== 'successful') {
       message.error(
         intl.formatMessage({
           id: 'app.node.new.createFail',
@@ -222,7 +222,7 @@ const CreateNode = props => {
     },
   };
 
-  const types = ['orderer', 'peer'];
+  const types = ['ORDERER', 'PEER'];
   const typeOptions = types.map(item => (
     <Option value={item} key={item}>
       <span style={{ color: '#8c8f88' }}>{item}</span>
@@ -726,7 +726,7 @@ class Index extends PureComponent {
           defaultMessage: 'Type',
         }),
         dataIndex: 'type',
-        render: text => text.toLowerCase()
+        render: text => text.toLowerCase(),
       },
       {
         title: intl.formatMessage({
@@ -742,7 +742,9 @@ class Index extends PureComponent {
           defaultMessage: 'Status',
         }),
         dataIndex: 'status',
-        render: text => <Badge status={badgeStatus(text.toLowerCase())} text={text.toLowerCase()} />,
+        render: text => (
+          <Badge status={badgeStatus(text.toLowerCase())} text={text.toLowerCase()} />
+        ),
       },
       {
         title: intl.formatMessage({

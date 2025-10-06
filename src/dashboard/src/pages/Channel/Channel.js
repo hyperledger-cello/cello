@@ -3,7 +3,7 @@
 */
 import React, { PureComponent, Fragment } from 'react';
 import { connect, injectIntl, useIntl } from 'umi';
-import { Card, Button, Modal, message, Divider, Input, Select, Form, Tag, Upload } from 'antd';
+import { Card, Button, Modal, message, Input, Select, Form, Tag, Upload } from 'antd';
 import { PlusOutlined, UploadOutlined, DeploymentUnitOutlined } from '@ant-design/icons';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import StandardTable from '@/components/StandardTable';
@@ -18,7 +18,7 @@ const CreateChannel = props => {
   const { modalVisible, handleCreate, handleModalVisible, nodes, creating, fetchChannels } = props;
 
   const createCallback = response => {
-    if (response.status !== 'successful') {
+    if (response.status.toLowerCase() !== 'successful') {
       message.error(
         intl.formatMessage({
           id: 'app.channel.form.create.fail',
@@ -62,7 +62,7 @@ const CreateChannel = props => {
   const orderers = [];
 
   Object.keys(nodes).forEach(item => {
-    if (nodes[item].type === 'peer') {
+    if (nodes[item].type.toLowerCase() === 'peer') {
       peers.push({ label: nodes[item].name, value: nodes[item].id });
     } else {
       orderers.push({ label: nodes[item].name, value: nodes[item].id });
@@ -133,7 +133,7 @@ const CreateChannel = props => {
             id: 'app.channel.form.create.orderer',
             defaultMessage: 'Please select orderer',
           })}
-          name="orderers"
+          name="orderer_ids"
           rules={[
             {
               required: true,
@@ -157,7 +157,7 @@ const CreateChannel = props => {
             id: 'app.channel.form.create.peer',
             defaultMessage: 'Peer',
           })}
-          name="peers"
+          name="peer_ids"
           rules={[
             {
               required: true,

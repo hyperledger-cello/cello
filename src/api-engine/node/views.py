@@ -26,13 +26,12 @@ class NodeViewSet(viewsets.ViewSet):
     def list(self, request):
         serializer = PageQuerySerializer(data=request.GET)
         p = serializer.get_paginator(Node.objects.filter(organization=request.user.organization))
-        response = NodeList({
-            "total": p.count,
-            "data": NodeResponse(p.page(serializer.data['page']).object_list, many=True).data
-        })
         return Response(
             status=status.HTTP_200_OK,
-            data=ok(response.data),
+            data=ok(NodeList({
+                "total": p.count,
+                "data": NodeResponse(p.page(serializer.data['page']).object_list, many=True).data
+            }).data),
         )
 
     @swagger_auto_schema(
@@ -45,9 +44,8 @@ class NodeViewSet(viewsets.ViewSet):
     def create(self, request):
         serializer = NodeCreateBody(data=request.data, context={"organization": request.user.organization})
         serializer.is_valid(raise_exception=True)
-        response = NodeID(serializer.save().__dict__)
         return Response(
             status=status.HTTP_201_CREATED,
-            data=ok(response.data),
+            data=ok(NodeID(serializer.save().__dict__).data),
         )
 

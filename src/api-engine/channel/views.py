@@ -31,10 +31,10 @@ class ChannelViewSet(viewsets.ViewSet):
         p = serializer.get_paginator(Channel.objects.filter(organizations__id__contains=request.user.organization.id))
         return Response(
             status=status.HTTP_200_OK,
-            data=ChannelList({
+            data=ok(ChannelList({
                 "total": p.count,
                 "data": ChannelResponse(p.page(serializer.data["page"]).object_list, many=True).data,
-            }).data,
+            }).data),
         )
 
     @swagger_auto_schema(
@@ -49,4 +49,5 @@ class ChannelViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         return Response(
             status=status.HTTP_201_CREATED,
-            data=serializer.save().data)
+            data=ok(serializer.save().data)
+        )
