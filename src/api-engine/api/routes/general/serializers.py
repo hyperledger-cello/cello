@@ -9,9 +9,11 @@ class RegisterBody(serializers.Serializer):
     orgName = serializers.CharField(help_text="name of Organization")
     email = serializers.EmailField(help_text="email of user")
     username = serializers.CharField(
-        help_text="name of Administrator", default="Administator")
+        help_text="name of Administrator", default="Administator"
+    )
     password = serializers.CharField(
-        help_text="password of Administrator", default="666666")
+        help_text="password of Administrator", default="666666"
+    )
 
 
 class RegisterIDSerializer(serializers.Serializer):

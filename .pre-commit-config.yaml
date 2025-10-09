@@ -1,7 +1,7 @@
 repos:
 -   repo: https://github.com/ambv/black
-    rev: stable
+    rev: 24.8.0
     hooks:
     - id: black
-      entry: black -l 79 src/api-engine src/agent/kubernetes-agent
-      language_version: python3.7
+      entry: black -l 79
+      language_version: python3.8

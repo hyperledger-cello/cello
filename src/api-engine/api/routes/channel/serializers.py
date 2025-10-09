@@ -37,16 +37,19 @@ ORG_CHOICES = (
 
 class ChannelUpdateSerializer(serializers.Serializer):
     msp_id = serializers.CharField(
-        max_length=128, help_text="MSP ID of Organization")
+        max_length=128, help_text="MSP ID of Organization"
+    )
     data = serializers.FileField(help_text="Channel config file")
     org_type = serializers.ChoiceField(
-        help_text="Organization type", choices=ORG_CHOICES)
+        help_text="Organization type", choices=ORG_CHOICES
+    )
 
 
 class ChannelOrgListSerializer(serializers.Serializer):
     id = serializers.UUIDField(help_text="Organization ID")
     name = serializers.CharField(
-        max_length=128, help_text="name of Organization")
+        max_length=128, help_text="name of Organization"
+    )
 
 
 class ChannelNetworkSerializer(serializers.Serializer):
@@ -54,7 +57,9 @@ class ChannelNetworkSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=128, help_text="name of Network")
 
 
-class ChannelResponseSerializer(ChannelIDSerializer, serializers.ModelSerializer):
+class ChannelResponseSerializer(
+    ChannelIDSerializer, serializers.ModelSerializer
+):
     id = serializers.UUIDField(help_text="ID of Channel")
     network = ChannelNetworkSerializer()
     organizations = ChannelOrgListSerializer(many=True)

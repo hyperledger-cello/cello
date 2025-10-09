@@ -79,9 +79,11 @@ router.register("chaincodes", ChainCodeViewSet, basename="chaincode")
 urlpatterns = router.urls
 
 urlpatterns += [
-    path('login', CelloTokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('token-verify', CelloTokenVerifyView.as_view(), name='token_verify'),
+    path(
+        "login", CelloTokenObtainPairView.as_view(), name="token_obtain_pair"
+    ),
+    path("login/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("token-verify", CelloTokenVerifyView.as_view(), name="token_verify"),
     path("docs/", SchemaView.with_ui("swagger", cache_timeout=0), name="docs"),
     path("redoc/", SchemaView.with_ui("redoc", cache_timeout=0), name="redoc"),
 ]

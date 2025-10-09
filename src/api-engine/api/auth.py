@@ -24,8 +24,7 @@ class IsAdminAuthenticated(BasePermission):
 
     def has_permission(self, request, view):
         return (
-            request.user
-            and request.user.role == UserRole.Admin.name.lower()
+            request.user and request.user.role == UserRole.Admin.name.lower()
         )
 
 

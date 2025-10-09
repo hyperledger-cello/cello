@@ -16,271 +16,1147 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),
+        ("auth", "0012_alter_user_first_name_max_length"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='UserProfile',
+            name="UserProfile",
             fields=[
-                ('password', models.CharField(max_length=128, verbose_name='password')),
-                ('last_login', models.DateTimeField(blank=True, null=True, verbose_name='last login')),
-                ('is_superuser', models.BooleanField(default=False, help_text='Designates that this user has all permissions without explicitly assigning them.', verbose_name='superuser status')),
-                ('first_name', models.CharField(blank=True, max_length=150, verbose_name='first name')),
-                ('last_name', models.CharField(blank=True, max_length=150, verbose_name='last name')),
-                ('is_staff', models.BooleanField(default=False, help_text='Designates whether the user can log into this admin site.', verbose_name='staff status')),
-                ('is_active', models.BooleanField(default=True, help_text='Designates whether this user should be treated as active. Unselect this instead of deleting accounts.', verbose_name='active')),
-                ('date_joined', models.DateTimeField(default=django.utils.timezone.now, verbose_name='date joined')),
-                ('id', models.UUIDField(default=api.utils.common.make_uuid, help_text='ID of user', primary_key=True, serialize=False)),
-                ('email', models.EmailField(db_index=True, max_length=254, unique=True)),
-                ('username', models.CharField(default='', help_text='Name of user', max_length=64)),
-                ('role', models.CharField(choices=[('admin', 'Admin'), ('operator', 'Operator'), ('user', 'User')], default=2, max_length=64)),
-                ('groups', models.ManyToManyField(blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.', related_name='user_set', related_query_name='user', to='auth.group', verbose_name='groups')),
+                (
+                    "password",
+                    models.CharField(max_length=128, verbose_name="password"),
+                ),
+                (
+                    "last_login",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="last login"
+                    ),
+                ),
+                (
+                    "is_superuser",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Designates that this user has all permissions without explicitly assigning them.",
+                        verbose_name="superuser status",
+                    ),
+                ),
+                (
+                    "first_name",
+                    models.CharField(
+                        blank=True, max_length=150, verbose_name="first name"
+                    ),
+                ),
+                (
+                    "last_name",
+                    models.CharField(
+                        blank=True, max_length=150, verbose_name="last name"
+                    ),
+                ),
+                (
+                    "is_staff",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Designates whether the user can log into this admin site.",
+                        verbose_name="staff status",
+                    ),
+                ),
+                (
+                    "is_active",
+                    models.BooleanField(
+                        default=True,
+                        help_text="Designates whether this user should be treated as active. Unselect this instead of deleting accounts.",
+                        verbose_name="active",
+                    ),
+                ),
+                (
+                    "date_joined",
+                    models.DateTimeField(
+                        default=django.utils.timezone.now,
+                        verbose_name="date joined",
+                    ),
+                ),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=api.utils.common.make_uuid,
+                        help_text="ID of user",
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "email",
+                    models.EmailField(
+                        db_index=True, max_length=254, unique=True
+                    ),
+                ),
+                (
+                    "username",
+                    models.CharField(
+                        default="", help_text="Name of user", max_length=64
+                    ),
+                ),
+                (
+                    "role",
+                    models.CharField(
+                        choices=[
+                            ("admin", "Admin"),
+                            ("operator", "Operator"),
+                            ("user", "User"),
+                        ],
+                        default=2,
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "groups",
+                    models.ManyToManyField(
+                        blank=True,
+                        help_text="The groups this user belongs to. A user will get all permissions granted to each of their groups.",
+                        related_name="user_set",
+                        related_query_name="user",
+                        to="auth.group",
+                        verbose_name="groups",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'User Info',
-                'verbose_name_plural': 'User Info',
-                'ordering': ['-date_joined'],
+                "verbose_name": "User Info",
+                "verbose_name_plural": "User Info",
+                "ordering": ["-date_joined"],
             },
             managers=[
-                ('objects', django.contrib.auth.models.UserManager()),
+                ("objects", django.contrib.auth.models.UserManager()),
             ],
         ),
         migrations.CreateModel(
-            name='Agent',
+            name="Agent",
             fields=[
-                ('id', models.UUIDField(default=api.utils.common.make_uuid, help_text='ID of agent', primary_key=True, serialize=False)),
-                ('name', models.CharField(default='agent-0d4db641fedc458fa54e9f364e411698', help_text='Agent name, can be generated automatically.', max_length=64)),
-                ('urls', models.URLField(blank=True, help_text='Agent URL', null=True)),
-                ('status', models.CharField(choices=[('inactive', 'Inactive'), ('active', 'Active')], default='active', help_text='Status of agent', max_length=10)),
-                ('type', models.CharField(choices=[('docker', 'Docker'), ('kubernetes', 'Kubernetes')], default='docker', help_text='Type of agent', max_length=32)),
-                ('config_file', models.FileField(blank=True, help_text='Config file for agent', max_length=256, upload_to=api.models.get_agent_config_file_path)),
-                ('created_at', models.DateTimeField(auto_now_add=True, help_text='Create time of agent')),
-                ('free_ports', django.contrib.postgres.fields.ArrayField(base_field=models.IntegerField(blank=True), help_text='Agent free ports.', null=True, size=None)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=api.utils.common.make_uuid,
+                        help_text="ID of agent",
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        default="agent-0d4db641fedc458fa54e9f364e411698",
+                        help_text="Agent name, can be generated automatically.",
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "urls",
+                    models.URLField(
+                        blank=True, help_text="Agent URL", null=True
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("inactive", "Inactive"),
+                            ("active", "Active"),
+                        ],
+                        default="active",
+                        help_text="Status of agent",
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "type",
+                    models.CharField(
+                        choices=[
+                            ("docker", "Docker"),
+                            ("kubernetes", "Kubernetes"),
+                        ],
+                        default="docker",
+                        help_text="Type of agent",
+                        max_length=32,
+                    ),
+                ),
+                (
+                    "config_file",
+                    models.FileField(
+                        blank=True,
+                        help_text="Config file for agent",
+                        max_length=256,
+                        upload_to=api.models.get_agent_config_file_path,
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True, help_text="Create time of agent"
+                    ),
+                ),
+                (
+                    "free_ports",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.IntegerField(blank=True),
+                        help_text="Agent free ports.",
+                        null=True,
+                        size=None,
+                    ),
+                ),
             ],
             options={
-                'ordering': ('-created_at',),
+                "ordering": ("-created_at",),
             },
         ),
         migrations.CreateModel(
-            name='ChainCode',
+            name="ChainCode",
             fields=[
-                ('id', models.UUIDField(default=api.utils.common.make_uuid, editable=False, help_text='ID of ChainCode', primary_key=True, serialize=False, unique=True)),
-                ('package_id', models.CharField(editable=False, help_text='package_id of chainCode', max_length=128, unique=True)),
-                ('label', models.CharField(help_text='label of chainCode', max_length=128)),
-                ('creator', models.CharField(help_text='creator of chainCode', max_length=128)),
-                ('language', models.CharField(help_text='language of chainCode', max_length=128)),
-                ('description', models.CharField(blank=True, help_text='description of chainCode', max_length=128, null=True)),
-                ('create_ts', models.DateTimeField(auto_now_add=True, help_text='Create time of chainCode')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=api.utils.common.make_uuid,
+                        editable=False,
+                        help_text="ID of ChainCode",
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "package_id",
+                    models.CharField(
+                        editable=False,
+                        help_text="package_id of chainCode",
+                        max_length=128,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "label",
+                    models.CharField(
+                        help_text="label of chainCode", max_length=128
+                    ),
+                ),
+                (
+                    "creator",
+                    models.CharField(
+                        help_text="creator of chainCode", max_length=128
+                    ),
+                ),
+                (
+                    "language",
+                    models.CharField(
+                        help_text="language of chainCode", max_length=128
+                    ),
+                ),
+                (
+                    "description",
+                    models.CharField(
+                        blank=True,
+                        help_text="description of chainCode",
+                        max_length=128,
+                        null=True,
+                    ),
+                ),
+                (
+                    "create_ts",
+                    models.DateTimeField(
+                        auto_now_add=True, help_text="Create time of chainCode"
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='FabricCA',
+            name="FabricCA",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('admin_name', models.CharField(default='admin', help_text='Admin username for ca server', max_length=32)),
-                ('admin_password', models.CharField(default='adminpw', help_text='Admin password for ca server', max_length=32)),
-                ('hosts', models.JSONField(blank=True, default=list, help_text='Hosts for ca', null=True)),
-                ('type', models.CharField(choices=[('tls', 'TLS'), ('signature', 'Signature')], default='signature', help_text='Fabric ca server type', max_length=32)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "admin_name",
+                    models.CharField(
+                        default="admin",
+                        help_text="Admin username for ca server",
+                        max_length=32,
+                    ),
+                ),
+                (
+                    "admin_password",
+                    models.CharField(
+                        default="adminpw",
+                        help_text="Admin password for ca server",
+                        max_length=32,
+                    ),
+                ),
+                (
+                    "hosts",
+                    models.JSONField(
+                        blank=True,
+                        default=list,
+                        help_text="Hosts for ca",
+                        null=True,
+                    ),
+                ),
+                (
+                    "type",
+                    models.CharField(
+                        choices=[("tls", "TLS"), ("signature", "Signature")],
+                        default="signature",
+                        help_text="Fabric ca server type",
+                        max_length=32,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='FabricPeer',
+            name="FabricPeer",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(default='', help_text='Name of peer node', max_length=64)),
-                ('gossip_use_leader_reflection', models.BooleanField(default=True, help_text='Gossip use leader reflection')),
-                ('gossip_org_leader', models.BooleanField(default=False, help_text='Gossip org leader')),
-                ('gossip_skip_handshake', models.BooleanField(default=True, help_text='Gossip skip handshake')),
-                ('local_msp_id', models.CharField(default='', help_text='Local msp id of peer node', max_length=64)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        default="",
+                        help_text="Name of peer node",
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "gossip_use_leader_reflection",
+                    models.BooleanField(
+                        default=True, help_text="Gossip use leader reflection"
+                    ),
+                ),
+                (
+                    "gossip_org_leader",
+                    models.BooleanField(
+                        default=False, help_text="Gossip org leader"
+                    ),
+                ),
+                (
+                    "gossip_skip_handshake",
+                    models.BooleanField(
+                        default=True, help_text="Gossip skip handshake"
+                    ),
+                ),
+                (
+                    "local_msp_id",
+                    models.CharField(
+                        default="",
+                        help_text="Local msp id of peer node",
+                        max_length=64,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Govern',
+            name="Govern",
             fields=[
-                ('id', models.UUIDField(default=api.utils.common.make_uuid, help_text='ID of govern', primary_key=True, serialize=False)),
-                ('name', models.CharField(default='', help_text='Name of govern', max_length=64)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=api.utils.common.make_uuid,
+                        help_text="ID of govern",
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        default="", help_text="Name of govern", max_length=64
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
         ),
         migrations.CreateModel(
-            name='Network',
+            name="Network",
             fields=[
-                ('id', models.UUIDField(default=api.utils.common.make_uuid, help_text='ID of network', primary_key=True, serialize=False)),
-                ('name', models.CharField(default='netowrk-30858a0cf2f54ab7a5e16a94958758b5', help_text='network name, can be generated automatically.', max_length=64)),
-                ('type', models.CharField(default='fabric', help_text="Type of network, ['fabric']", max_length=64)),
-                ('version', models.CharField(default='', help_text="\n    Version of network.\n    Fabric supported versions: ['1.4.2', '1.5']\n    ", max_length=64)),
-                ('created_at', models.DateTimeField(auto_now_add=True, help_text='Create time of network')),
-                ('consensus', models.CharField(default='raft', help_text='Consensus of network', max_length=128)),
-                ('genesisblock', models.TextField(help_text='genesis block', null=True)),
-                ('database', models.CharField(default='leveldb', help_text='database of network', max_length=128)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=api.utils.common.make_uuid,
+                        help_text="ID of network",
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        default="netowrk-30858a0cf2f54ab7a5e16a94958758b5",
+                        help_text="network name, can be generated automatically.",
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "type",
+                    models.CharField(
+                        default="fabric",
+                        help_text="Type of network, ['fabric']",
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "version",
+                    models.CharField(
+                        default="",
+                        help_text="\n    Version of network.\n    Fabric supported versions: ['1.4.2', '1.5']\n    ",
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True, help_text="Create time of network"
+                    ),
+                ),
+                (
+                    "consensus",
+                    models.CharField(
+                        default="raft",
+                        help_text="Consensus of network",
+                        max_length=128,
+                    ),
+                ),
+                (
+                    "genesisblock",
+                    models.TextField(help_text="genesis block", null=True),
+                ),
+                (
+                    "database",
+                    models.CharField(
+                        default="leveldb",
+                        help_text="database of network",
+                        max_length=128,
+                    ),
+                ),
             ],
             options={
-                'ordering': ('-created_at',),
+                "ordering": ("-created_at",),
             },
         ),
         migrations.CreateModel(
-            name='Node',
+            name="Node",
             fields=[
-                ('id', models.UUIDField(default=api.utils.common.make_uuid, help_text='ID of node', primary_key=True, serialize=False)),
-                ('name', models.CharField(default='', help_text='Node name', max_length=64)),
-                ('type', models.CharField(help_text="\n    Node type defined for network.\n    Fabric available types: ['ca', 'orderer', 'peer']\n    ", max_length=64)),
-                ('urls', models.JSONField(blank=True, default=dict, help_text='URL configurations for node', null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True, help_text='Create time of network')),
-                ('status', models.CharField(choices=[('created', 'Created'), ('restarting', 'Restarting'), ('running', 'Running'), ('removing', 'Removing'), ('paused', 'Paused'), ('exited', 'Exited'), ('dead', 'Dead')], default='created', help_text='Status of node', max_length=64)),
-                ('config_file', models.TextField(help_text='Config file of node', null=True)),
-                ('msp', models.TextField(help_text='msp of node', null=True)),
-                ('tls', models.TextField(help_text='tls of node', null=True)),
-                ('cid', models.CharField(default='', help_text='id used in agent, such as container id', max_length=256)),
-                ('agent', models.ForeignKey(help_text='Agent of node', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='node', to='api.agent')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=api.utils.common.make_uuid,
+                        help_text="ID of node",
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        default="", help_text="Node name", max_length=64
+                    ),
+                ),
+                (
+                    "type",
+                    models.CharField(
+                        help_text="\n    Node type defined for network.\n    Fabric available types: ['ca', 'orderer', 'peer']\n    ",
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "urls",
+                    models.JSONField(
+                        blank=True,
+                        default=dict,
+                        help_text="URL configurations for node",
+                        null=True,
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True, help_text="Create time of network"
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("created", "Created"),
+                            ("restarting", "Restarting"),
+                            ("running", "Running"),
+                            ("removing", "Removing"),
+                            ("paused", "Paused"),
+                            ("exited", "Exited"),
+                            ("dead", "Dead"),
+                        ],
+                        default="created",
+                        help_text="Status of node",
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "config_file",
+                    models.TextField(
+                        help_text="Config file of node", null=True
+                    ),
+                ),
+                ("msp", models.TextField(help_text="msp of node", null=True)),
+                ("tls", models.TextField(help_text="tls of node", null=True)),
+                (
+                    "cid",
+                    models.CharField(
+                        default="",
+                        help_text="id used in agent, such as container id",
+                        max_length=256,
+                    ),
+                ),
+                (
+                    "agent",
+                    models.ForeignKey(
+                        help_text="Agent of node",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="node",
+                        to="api.agent",
+                    ),
+                ),
             ],
             options={
-                'ordering': ('-created_at',),
+                "ordering": ("-created_at",),
             },
         ),
         migrations.CreateModel(
-            name='NodeUser',
+            name="NodeUser",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(default='', help_text='User name of node', max_length=64)),
-                ('secret', models.CharField(default='', help_text='User secret of node', max_length=64)),
-                ('user_type', models.CharField(choices=[('peer', 'Peer'), ('orderer', 'Orderer'), ('user', 'User')], default='peer', help_text='User type of node', max_length=64)),
-                ('status', models.CharField(choices=[('registering', 'Registering'), ('registered', 'Registered'), ('fail', 'Fail')], default='registering', help_text='Status of node user', max_length=32)),
-                ('attrs', models.CharField(default='', help_text='Attributes of node user', max_length=512)),
-                ('node', models.ForeignKey(help_text='Node of user', null=True, on_delete=django.db.models.deletion.CASCADE, to='api.node')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        default="",
+                        help_text="User name of node",
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "secret",
+                    models.CharField(
+                        default="",
+                        help_text="User secret of node",
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "user_type",
+                    models.CharField(
+                        choices=[
+                            ("peer", "Peer"),
+                            ("orderer", "Orderer"),
+                            ("user", "User"),
+                        ],
+                        default="peer",
+                        help_text="User type of node",
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("registering", "Registering"),
+                            ("registered", "Registered"),
+                            ("fail", "Fail"),
+                        ],
+                        default="registering",
+                        help_text="Status of node user",
+                        max_length=32,
+                    ),
+                ),
+                (
+                    "attrs",
+                    models.CharField(
+                        default="",
+                        help_text="Attributes of node user",
+                        max_length=512,
+                    ),
+                ),
+                (
+                    "node",
+                    models.ForeignKey(
+                        help_text="Node of user",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="api.node",
+                    ),
+                ),
             ],
             options={
-                'ordering': ('id',),
+                "ordering": ("id",),
             },
         ),
         migrations.CreateModel(
-            name='Organization',
+            name="Organization",
             fields=[
-                ('id', models.UUIDField(default=api.utils.common.make_uuid, help_text='ID of organization', primary_key=True, serialize=False)),
-                ('name', models.CharField(default='', help_text='Name of organization', max_length=64)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('msp', models.TextField(help_text='msp of organization', null=True)),
-                ('tls', models.TextField(help_text='tls of organization', null=True)),
-                ('agents', models.CharField(default='', help_text='agent of organization', max_length=128)),
-                ('network', models.ForeignKey(help_text='Network to which the organization belongs', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='organization', to='api.network')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=api.utils.common.make_uuid,
+                        help_text="ID of organization",
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        default="",
+                        help_text="Name of organization",
+                        max_length=64,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "msp",
+                    models.TextField(
+                        help_text="msp of organization", null=True
+                    ),
+                ),
+                (
+                    "tls",
+                    models.TextField(
+                        help_text="tls of organization", null=True
+                    ),
+                ),
+                (
+                    "agents",
+                    models.CharField(
+                        default="",
+                        help_text="agent of organization",
+                        max_length=128,
+                    ),
+                ),
+                (
+                    "network",
+                    models.ForeignKey(
+                        help_text="Network to which the organization belongs",
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="organization",
+                        to="api.network",
+                    ),
+                ),
             ],
             options={
-                'ordering': ('-created_at',),
+                "ordering": ("-created_at",),
             },
         ),
         migrations.CreateModel(
-            name='PeerCa',
+            name="PeerCa",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('address', models.CharField(default='', help_text='Node Address of ca', max_length=128)),
-                ('certificate', models.FileField(blank=True, help_text='Certificate file for ca node.', max_length=256, null=True, upload_to=api.models.get_ca_certificate_path)),
-                ('type', models.CharField(choices=[('tls', 'TLS'), ('signature', 'Signature')], default='signature', help_text='Type of ca node for peer', max_length=64)),
-                ('node', models.ForeignKey(help_text='CA node of peer', null=True, on_delete=django.db.models.deletion.CASCADE, to='api.node')),
-                ('peer', models.ForeignKey(help_text='Peer node', null=True, on_delete=django.db.models.deletion.CASCADE, to='api.fabricpeer')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "address",
+                    models.CharField(
+                        default="",
+                        help_text="Node Address of ca",
+                        max_length=128,
+                    ),
+                ),
+                (
+                    "certificate",
+                    models.FileField(
+                        blank=True,
+                        help_text="Certificate file for ca node.",
+                        max_length=256,
+                        null=True,
+                        upload_to=api.models.get_ca_certificate_path,
+                    ),
+                ),
+                (
+                    "type",
+                    models.CharField(
+                        choices=[("tls", "TLS"), ("signature", "Signature")],
+                        default="signature",
+                        help_text="Type of ca node for peer",
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "node",
+                    models.ForeignKey(
+                        help_text="CA node of peer",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="api.node",
+                    ),
+                ),
+                (
+                    "peer",
+                    models.ForeignKey(
+                        help_text="Peer node",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="api.fabricpeer",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='User',
+            name="User",
             fields=[
-                ('id', models.UUIDField(default=api.utils.common.make_uuid, help_text='ID of user', primary_key=True, serialize=False)),
-                ('name', models.CharField(help_text='user name', max_length=128)),
-                ('roles', models.CharField(help_text='roles of user', max_length=128)),
-                ('attributes', models.CharField(help_text='attributes of user', max_length=128)),
-                ('revoked', models.CharField(help_text='revoked of user', max_length=128)),
-                ('create_ts', models.DateTimeField(auto_now_add=True, help_text='Create time of user')),
-                ('msp', models.TextField(help_text='msp of user', null=True)),
-                ('tls', models.TextField(help_text='tls of user', null=True)),
-                ('organization', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='api.organization')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=api.utils.common.make_uuid,
+                        help_text="ID of user",
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(help_text="user name", max_length=128),
+                ),
+                (
+                    "roles",
+                    models.CharField(
+                        help_text="roles of user", max_length=128
+                    ),
+                ),
+                (
+                    "attributes",
+                    models.CharField(
+                        help_text="attributes of user", max_length=128
+                    ),
+                ),
+                (
+                    "revoked",
+                    models.CharField(
+                        help_text="revoked of user", max_length=128
+                    ),
+                ),
+                (
+                    "create_ts",
+                    models.DateTimeField(
+                        auto_now_add=True, help_text="Create time of user"
+                    ),
+                ),
+                ("msp", models.TextField(help_text="msp of user", null=True)),
+                ("tls", models.TextField(help_text="tls of user", null=True)),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="api.organization",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Port',
+            name="Port",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('external', models.IntegerField(default=0, help_text='External port', validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(65535)])),
-                ('internal', models.IntegerField(default=0, help_text='Internal port', validators=[django.core.validators.MinValueValidator(1), django.core.validators.MaxValueValidator(65535)])),
-                ('node', models.ForeignKey(help_text='Node of port', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='port', to='api.node')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "external",
+                    models.IntegerField(
+                        default=0,
+                        help_text="External port",
+                        validators=[
+                            django.core.validators.MinValueValidator(1),
+                            django.core.validators.MaxValueValidator(65535),
+                        ],
+                    ),
+                ),
+                (
+                    "internal",
+                    models.IntegerField(
+                        default=0,
+                        help_text="Internal port",
+                        validators=[
+                            django.core.validators.MinValueValidator(1),
+                            django.core.validators.MaxValueValidator(65535),
+                        ],
+                    ),
+                ),
+                (
+                    "node",
+                    models.ForeignKey(
+                        help_text="Node of port",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="port",
+                        to="api.node",
+                    ),
+                ),
             ],
             options={
-                'ordering': ('external',),
+                "ordering": ("external",),
             },
         ),
         migrations.CreateModel(
-            name='PeerCaUser',
+            name="PeerCaUser",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('username', models.CharField(default='', help_text='If user not set, set username/password', max_length=64)),
-                ('password', models.CharField(default='', help_text='If user not set, set username/password', max_length=64)),
-                ('type', models.CharField(choices=[('peer', 'Peer'), ('orderer', 'Orderer'), ('user', 'User')], default='user', help_text='User type of ca', max_length=64)),
-                ('peer_ca', models.ForeignKey(help_text='Peer Ca configuration', null=True, on_delete=django.db.models.deletion.CASCADE, to='api.peerca')),
-                ('user', models.ForeignKey(help_text='User of ca node', null=True, on_delete=django.db.models.deletion.CASCADE, to='api.nodeuser')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "username",
+                    models.CharField(
+                        default="",
+                        help_text="If user not set, set username/password",
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "password",
+                    models.CharField(
+                        default="",
+                        help_text="If user not set, set username/password",
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "type",
+                    models.CharField(
+                        choices=[
+                            ("peer", "Peer"),
+                            ("orderer", "Orderer"),
+                            ("user", "User"),
+                        ],
+                        default="user",
+                        help_text="User type of ca",
+                        max_length=64,
+                    ),
+                ),
+                (
+                    "peer_ca",
+                    models.ForeignKey(
+                        help_text="Peer Ca configuration",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="api.peerca",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        help_text="User of ca node",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="api.nodeuser",
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
-            model_name='node',
-            name='organization',
-            field=models.ForeignKey(help_text='Organization of node', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='node', to='api.organization'),
+            model_name="node",
+            name="organization",
+            field=models.ForeignKey(
+                help_text="Organization of node",
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="node",
+                to="api.organization",
+            ),
         ),
         migrations.AddField(
-            model_name='node',
-            name='user',
-            field=models.ForeignKey(help_text='User of node', null=True, on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+            model_name="node",
+            name="user",
+            field=models.ForeignKey(
+                help_text="User of node",
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.CreateModel(
-            name='KubernetesConfig',
+            name="KubernetesConfig",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('credential_type', models.CharField(choices=[('cert_key', 'CertKey'), ('config', 'Config'), ('username_password', 'UsernamePassword')], default='cert_key', help_text='Credential type of k8s', max_length=32)),
-                ('enable_ssl', models.BooleanField(default=False, help_text='Whether enable ssl for api')),
-                ('ssl_ca', models.TextField(blank=True, default='', help_text='Ca file content for ssl')),
-                ('nfs_server', models.CharField(blank=True, default='', help_text='NFS server address for k8s', max_length=256)),
-                ('parameters', models.JSONField(blank=True, default=dict, help_text='Extra parameters for kubernetes', null=True)),
-                ('cert', models.TextField(blank=True, default='', help_text='Cert content for k8s')),
-                ('key', models.TextField(blank=True, default='', help_text='Key content for k8s')),
-                ('username', models.CharField(blank=True, default='', help_text='Username for k8s credential', max_length=128)),
-                ('password', models.CharField(blank=True, default='', help_text='Password for k8s credential', max_length=128)),
-                ('agent', models.ForeignKey(help_text='Agent of kubernetes config', null=True, on_delete=django.db.models.deletion.CASCADE, to='api.agent')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "credential_type",
+                    models.CharField(
+                        choices=[
+                            ("cert_key", "CertKey"),
+                            ("config", "Config"),
+                            ("username_password", "UsernamePassword"),
+                        ],
+                        default="cert_key",
+                        help_text="Credential type of k8s",
+                        max_length=32,
+                    ),
+                ),
+                (
+                    "enable_ssl",
+                    models.BooleanField(
+                        default=False, help_text="Whether enable ssl for api"
+                    ),
+                ),
+                (
+                    "ssl_ca",
+                    models.TextField(
+                        blank=True,
+                        default="",
+                        help_text="Ca file content for ssl",
+                    ),
+                ),
+                (
+                    "nfs_server",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        help_text="NFS server address for k8s",
+                        max_length=256,
+                    ),
+                ),
+                (
+                    "parameters",
+                    models.JSONField(
+                        blank=True,
+                        default=dict,
+                        help_text="Extra parameters for kubernetes",
+                        null=True,
+                    ),
+                ),
+                (
+                    "cert",
+                    models.TextField(
+                        blank=True,
+                        default="",
+                        help_text="Cert content for k8s",
+                    ),
+                ),
+                (
+                    "key",
+                    models.TextField(
+                        blank=True, default="", help_text="Key content for k8s"
+                    ),
+                ),
+                (
+                    "username",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        help_text="Username for k8s credential",
+                        max_length=128,
+                    ),
+                ),
+                (
+                    "password",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        help_text="Password for k8s credential",
+                        max_length=128,
+                    ),
+                ),
+                (
+                    "agent",
+                    models.ForeignKey(
+                        help_text="Agent of kubernetes config",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="api.agent",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='File',
+            name="File",
             fields=[
-                ('id', models.UUIDField(default=api.utils.common.make_uuid, help_text='ID of file', primary_key=True, serialize=False)),
-                ('name', models.CharField(default='', help_text='File name', max_length=64)),
-                ('file', models.FileField(blank=True, help_text='File', max_length=256, upload_to=api.models.get_file_path)),
-                ('created_at', models.DateTimeField(auto_now_add=True, help_text='Create time of agent')),
-                ('type', models.CharField(choices=[('certificate', 'Certificate')], default='certificate', help_text='File type', max_length=32)),
-                ('organization', models.ForeignKey(help_text='Organization of file', null=True, on_delete=django.db.models.deletion.CASCADE, to='api.organization')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=api.utils.common.make_uuid,
+                        help_text="ID of file",
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        default="", help_text="File name", max_length=64
+                    ),
+                ),
+                (
+                    "file",
+                    models.FileField(
+                        blank=True,
+                        help_text="File",
+                        max_length=256,
+                        upload_to=api.models.get_file_path,
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True, help_text="Create time of agent"
+                    ),
+                ),
+                (
+                    "type",
+                    models.CharField(
+                        choices=[("certificate", "Certificate")],
+                        default="certificate",
+                        help_text="File type",
+                        max_length=32,
+                    ),
+                ),
+                (
+                    "organization",
+                    models.ForeignKey(
+                        help_text="Organization of file",
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="api.organization",
+                    ),
+                ),
             ],
             options={
-                'ordering': ('-created_at',),
+                "ordering": ("-created_at",),
             },
         ),
         migrations.CreateModel(
-            name='Channel',
+            name="Channel",
             fields=[
-                ('id', models.UUIDField(default=api.utils.common.make_uuid, editable=False, help_text='ID of Channel', primary_key=True, serialize=False, unique=True)),
-                ('name', models.CharField(help_text='name of channel', max_length=128)),
-                ('create_ts', models.DateTimeField(auto_now_add=True, help_text='Create time of Channel')),
-                ('config', models.JSONField(blank=True, default=dict, help_text='Channel config', null=True)),
-                ('network', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='api.network')),
-                ('orderers', models.ManyToManyField(help_text='Orderer list in the channel', to='api.node')),
-                ('organizations', models.ManyToManyField(help_text='the organization of the channel', related_name='channels', to='api.organization')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=api.utils.common.make_uuid,
+                        editable=False,
+                        help_text="ID of Channel",
+                        primary_key=True,
+                        serialize=False,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        help_text="name of channel", max_length=128
+                    ),
+                ),
+                (
+                    "create_ts",
+                    models.DateTimeField(
+                        auto_now_add=True, help_text="Create time of Channel"
+                    ),
+                ),
+                (
+                    "config",
+                    models.JSONField(
+                        blank=True,
+                        default=dict,
+                        help_text="Channel config",
+                        null=True,
+                    ),
+                ),
+                (
+                    "network",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="api.network",
+                    ),
+                ),
+                (
+                    "orderers",
+                    models.ManyToManyField(
+                        help_text="Orderer list in the channel", to="api.node"
+                    ),
+                ),
+                (
+                    "organizations",
+                    models.ManyToManyField(
+                        help_text="the organization of the channel",
+                        related_name="channels",
+                        to="api.organization",
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
-            model_name='agent',
-            name='organization',
-            field=models.ForeignKey(help_text='Organization of agent', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='agent', to='api.organization'),
+            model_name="agent",
+            name="organization",
+            field=models.ForeignKey(
+                help_text="Organization of agent",
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="agent",
+                to="api.organization",
+            ),
         ),
         migrations.AddField(
-            model_name='userprofile',
-            name='organization',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='users', to='api.organization'),
+            model_name="userprofile",
+            name="organization",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="users",
+                to="api.organization",
+            ),
         ),
         migrations.AddField(
-            model_name='userprofile',
-            name='user_permissions',
-            field=models.ManyToManyField(blank=True, help_text='Specific permissions for this user.', related_name='user_set', related_query_name='user', to='auth.permission', verbose_name='user permissions'),
+            model_name="userprofile",
+            name="user_permissions",
+            field=models.ManyToManyField(
+                blank=True,
+                help_text="Specific permissions for this user.",
+                related_name="user_set",
+                related_query_name="user",
+                to="auth.permission",
+                verbose_name="user permissions",
+            ),
         ),
     ]

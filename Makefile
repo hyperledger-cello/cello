@@ -145,6 +145,9 @@ deep-clean: ##@Clean Stop services, clean docker images and remove mounted local
 	make clean-images
 	rm -rf $(LOCAL_STORAGE_PATH)
 
+docs:
+	make doc
+
 doc: ##@Documentation Build local online documentation and start serve
 	command -v mkdocs >/dev/null 2>&1 || pip install -r docs/requirements.txt || pip3 -r docs/requirements.txt
 	mkdocs serve -f mkdocs.yml
@@ -201,6 +204,9 @@ clean-images:
 check-dashboard:
 	docker compose -f tests/dashboard/docker-compose.yml up --abort-on-container-exit || (echo "check dashboard failed $$?"; exit 1)
 
+check-api: ##@Test Run API tests with newman
+	cd tests/postman && docker compose up --abort-on-container-exit || (echo "API tests failed $$?"; exit 1)
+
 start-docker-compose:
 	docker compose -f bootup/docker-compose-files/${COMPOSE_FILE} up -d --force-recreate --remove-orphans
 
@@ -213,23 +219,29 @@ images: api-engine docker-rest-agent fabric dashboard
 
 api-engine: 
 	docker build -t hyperledger/cello-api-engine:latest -f build_image/docker/common/api-engine/Dockerfile.in ./ --platform linux/$(ARCH)
-	
+
 docker-rest-agent:
 	docker build -t hyperledger/cello-agent-docker:latest -f build_image/docker/agent/docker-rest-agent/Dockerfile.in ./ --build-arg pip=$(PIP) --platform linux/$(ARCH)
 
 fabric:
-	docker build -t hyperledger/fabric:2.5.10 -f build_image/docker/cello-hlf/Dockerfile build_image/docker/cello-hlf/
+	docker build -t hyperledger/fabric:2.5.13 -f build_image/docker/cello-hlf/Dockerfile build_image/docker/cello-hlf/
 
 dashboard:
 	docker build -t hyperledger/cello-dashboard:latest -f build_image/docker/common/dashboard/Dockerfile.in ./
 
+server:
+	docker compose -f bootup/docker-compose-files/docker-compose.server.dev.yml up -d --force-recreate --remove-orphans
 
-
+agent:
+	docker compose -f bootup/docker-compose-files/docker-compose.agent.dev.yml up -d --force-recreate --remove-orphans
 
 .PHONY: \
 	all \
 	license \
 	check \
+	check-api \
+	check-dashboard \
+    docs \
 	doc \ 
 	help \
 	docker \
@@ -249,3 +261,5 @@ dashboard:
 	start-docker-compose \
 	stop-docker-compose \
 	images \
+	server \
+	agent

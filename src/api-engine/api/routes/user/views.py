@@ -19,7 +19,7 @@ from api.routes.user.serializers import (
     UserIDSerializer,
     UserQuerySerializer,
     UserListSerializer,
-    UserUpdateSerializer
+    UserUpdateSerializer,
 )
 from api.utils.common import with_common_response
 
@@ -151,11 +151,16 @@ class UserViewSet(viewsets.ViewSet):
     @swagger_auto_schema(
         method="post",
         request_body=UserUpdateSerializer,
-        responses=with_common_response(
-            {status.HTTP_200_OK: "OK"}
-        )
+        responses=with_common_response({status.HTTP_200_OK: "OK"}),
     )
-    @action(methods=["post"], detail=True, url_path="password", permission_classes=[IsAuthenticated, ])
+    @action(
+        methods=["post"],
+        detail=True,
+        url_path="password",
+        permission_classes=[
+            IsAuthenticated,
+        ],
+    )
     def password(self, request, pk=None):
         """
         post:

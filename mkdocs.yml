@@ -1,18 +1,32 @@
 site_name: Hyperledger Cello
 repo_name: "hyperledger/cello"
 repo_url: "https://github.com/hyperledger/cello"
+dev_addr: 0.0.0.0:8000
 theme:
   name: "material"
   logo: "images/favicon.png"
   favicon: "images/favicon.png"
-  feature:
-    tabs: true
+  features:
+    - navigation.tabs
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
   palette:
-    primary: "light-blue"
-    accent: "light-blue"
+    - scheme: default
+      toggle:
+        icon: material/brightness-7 
+        name: Switch to dark mode
+      primary: "light-blue"
+      accent: "light-blue"
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+      primary: "light-blue"
+      accent: "light-blue"
   font:
-    text: "Ubuntu"
-    code: "Ubuntu Mono"
+    text: "Ubuntu Sans"
+    code: "Ubuntu Sans Mono"
 markdown_extensions:
   - admonition
   - codehilite
@@ -24,38 +38,35 @@ markdown_extensions:
   - markdown.extensions.meta
   - markdown.extensions.toc:
       permalink: true
+  - pymdownx.details
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: !!python/name:mermaid2.fence_mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.mark
   - pymdownx.critic:
       mode: view
 docs_dir: docs
 nav:
-  - Docs:
-      - Overview: index.md
-      - Concepts: concepts.md
-      - Design:
-          - Architecture: design/arch.md
-      - Setup:
-          - Server: setup/server.md
-      - Agent:
-          - Kubernetes: agents/kubernetes.md
-          - Fabric operator: agents/fabric-operator.md
-      - Operations:
-          - Dashboard:
-              - Operator operations: operations/dashboard/operator.md
-              - Admin operations: operations/dashboard/admin.md
-              - User operations: operations/dashboard/user.md
-      - Reference:
-          - Configuration:
-              - Server Configuration: reference/configuration/server.md
-          - Commands:
-              - make: reference/commands/make.md
-              - cli: reference/commands/cli.md
-      - Contribute: contributing.md
+  - Home: index.md
+  - Concepts: concepts.md
+  - Design:
+      - Architecture: design/arch.md
+  - Tutorials:
+      - "Lesson 0: Introduction": tutorials/introduction.md
+      - "Lesson 1: Prerequisites": tutorials/prerequisites.md
+      - "Lesson 2: Server": tutorials/server.md
+      - "Lesson 3: Agent": tutorials/agent.md
+      - "Lesson 4: User & Organization": tutorials/organization.md
+      - "Lesson 5: Agent, Network, & Node": tutorials/node.md
+      - "Lesson 6: Channel": tutorials/channel.md
+  - Reference:
+      - Configuration:
+          - Server Configuration: reference/configuration/server.md
+      - Commands:
+          - make: reference/commands/make.md
+  - Contribute: contributing.md
   - FAQ:
       - faq.md
   - Release Notes:

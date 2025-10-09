@@ -70,9 +70,11 @@ class NetworkCreateBody(serializers.ModelSerializer):
     class Meta:
         model = Network
         fields = ("name", "consensus", "database")
-        extra_kwargs = {"name": {"required": True},
-                        "consensus": {"required": True},
-                        "database": {"required": True}}
+        extra_kwargs = {
+            "name": {"required": True},
+            "consensus": {"required": True},
+            "database": {"required": True},
+        }
 
 
 class NetworkMemberResponse(serializers.Serializer):

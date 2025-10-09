@@ -13,4 +13,4 @@ FABRIC_CA_CFG = "/opt/node/ca.yaml.bak"
 
 FABRIC_CHAINCODE_STORE = "/opt/cello/chaincode"
 
-FABRIC_VERSION = "2.5.10"
+FABRIC_VERSION = "2.5.13"

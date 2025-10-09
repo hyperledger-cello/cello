@@ -248,9 +248,7 @@ class NodeInfoSerializer(NodeIDSerializer, serializers.ModelSerializer):
 class NodeStatusSerializer(NodeIDSerializer, serializers.ModelSerializer):
     class Meta:
         model = Node
-        fields = (
-            "status",
-        )
+        fields = ("status",)
         extra_kwargs = {
             "id": {"required": True, "read_only": False},
             "created_at": {"required": True, "read_only": False},
@@ -330,6 +328,7 @@ class NodeConfigFileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Node
         fields = ("files",)
+
 
 # class NodeFileCreateSerializer(serializers.ModelSerializer):
 #     def to_form_paras(self):

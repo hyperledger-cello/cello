@@ -254,7 +254,7 @@ class AgentApplySerializer(serializers.ModelSerializer):
         fields = (
             "type",
             # "capacity"
-             )
+        )
         extra_kwargs = {
             "type": {"required": True},
             # "capacity": {"required": True},

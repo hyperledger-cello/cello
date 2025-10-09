@@ -1,0 +1,9 @@
+version: '3.2'
+services:
+  newman:
+    image: postman/newman:latest
+    volumes:
+      - ./:/etc/newman
+    working_dir: /etc/newman
+    command: run collections/Cello\ Engine\ CI\ Test.postman_collection.json -r junit,cli --reporter-junit-export junitResult.xml
+    network_mode: "host"

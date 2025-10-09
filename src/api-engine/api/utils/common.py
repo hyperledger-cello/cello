@@ -91,7 +91,7 @@ def to_form_paras(self):
 
 def any_of(*perm_classes):
     """Returns permission class that allows access for
-       one of permission classes provided in perm_classes"""
+    one of permission classes provided in perm_classes"""
 
     class Or(BasePermission):
         def has_permission(*args):
@@ -119,14 +119,16 @@ def zip_dir(dirpath, outFullName):
     dir_dst = "/" + dirpath.rsplit("/", 1)[1]
     zdir = ZipFile(outFullName, "w")
     for path, dirnames, filenames in os.walk(dirpath):
-        fpath = dir_dst + path.replace(dirpath, '')
+        fpath = dir_dst + path.replace(dirpath, "")
         for filename in filenames:
-            zdir.write(os.path.join(path, filename),
-                       os.path.join(fpath, filename))
+            zdir.write(
+                os.path.join(path, filename), os.path.join(fpath, filename)
+            )
         # zip empty folder
         for dirname in dirnames:
-            zdir.write(os.path.join(path, dirname),
-                       os.path.join(fpath, dirname))
+            zdir.write(
+                os.path.join(path, dirname), os.path.join(fpath, dirname)
+            )
     zdir.close()
 
 
@@ -152,7 +154,13 @@ def parse_block_file(data):
     """
     config = loads(data)
     if config.get("data"):
-        return config.get("data").get("data")[0].get("payload").get("data").get("config")
+        return (
+            config.get("data")
+            .get("data")[0]
+            .get("payload")
+            .get("data")
+            .get("config")
+        )
     return {"error": "can't find channel config"}
 
 
@@ -173,25 +181,25 @@ def json_filter(input, output, expression):
     """
     # if json_data is a file path, read the file
     if isinstance(input, str):
-        with open(input, 'r', encoding='utf-8') as f:
+        with open(input, "r", encoding="utf-8") as f:
             data = json.load(f)
     else:
         data = input
 
     # parse the path expression
-    path_parts = expression.strip('.').split('.')
+    path_parts = expression.strip(".").split(".")
     result = data
 
     for part in path_parts:
         # handle array index, like data[0]
-        if '[' in part and ']' in part:
-            array_name = part.split('[')[0]
-            index = int(part.split('[')[1].split(']')[0])
+        if "[" in part and "]" in part:
+            array_name = part.split("[")[0]
+            index = int(part.split("[")[1].split("]")[0])
             result = result[array_name][index]
         else:
             result = result[part]
 
-    with open(output, 'w', encoding='utf-8') as f:
+    with open(output, "w", encoding="utf-8") as f:
         json.dump(result, f, sort_keys=False, indent=4)
 
     LOG.info("jq {} {} -> {}".format(expression, input, output))
@@ -208,7 +216,7 @@ def json_add_anchor_peer(input, output, anchor_peer_config, org_msp):
     """
     # if json_data is a file path, read the file
     if isinstance(input, str):
-        with open(input, 'r', encoding='utf-8') as f:
+        with open(input, "r", encoding="utf-8") as f:
             data = json.load(f)
     else:
         data = input
@@ -218,14 +226,22 @@ def json_add_anchor_peer(input, output, anchor_peer_config, org_msp):
     if "Application" not in data["channel_group"]["groups"]:
         data["channel_group"]["groups"]["Application"] = {"groups": {}}
     if org_msp not in data["channel_group"]["groups"]["Application"]["groups"]:
-        data["channel_group"]["groups"]["Application"]["groups"][org_msp] = {"values": {}}
+        data["channel_group"]["groups"]["Application"]["groups"][org_msp] = {
+            "values": {}
+        }
 
-    data["channel_group"]["groups"]["Application"]["groups"][org_msp]["values"].update(anchor_peer_config)
+    data["channel_group"]["groups"]["Application"]["groups"][org_msp][
+        "values"
+    ].update(anchor_peer_config)
 
-    with open(output, 'w', encoding='utf-8') as f:
+    with open(output, "w", encoding="utf-8") as f:
         json.dump(data, f, sort_keys=False, indent=4)
 
-    LOG.info("jq '.channel_group.groups.Application.groups.Org1MSP.values += ... ' {} -> {}".format(input, output))
+    LOG.info(
+        "jq '.channel_group.groups.Application.groups.Org1MSP.values += ... ' {} -> {}".format(
+            input, output
+        )
+    )
 
 
 def json_create_envelope(input, output, channel):
@@ -239,26 +255,21 @@ def json_create_envelope(input, output, channel):
     """
     try:
         # Read the config update file
-        with open(input, 'r', encoding='utf-8') as f:
+        with open(input, "r", encoding="utf-8") as f:
             config_update = json.load(f)
 
         # Create the envelope structure
         envelope = {
             "payload": {
                 "header": {
-                    "channel_header": {
-                        "channel_id": channel,
-                        "type": 2
-                    }
+                    "channel_header": {"channel_id": channel, "type": 2}
                 },
-                "data": {
-                    "config_update": config_update
-                }
+                "data": {"config_update": config_update},
             }
         }
 
         # Write the envelope to output file
-        with open(output, 'w', encoding='utf-8') as f:
+        with open(output, "w", encoding="utf-8") as f:
             json.dump(envelope, f, sort_keys=False, indent=4)
 
         LOG.info("echo 'payload ... ' | jq . > {}".format(output))
@@ -278,28 +289,46 @@ def init_env_vars(node, org):
     org_name = org.name
     org_domain = org_name.split(".", 1)[1]
     dir_certificate = "{}/{}/crypto-config/ordererOrganizations/{}".format(
-        CELLO_HOME, org_name, org_domain)
+        CELLO_HOME, org_name, org_domain
+    )
     dir_node = "{}/{}/crypto-config/peerOrganizations".format(
-        CELLO_HOME, org_name)
+        CELLO_HOME, org_name
+    )
 
     envs = {}
 
-    if (node.type == "orderer"):
+    if node.type == "orderer":
         envs = {
             "CORE_PEER_TLS_ENABLED": "true",
-            "ORDERER_CA": "{}/orderers/{}/msp/tlscacerts/tlsca.{}-cert.pem".format(dir_certificate, node.name + "." + org_domain, org_domain),
-            "ORDERER_ADMIN_TLS_SIGN_CERT": "{}/orderers/{}/tls/server.crt".format(dir_certificate, node.name + "." + org_domain),
-            "ORDERER_ADMIN_TLS_PRIVATE_KEY": "{}/orderers/{}/tls/server.key".format(dir_certificate, node.name + "." + org_domain)
+            "ORDERER_CA": "{}/orderers/{}/msp/tlscacerts/tlsca.{}-cert.pem".format(
+                dir_certificate, node.name + "." + org_domain, org_domain
+            ),
+            "ORDERER_ADMIN_TLS_SIGN_CERT": "{}/orderers/{}/tls/server.crt".format(
+                dir_certificate, node.name + "." + org_domain
+            ),
+            "ORDERER_ADMIN_TLS_PRIVATE_KEY": "{}/orderers/{}/tls/server.key".format(
+                dir_certificate, node.name + "." + org_domain
+            ),
         }
-    elif (node.type == "peer"):
+
+    elif node.type == "peer":
         envs = {
             "CORE_PEER_TLS_ENABLED": "true",
-            "CORE_PEER_LOCALMSPID": "{}MSP".format(org_name.split(".")[0].capitalize()),
-            "CORE_PEER_TLS_ROOTCERT_FILE": "{}/{}/peers/{}/tls/ca.crt".format(dir_node, org_name, node.name + "." + org_name),
-            "CORE_PEER_MSPCONFIGPATH": "{}/{}/users/Admin@{}/msp".format(dir_node, org_name, org_name),
+            "CORE_PEER_LOCALMSPID": "{}MSP".format(
+                org_name.split(".")[0].capitalize()
+            ),
+            "CORE_PEER_TLS_ROOTCERT_FILE": "{}/{}/peers/{}/tls/ca.crt".format(
+                dir_node, org_name, node.name + "." + org_name
+            ),
+            "CORE_PEER_MSPCONFIGPATH": "{}/{}/users/Admin@{}/msp".format(
+                dir_node, org_name, org_name
+            ),
             "CORE_PEER_ADDRESS": "{}:{}".format(
-                node.name + "." + org_name, str(7051)),
-            "FABRIC_CFG_PATH": "{}/{}/peers/{}/".format(dir_node, org_name, node.name + "." + org_name)
+                node.name + "." + org_name, str(7051)
+            ),
+            "FABRIC_CFG_PATH": "{}/{}/peers/{}/".format(
+                dir_node, org_name, node.name + "." + org_name
+            ),
         }
 
     return envs
