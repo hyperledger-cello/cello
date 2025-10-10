@@ -24,7 +24,7 @@ class RegisterBody(serializers.Serializer):
 
     @staticmethod
     def validate_org_name(org_name: str) -> str:
-        if Organization.objects.filter(name = org_name).exists():
+        if Organization.objects.filter(name=org_name).exists():
             raise serializers.ValidationError("Organization already exists!")
         validate_host(org_name)
         return org_name
@@ -39,7 +39,7 @@ class RegisterBody(serializers.Serializer):
 
         user = UserProfile(
             email=validated_data["email"],
-            username= validated_data["email"],
+            username=validated_data["email"],
             role=UserProfile.Role.ADMIN,
             organization=organization,
         )
@@ -49,17 +49,21 @@ class RegisterBody(serializers.Serializer):
         user.save()
         return organization
 
+
 class RegisterResponse(serializers.Serializer):
     id = serializers.UUIDField(help_text="Organization ID")
     msg = serializers.CharField(help_text="Organization Name")
+
 
 class LoginBody(serializers.Serializer):
     email = serializers.CharField(help_text="User Email")
     password = serializers.CharField(help_text="User Password")
 
+
 class LoginSuccessBody(serializers.Serializer):
     token = serializers.CharField(help_text="access token")
     user = UserInfo()
+
 
 class TokenVerifyRequest(serializers.Serializer):
     token = serializers.CharField(help_text="access token")
