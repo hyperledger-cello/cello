@@ -40,6 +40,7 @@ class UserID(serializers.ModelSerializer):
 
 class UserInfo(serializers.ModelSerializer):
     organization = OrganizationResponse()
+
     class Meta:
         model = UserProfile
         fields = (
@@ -66,4 +67,3 @@ class UserPasswordUpdate(serializers.Serializer):
         user.set_password(validated_data["password"])
         user.save()
         return user
-

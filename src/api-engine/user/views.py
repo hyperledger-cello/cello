@@ -43,8 +43,8 @@ class UserViewSet(viewsets.ViewSet):
         serializer = PageQuerySerializer(data=request.GET)
         p = serializer.get_paginator(UserProfile.objects.filter(organization=request.user.organization))
         return Response(
-            status = status.HTTP_200_OK,
-            data = ok(UserList({
+            status=status.HTTP_200_OK,
+            data=ok(UserList({
                 "total": p.count,
                 "data": UserInfo(
                     p.page(serializer.data['page']).object_list,
@@ -66,8 +66,8 @@ class UserViewSet(viewsets.ViewSet):
         response = UserID(data={"id": serializer.save().id})
         response.is_valid(raise_exception=True)
         return Response(
-            status = status.HTTP_201_CREATED,
-            data = ok(response.data),
+            status=status.HTTP_201_CREATED,
+            data=ok(response.data),
         )
 
     @swagger_auto_schema(
@@ -98,7 +98,7 @@ class UserViewSet(viewsets.ViewSet):
         serializer = UserPasswordUpdate(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(status = status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @swagger_auto_schema(
         method="GET",
@@ -112,6 +112,6 @@ class UserViewSet(viewsets.ViewSet):
     )
     def profile(self, request: Request) -> Response:
         return Response(
-            status = status.HTTP_200_OK,
+            status=status.HTTP_200_OK,
             data=ok(UserInfo(request.user).data),
         )

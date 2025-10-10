@@ -48,4 +48,3 @@ class NodeViewSet(viewsets.ViewSet):
             status=status.HTTP_201_CREATED,
             data=ok(NodeID(serializer.save().__dict__).data),
         )
-
