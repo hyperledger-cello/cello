@@ -12,9 +12,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Build images
-        run: |
-          make docker-compose
+      # - name: Build images
+      #   run: |
+      #     make docker-compose
       - name: Start services
         run: |
           MODE=dev make start
