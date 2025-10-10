@@ -208,7 +208,7 @@ check-api: ##@Test Run API tests with newman
 	cd tests/postman && docker compose up --abort-on-container-exit || (echo "API tests failed $$?"; exit 1)
 
 start-docker-compose:
-	docker compose -f bootup/docker-compose-files/${COMPOSE_FILE} up -d --force-recreate --remove-orphans
+	docker compose -f docker-compose.dev.yaml up -d --build --force-recreate --remove-orphans
 
 stop-docker-compose:
 	echo "Stop all services with bootup/docker-compose-files/${COMPOSE_FILE}..."
