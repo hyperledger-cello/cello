@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react';
 import { injectIntl } from 'umi';
-import { Spin, Menu, Avatar } from 'antd';
+import { Spin, Avatar } from 'antd';
 import { LogoutOutlined } from '@ant-design/icons';
 import HeaderDropdown from '../HeaderDropdown';
 import SelectLang from '../SelectLang';
@@ -9,19 +9,21 @@ import styles from './index.less';
 class GlobalHeaderRight extends PureComponent {
   render() {
     const { currentUser, onMenuClick, intl } = this.props;
-    const menuItems = [{
-      key: "logout",
-      icon: <LogoutOutlined />,
-      label: (
-        <span>
-          {intl.formatMessage({
-            id: 'menu.account.logout',
-            defaultMessage: 'logout',
-          })}
-        </span>
-      ),
-      onClick: onMenuClick
-    }];
+    const menuItems = [
+      {
+        key: 'logout',
+        icon: <LogoutOutlined />,
+        label: (
+          <span>
+            {intl.formatMessage({
+              id: 'menu.account.logout',
+              defaultMessage: 'logout',
+            })}
+          </span>
+        ),
+        onClick: onMenuClick,
+      },
+    ];
     const className = styles.right;
 
     return (
