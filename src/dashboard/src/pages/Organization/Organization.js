@@ -1,10 +1,10 @@
 /*
  SPDX-License-Identifier: Apache-2.0
 */
-import React, { PureComponent, Fragment } from 'react';
+import React, { PureComponent } from 'react';
 import { connect, injectIntl } from 'umi';
-import { Card, Button, Form, Modal, Input, message, Divider } from 'antd';
-import { PlusOutlined, TeamOutlined } from '@ant-design/icons';
+import { Card, Form, Modal, Input, message } from 'antd';
+import { TeamOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import StandardTable from '@/components/StandardTable';
@@ -348,23 +348,23 @@ class Organization extends PureComponent {
         dataIndex: 'created_at',
         render: text => <span>{moment(text).format('YYYY-MM-DD HH:mm:ss')}</span>,
       },
-      {
-        title: intl.formatMessage({
-          id: 'form.table.header.operation',
-          defaultMessage: 'Operation',
-        }),
-        render: (text, record) => (
-          <Fragment>
-            {/* <a onClick={() => this.showUpdate(record)}>
-              {intl.formatMessage({ id: 'form.menu.item.update', defaultMessage: 'Update' })}
-            </a> */}
-            <Divider type="vertical" />
-            {/* <a className={styles.danger} onClick={() => this.handleDelete(record)}>
-              {intl.formatMessage({ id: 'form.menu.item.delete', defaultMessage: 'Delete' })}
-            </a> */}
-          </Fragment>
-        ),
-      },
+      // {
+      //   title: intl.formatMessage({
+      //     id: 'form.table.header.operation',
+      //     defaultMessage: 'Operation',
+      //   }),
+      //   render: (text, record) => (
+      //     <Fragment>
+      //       {/* <a onClick={() => this.showUpdate(record)}>
+      //         {intl.formatMessage({ id: 'form.menu.item.update', defaultMessage: 'Update' })}
+      //       </a> */}
+      //       <Divider type="vertical" />
+      //       {/* <a className={styles.danger} onClick={() => this.handleDelete(record)}>
+      //         {intl.formatMessage({ id: 'form.menu.item.delete', defaultMessage: 'Delete' })}
+      //       </a> */}
+      //     </Fragment>
+      //   ),
+      // },
     ];
     const formProps = {
       visible: modalVisible,
