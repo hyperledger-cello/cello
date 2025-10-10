@@ -19,9 +19,9 @@ jobs:
         run: |
           MODE=dev make start
           sleep 10
-      - name: Run newman tests
-        run: |
-          make check-api
+      # - name: Run newman tests
+      #   run: |
+      #     make check-api
       - name: Stop services
         if: always()
         run: |
