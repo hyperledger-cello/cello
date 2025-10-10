@@ -17,6 +17,7 @@ from user.models import UserProfile
 
 LOG = logging.getLogger(__name__)
 
+
 def create_chaincode(
         name: str,
         version: str,
@@ -185,8 +186,8 @@ def get_metadata(file) -> Optional[Dict[str, Any]]:
             if member.name.endswith("metadata.json"):
                 res = json.loads(
                     tar.extractfile(member)
-                        .read()
-                        .decode("utf-8")
+                    .read()
+                    .decode("utf-8")
                 )
                 break
     file.seek(0)

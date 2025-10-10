@@ -8,6 +8,7 @@ from common.utils import make_uuid
 from node.models import Node
 from user.models import UserProfile
 
+
 def get_package_path(instance, filename) -> str:
     return str(os.path.join(instance.channel.name, filename))
 # Create your models here.
