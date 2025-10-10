@@ -21,6 +21,7 @@ def validate_url(value):
         validate_host(host)
         return value
 
+
 def validate_host(value):
     fqdn = FQDN(value, min_labels=1)
     if not fqdn.is_valid:

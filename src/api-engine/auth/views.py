@@ -67,9 +67,9 @@ class CelloTokenObtainPairView(TokenObtainPairView):
 
         return Response(
             data=ok(LoginSuccessBody({
-                    "token": str(AccessToken.for_user(user)),
-                    "user": UserInfo(user).data,
-                }).data),
+                "token": str(AccessToken.for_user(user)),
+                "user": UserInfo(user).data,
+            }).data),
             status=status.HTTP_200_OK,
         )
 
@@ -98,8 +98,8 @@ class CelloTokenVerifyView(TokenVerifyView):
 
         return Response(
             data=ok(LoginSuccessBody({
-                    "token": str(access_token.token),
-                    "user": UserInfo(user).data,
-                }).data),
+                "token": str(access_token.token),
+                "user": UserInfo(user).data,
+            }).data),
             status=status.HTTP_200_OK,
         )

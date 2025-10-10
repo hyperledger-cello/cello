@@ -6,8 +6,10 @@ from api.common.serializers import BadResponseSerializer
 def ok(data):
     return {"data": data, "msg": None, "status": "successful"}
 
+
 def err(msg):
     return {"data": None, "msg": msg, "status": "fail"}
+
 
 def with_common_response(responses=None):
     if responses is None:

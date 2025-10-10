@@ -14,9 +14,11 @@ from typing import Type, Dict
 
 from rest_framework import serializers
 
+
 class Status(enum.Enum):
     SUCCESSFUL = "SUCCESSFUL"
     FAILED = "FAILED"
+
 
 def make_response_serializer(data_serializer: Type[serializers.Serializer]):
     class _ResponseBody(serializers.Serializer):
@@ -36,6 +38,7 @@ def ok(data: Dict[str, any]) -> Dict[str, any]:
         "msg": None,
         "data": data
     }
+
 
 def err(msg: str) -> Dict[str, any]:
     return {

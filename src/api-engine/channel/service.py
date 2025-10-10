@@ -17,6 +17,7 @@ from organization.models import Organization
 
 LOG = logging.getLogger(__name__)
 
+
 def create(
         channel_organization: Organization,
         channel_name: str,
@@ -329,8 +330,8 @@ def create(
                 }
             },
             f,
-            sort_keys = False,
-            indent = 4
+            sort_keys=False,
+            indent=4
         )
 
     command = [
@@ -384,6 +385,7 @@ def create(
     res.organizations.add(channel_organization)
     res.orderers.add(channel_orderers[0])
     return res
+
 
 def validate_nodes(nodes: List[Node]):
     for node in nodes:

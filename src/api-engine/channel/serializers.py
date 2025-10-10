@@ -15,8 +15,10 @@ class ChannelID(serializers.ModelSerializer):
         model = Channel
         fields = ("id",)
 
+
 class ChannelResponse(serializers.ModelSerializer):
     organizations = OrganizationID(many=True)
+
     class Meta:
         model = Channel
         fields = (
@@ -74,7 +76,7 @@ class ChannelCreateBody(serializers.Serializer):
 
         return value
 
-    def create(self, validated_data:Dict[str, Any]) -> ChannelID:
+    def create(self, validated_data: Dict[str, Any]) -> ChannelID:
         return ChannelID(create(
             self.context["organization"],
             validated_data["name"],

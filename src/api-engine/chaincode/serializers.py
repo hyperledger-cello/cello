@@ -18,6 +18,7 @@ class ChaincodeID(serializers.ModelSerializer):
         model = Chaincode
         fields = ("id",)
 
+
 class ChaincodeResponse(ChaincodeID):
     channel = ChannelID()
     creator = UserID()
@@ -36,8 +37,10 @@ class ChaincodeResponse(ChaincodeID):
             "description",
         )
 
+
 class ChaincodeList(ListResponseSerializer):
     data = ChaincodeResponse(many=True, help_text="Chaincode data")
+
 
 class ChaincodeCreateBody(serializers.ModelSerializer):
     peers = serializers.PrimaryKeyRelatedField(
@@ -45,7 +48,6 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
         queryset=Node.objects.filter(type=Node.Type.PEER),
         help_text="Chaincode Peers"
     )
-
 
     class Meta:
         model = Chaincode
@@ -76,7 +78,7 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
         if value.content_type != "application/gzip":
             raise serializers.ValidationError(
                 "Chaincode Package is not a 'application/gzip' file but {} instead."
-                    .format(value.content_type)
+                .format(value.content_type)
             )
 
         try:

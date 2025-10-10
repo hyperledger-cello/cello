@@ -6,6 +6,7 @@ import os
 
 from api_engine.settings import CELLO_HOME
 
+
 class CryptoConfig:
     """Class represents crypto-config yaml."""
 
