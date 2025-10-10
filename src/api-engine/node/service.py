@@ -205,11 +205,11 @@ def _get_orderer_cfg(organization_name: str, orderer_domain_name: str):
         return base64.b64encode(cfg_zip_input_stream.read())
 
 
-def _zip_directory(directory_path:str, output_file_path: str) -> None:
+def _zip_directory(directory_path: str, output_file_path: str) -> None:
     root_path_inside_zip = "/{}".format(directory_path.rsplit("/", 1)[1])
     with ZipFile(output_file_path, "w") as zip_output_stream:
         for path, sub_directories, files in os.walk(directory_path):
-            path_inside_zip = root_path_inside_zip +  path.replace(directory_path, "")
+            path_inside_zip = root_path_inside_zip + path.replace(directory_path, "")
             for filename in files:
                 zip_output_stream.write(
                     str(os.path.join(path, filename)),
@@ -244,8 +244,8 @@ def get_org_directory(organization_name: str, node_type: Node.Type) -> str:
         organization_name,
         node_type.lower(),
         organization_name.split(".", 1)[1]
-            if node_type == Node.Type.ORDERER
-            else organization_name,
+        if node_type == Node.Type.ORDERER
+        else organization_name,
     )
 
 
@@ -256,6 +256,7 @@ def _get_node_env(node_type: Node.Type, node_domain_name: str, msp, tls, cfg) ->
         return _get_orderer_env(node_domain_name, msp, tls, cfg)
     # throw exception here
     return None
+
 
 def _get_peer_env(peer_domain_name: str, msp, tls, cfg) -> Dict[str, Any]:
     return {

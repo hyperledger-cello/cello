@@ -19,5 +19,6 @@ class Organization(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     msp = models.TextField(help_text="msp of organization", null=True)
     tls = models.TextField(help_text="tls of organization", null=True)
+
     class Meta:
         ordering = ("-created_at",)
