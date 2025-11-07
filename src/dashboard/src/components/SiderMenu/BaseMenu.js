@@ -11,6 +11,7 @@ import {
   DeploymentUnitOutlined,
   FunctionOutlined,
   UserOutlined,
+  BookOutlined,
 } from '@ant-design/icons';
 import { Link } from 'umi';
 import { urlToList } from '../_utils/pathTools';
@@ -30,6 +31,7 @@ const menus = {
   chaincode: <FunctionOutlined />,
   user: <UserOutlined />,
   agent: <DesktopOutlined />,
+  docs: <BookOutlined />
 };
 
 // Allow menu.js config icon as string or ReactNode
@@ -55,12 +57,12 @@ export default class BaseMenu extends PureComponent {
    * 获得菜单子节点
    * @memberof SiderMenu
    */
-  getNavMenuItems = menusData => {
+  getNavMenuItems = (menusData, isFromTop) => {
     if (!menusData) {
       return [];
     }
     return menusData
-      .filter(item => item.name && !item.hideInMenu)
+      .filter(item => item.name && !item.hideInMenu && (isFromTop !== item.isBottom))
       .map(item => this.getSubMenuOrItem(item))
       .filter(item => item);
   };
@@ -92,7 +94,7 @@ export default class BaseMenu extends PureComponent {
           }
           key={item.path}
         >
-          {this.getNavMenuItems(item.children)}
+          {this.getNavMenuItems(item.children, false)}
         </SubMenu>
       );
     }
@@ -184,7 +186,21 @@ export default class BaseMenu extends PureComponent {
     });
 
     return (
-      <>
+      <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 64px)" }}>
+        <Menu
+          key="Menu"
+          mode={mode}
+          theme={theme}
+          onOpenChange={handleOpenChange}
+          selectedKeys={selectedKeys}
+          style={style}
+          className={cls}
+          {...props}
+          getPopupContainer={() => this.getPopupContainer(fixedHeader, layout)}
+        >
+          {this.getNavMenuItems(menuData, true)}
+        </Menu>
+        <div style={{ flexGrow: 1 }} />
         <Menu
           key="Menu"
           mode={mode}
@@ -199,7 +215,7 @@ export default class BaseMenu extends PureComponent {
           {this.getNavMenuItems(menuData)}
         </Menu>
         <div ref={this.getRef} />
-      </>
+      </div>
     );
   }
 }
