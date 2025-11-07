@@ -114,6 +114,13 @@ export default [
             icon: 'user',
             component: './UserManagement/UserManagement',
           },
+          {
+            path: 'https://hyperledger-cello.readthedocs.io',
+            name: 'docs',
+            icon: 'docs',
+            isExternal: true,
+            isBottom: true,
+          },
         ],
       },
       {
