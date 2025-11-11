@@ -13,6 +13,7 @@ import {
   UserOutlined,
   BookOutlined,
   GithubOutlined,
+  ApiOutlined,
 } from '@ant-design/icons';
 import { Link } from 'umi';
 import { urlToList } from '../_utils/pathTools';
@@ -34,6 +35,7 @@ const menus = {
   agent: <DesktopOutlined />,
   docs: <BookOutlined />,
   github: <GithubOutlined />,
+  api: <ApiOutlined />
 };
 
 // Allow menu.js config icon as string or ReactNode
@@ -109,12 +111,11 @@ export default class BaseMenu extends PureComponent {
    * @memberof SiderMenu
    */
   getMenuItemPath = item => {
-    const { name } = item;
     const itemPath = this.conversionPath(item.path);
     const icon = getIcon(item.icon);
-    const { target } = item;
+    const { name, target, isExternal } = item;
     // Is it a http link
-    if (/^https?:\/\//.test(itemPath)) {
+    if (isExternal) {
       return (
         <a href={itemPath} target={target}>
           {icon}
