@@ -115,6 +115,13 @@ export default [
             component: './UserManagement/UserManagement',
           },
           {
+            path: '/api/v1/docs',
+            name: 'REST API',
+            icon: 'api',
+            isExternal: true,
+            isBottom: true,
+          },
+          {
             path: 'https://github.com/hyperledger-cello',
             name: 'GitHub',
             icon: 'github',
