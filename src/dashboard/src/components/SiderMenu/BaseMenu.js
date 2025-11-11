@@ -12,13 +12,14 @@ import {
   FunctionOutlined,
   UserOutlined,
   BookOutlined,
+  GithubOutlined,
 } from '@ant-design/icons';
 import { Link } from 'umi';
 import { urlToList } from '../_utils/pathTools';
 import { getMenuMatches } from './SiderMenuUtils';
 // import { isUrl } from '@/utils/utils';
 // import styles from './index.less';
-// import IconFont from '@/components/IconFont';
+// import IconFont from '@/components/IdocsconFont';
 
 const { SubMenu } = Menu;
 const menus = {
@@ -31,7 +32,8 @@ const menus = {
   chaincode: <FunctionOutlined />,
   user: <UserOutlined />,
   agent: <DesktopOutlined />,
-  docs: <BookOutlined />
+  docs: <BookOutlined />,
+  github: <GithubOutlined />,
 };
 
 // Allow menu.js config icon as string or ReactNode
@@ -62,7 +64,7 @@ export default class BaseMenu extends PureComponent {
       return [];
     }
     return menusData
-      .filter(item => item.name && !item.hideInMenu && (isFromTop !== item.isBottom))
+      .filter(item => item.name && !item.hideInMenu && (isFromTop !== (item.isBottom ?? false)))
       .map(item => this.getSubMenuOrItem(item))
       .filter(item => item);
   };
@@ -94,7 +96,7 @@ export default class BaseMenu extends PureComponent {
           }
           key={item.path}
         >
-          {this.getNavMenuItems(item.children, false)}
+          {this.getNavMenuItems(item.children)}
         </SubMenu>
       );
     }
@@ -212,7 +214,7 @@ export default class BaseMenu extends PureComponent {
           {...props}
           getPopupContainer={() => this.getPopupContainer(fixedHeader, layout)}
         >
-          {this.getNavMenuItems(menuData)}
+          {this.getNavMenuItems(menuData, false)}
         </Menu>
         <div ref={this.getRef} />
       </div>
