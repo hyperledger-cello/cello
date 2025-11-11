@@ -1,3 +1,4 @@
+from enum import Enum, auto
 import json
 import logging
 import os
@@ -7,7 +8,7 @@ from typing import Optional, List, Any, Dict
 
 from django.db import transaction
 
-from api_engine.settings import FABRIC_TOOL
+from api_engine.settings import CELLO_HOME, FABRIC_TOOL
 from chaincode.models import Chaincode
 from channel.models import Channel
 from node.models import Node
@@ -192,3 +193,47 @@ def get_metadata(file) -> Optional[Dict[str, Any]]:
                 break
     file.seek(0)
     return res
+
+class ChaincodeAction(Enum):
+    SUBMIT = auto()
+    EVALUATE = auto()
+
+def send_chaincode_request(
+        channel: Channel,
+        organization: Organization,
+        peer: Node,
+        chaincode: Chaincode,
+        action: ChaincodeAction,
+        function: str,
+        *args: str):
+    peer_organization_name = organization.name.split(".", 1)[0].capitalize()
+    peer_msp = "{}MSP".format(peer_organization_name)
+    peer_domain_name = get_domain_name(organization.name, Node.Type.PEER, peer.name)
+    peer_dir = get_peer_directory(organization.name, peer_domain_name)
+    peer_root_cert = os.path.join(peer_dir, "tls/ca.crt")
+    peer_address = "{}:7051".format(peer_domain_name)
+    command = [
+        "go", 
+        "run",
+        os.path.join(CELLO_HOME, "chaincode", "application-gateway", "main.go"),
+        action.name,
+        function,
+        *args
+    ]
+    LOG.info(" ".join(command))
+    subprocess.run(
+        command,
+        env={
+            "CORE_PEER_TLS_ENABLED": "true",
+            "CORE_PEER_LOCALMSPID": peer_msp,
+            "CORE_PEER_TLS_ROOTCERT_FILE": peer_root_cert,
+            "CORE_PEER_MSPCONFIGPATH": "{}/users/Admin@{}/msp".format(
+                get_org_directory(organization.name, Node.Type.PEER),
+                organization.name
+            ),
+            "CORE_PEER_ADDRESS": peer_address,
+            "FABRIC_CFG_PATH": peer_dir,
+            "CHANNEL_NAME": channel.name,
+            "CHAINCODE_NAME": chaincode.name
+        },
+        check=True)
