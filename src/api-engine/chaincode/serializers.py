@@ -1,15 +1,14 @@
 import tarfile
-from typing import List
+from typing import List, Dict, Any
 
 from django.core.validators import MinValueValidator
 from rest_framework import serializers
 from chaincode.models import Chaincode
-from chaincode.service import create_chaincode, get_metadata
+from chaincode.service import create_chaincode, get_metadata, install_chaincode, approve_chaincode, commit_chaincode
 from channel.models import Channel
 from channel.serializers import ChannelID
 from common.serializers import ListResponseSerializer
 from node.models import Node
-from node.serializers import NodeID
 from user.serializers import UserID
 
 
@@ -107,7 +106,30 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
                 )
         return value
 
-    def create(self, validated_data) -> ChaincodeID:
+    def create(self, validated_data: Dict[str, Any]) -> ChaincodeID:
         validated_data["user"] = self.context["user"]
         validated_data["organization"] = self.context["organization"]
         return ChaincodeID({"id": create_chaincode(**validated_data).id})
+
+
+class ChaincodeInstallBody(ChaincodeID):
+    def update(self, instance: Chaincode, validated_data: Dict[str, Any]):
+        install_chaincode(
+            self.context["organization"],
+            instance
+        )
+
+
+class ChaincodeApproveBody(ChaincodeID):
+    def update(self, instance: Chaincode, validated_data: Dict[str, Any]):
+        approve_chaincode(
+            self.context["organization"],
+            instance
+        )
+
+class ChaincodeCommitBody(ChaincodeID):
+    def update(self, instance: Chaincode, validated_data: Dict[str, Any]):
+        commit_chaincode(
+            self.context["organization"],
+            instance
+        )
