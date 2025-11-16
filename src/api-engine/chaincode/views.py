@@ -8,7 +8,8 @@ from rest_framework.response import Response
 
 from api.common.response import make_response_serializer
 from chaincode.models import Chaincode
-from chaincode.serializers import ChaincodeList, ChaincodeCreateBody, ChaincodeID, ChaincodeResponse
+from chaincode.serializers import ChaincodeList, ChaincodeCreateBody, ChaincodeID, ChaincodeResponse, \
+    ChaincodeInstallBody, ChaincodeApproveBody
 from common.responses import with_common_response, ok
 from common.serializers import PageQuerySerializer
 
@@ -49,7 +50,7 @@ class ChaincodeViewSet(viewsets.ViewSet):
         )
 
     @swagger_auto_schema(
-        operation_summary="Create (Install, Approve, and Commit) a chaincode of the current organization",
+        operation_summary="Create (Install and Approve) a chaincode for the current organization",
         request_body=ChaincodeCreateBody(),
         responses=with_common_response(
             {status.HTTP_201_CREATED: make_response_serializer(ChaincodeID)}
@@ -64,4 +65,32 @@ class ChaincodeViewSet(viewsets.ViewSet):
         return Response(
             status=status.HTTP_201_CREATED,
             data=ok(serializer.save().data)
+        )
+
+    @swagger_auto_schema(
+        operation_summary="Install a chaincode for the current organization",
+        responses=with_common_response(
+            {status.HTTP_204_NO_CONTENT: None}
+        ),
+    )
+    @action(detail=True, methods=["PUT"])
+    def install(self, request, pk=None):
+        serializer = ChaincodeInstallBody(id=pk, context={"organization": request.user.organization})
+        serializer.save()
+        return Response(
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
+    @swagger_auto_schema(
+        operation_summary="Approve a chaincode for the current organization",
+        responses=with_common_response(
+            {status.HTTP_204_NO_CONTENT: None}
+        ),
+    )
+    @action(detail=True, methods=["PUT"])
+    def approve(self, request, pk=None):
+        serializer = ChaincodeApproveBody(id=pk, context={"organization": request.user.organization})
+        serializer.save()
+        return Response(
+            status=status.HTTP_204_NO_CONTENT,
         )

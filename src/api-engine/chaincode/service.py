@@ -4,7 +4,7 @@ import logging
 import os
 import subprocess
 import tarfile
-from typing import Optional, List, Any, Dict
+from typing import Optional, List, Any, Dict, Tuple
 
 from django.db import transaction
 
@@ -50,35 +50,14 @@ def create_chaincode(
     chaincode.save()
     chaincode.peers.add(*peers)
 
-    peer_root_certs: list[str] = []
-    peer_addresses: list[str] = []
-    peer_envs: list[map[str, str]] = []
-    for peer in peers:
-        peer_root_cert, peer_address, peer_env = get_peer_root_cert_and_address_and_envs(organization.name, peer.name)
-        peer_root_certs.append(peer_root_cert)
-        peer_addresses.append(peer_address)
-        peer_envs.append(peer_env)
+    peer_root_certs, peer_addresses, peer_envs = get_peers_root_certs_and_addresses_and_envs(
+        organization.name,
+        peers
+    )
 
     set_chaincode_package_id(peer_envs[0], chaincode)
     install_chaincode_with_envs(peer_envs, chaincode)
-
-    command[3] = "commit"
-    # Remove package ID
-    del command[14:16]
-    for i in range(len(peers)):
-        command.extend(["--peerAddresses", peer_addresses[i], "--tlsRootCertFiles", peer_root_certs[i]])
-
-    LOG.info(" ".join(command))
-    for peer_env in peer_envs:
-        subprocess.run(
-            command,
-            env=peer_env,
-            check=True)
-
-    with transaction.atomic():
-        chaincode.status = Chaincode.Status.COMMITTED
-        chaincode.save()
-
+    approve_chaincode_with_envs(peer_envs[0], organization, chaincode)
     return chaincode
 
 def get_metadata(file) -> Optional[Dict[str, Any]]:
@@ -96,21 +75,73 @@ def get_metadata(file) -> Optional[Dict[str, Any]]:
     file.seek(0)
     return res
 
-def install_chaincode(organization: Organization, chaincode: Chaincode):
-    peer_envs: list[map[str, str]] = []
-    for peer in chaincode.peers:
-        peer_envs.append(get_peer_root_cert_and_address_and_envs(organization.name, peer.name)[2])
+def install_chaincode(organization: Organization, chaincode: Chaincode) -> None:
+    peer_envs: List[Dict[str, str]] = get_peers_root_certs_and_addresses_and_envs(
+        organization.name,
+        chaincode.peers
+    )[2]
 
     if chaincode.package_id is None:
         set_chaincode_package_id(peer_envs[0], chaincode)
 
     install_chaincode_with_envs(peer_envs, chaincode)
 
+def set_chaincode_package_id(peer_env: Dict[str, str], chaincode: Chaincode) -> None:
+    command: List[str] = [
+        peer_command,
+        "lifecycle",
+        "chaincode",
+        "calculatepackageid",
+        chaincode.package.path
+    ]
+    LOG.info(" ".join(command))
+    with transaction.atomic():
+        chaincode.package_id = subprocess.run(
+            command,
+            env=peer_env,
+            check=True,
+            capture_output=True,
+            text=True
+        ).stdout
+        chaincode.save()
+
+def install_chaincode_with_envs(peer_envs: List[Dict[str, str]], chaincode: Chaincode) -> None:
+    command = [
+        peer_command,
+        "lifecycle",
+        "chaincode",
+        "install",
+        chaincode.package.path,
+    ]
+    LOG.info(" ".join(command))
+    for peer_env in peer_envs:
+        subprocess.run(
+            command,
+            env=peer_env,
+            check=True)
+
+    with transaction.atomic():
+        chaincode.status = Chaincode.Status.INSTALLED
+        chaincode.save()
+
 def approve_chaincode(
-        peer_envs: list[dict[str, str]],
-        channel_name: str,
-        organization: Organization, 
-        chaincode: Chaincode):
+        organization: Organization,
+        chaincode: Chaincode) -> None:
+    approve_chaincode_with_envs(
+        get_peers_root_certs_and_addresses_and_envs(
+            organization.name,
+            [chaincode.peers[0]]  # type: ignore
+        )[2][0],
+        organization,
+        chaincode
+    )
+
+def approve_chaincode_with_envs(
+        peer_env: Dict[str, str],
+        organization: Organization,
+        chaincode: Chaincode) -> None:
+    # Chaincode is approved at the organization level,
+    # so the command only needs to target one peer.
     orderer_domain_name = get_domain_name(
         organization.name,
         Node.Type.ORDERER,
@@ -126,7 +157,7 @@ def approve_chaincode(
         "--ordererTLSHostnameOverride",
         orderer_domain_name,
         "--channelID",
-        channel_name,
+        chaincode.channel.name,
         "--name",
         chaincode.name,
         "--version",
@@ -148,69 +179,63 @@ def approve_chaincode(
         command.extend(["--signature-policy", chaincode.signature_policy])
 
     LOG.info(" ".join(command))
-    for peer_env in peer_envs:
-        subprocess.run(
-            command,
-            env=peer_env,
-            check=True)
+    subprocess.run(
+        command,
+        env=peer_env,
+        check=True)
 
     with transaction.atomic():
         chaincode.status = Chaincode.Status.APPROVED
         chaincode.save()
 
-def get_peer_root_cert_and_address_and_envs(organization_name: str, peer_name: str) -> tuple[str, str, map[str, str]]:
-    peer_domain_name: str = get_domain_name(organization_name, Node.Type.PEER, peer_name)
-    peer_dir: str = get_peer_directory(organization_name, peer_domain_name)
-    peer_root_cert: str = os.path.join(peer_dir, "tls/ca.crt")
-    peer_address: str = "{}:7051".format(peer_domain_name)
-    return peer_root_cert, peer_address, {
-        "CORE_PEER_TLS_ENABLED": "true",
-        "CORE_PEER_LOCALMSPID": "{}MSP".format(organization_name.split(".", 1)[0].capitalize()),
-        "CORE_PEER_TLS_ROOTCERT_FILE": peer_root_cert,
-        "CORE_PEER_MSPCONFIGPATH": "{}/users/Admin@{}/msp".format(
-            get_org_directory(organization_name, Node.Type.PEER),
-            organization_name
-        ),
-        "CORE_PEER_ADDRESS": peer_address,
-        "FABRIC_CFG_PATH": peer_dir,
-    }
 
-def set_chaincode_package_id(peer_env: dict[str, str], chaincode: Chaincode):
-    command: list[str] = [
-        peer_command,
-        "lifecycle",
-        "chaincode",
-        "calculatepackageid",
-        chaincode.package.path
-    ]
-    LOG.info(" ".join(command))
-    with transaction.atomic():
-        chaincode.package_id = subprocess.run(
-            command,
-            env=peer_env,
-            check=True,
-            capture_output=True,
-            text=True
-        ).stdout
-        chaincode.save()
-
-def install_chaincode_with_envs(peer_envs: list[dict[str, str]], chaincode: Chaincode):
+def commit_chaincode(
+        organization: Organization,
+        chaincode: Chaincode) -> None:
+    peer_root_certs, peer_addresses, peer_envs = get_peers_root_certs_and_addresses_and_envs(
+        organization.name,
+        chaincode.peers
+    )
+    orderer_domain_name = get_domain_name(
+        organization.name,
+        Node.Type.ORDERER,
+        Node.objects.filter(type=Node.Type.ORDERER, organization=organization).first().name
+    )
     command = [
         peer_command,
         "lifecycle",
         "chaincode",
-        "install",
-        chaincode.package.path,
+        "commit",
+        "-o",
+        "{}:7050".format(orderer_domain_name),
+        "--ordererTLSHostnameOverride",
+        orderer_domain_name,
+        "--channelID",
+        chaincode.channel.name,
+        "--name",
+        chaincode.name,
+        "--version",
+        chaincode.version,
+        "--sequence",
+        str(chaincode.sequence),
+        "--tls",
+        "--cafile",
+        "{}/msp/tlscacerts/tlsca.{}-cert.pem".format(
+            get_orderer_directory(organization.name, orderer_domain_name),
+            organization.name.split(".", 1)[1],
+        )
     ]
+    for i in range(len(chaincode.peers)):
+        command.extend(["--peerAddresses", peer_addresses[i], "--tlsRootCertFiles", peer_root_certs[i]])
+
     LOG.info(" ".join(command))
-    for peer_env in peer_envs:
-        subprocess.run(
-            command,
-            env=peer_env,
-            check=True)
+    subprocess.run(
+        command,
+        env=peer_envs[0],
+        check=True)
 
     with transaction.atomic():
-        chaincode.status = Chaincode.Status.INSTALLED
+        chaincode.status = Chaincode.Status.COMMITTED
         chaincode.save()
 
 class ChaincodeAction(Enum):
@@ -225,14 +250,12 @@ def send_chaincode_request(
         action: ChaincodeAction,
         function: str,
         *args: str):
-    peer_organization_name = organization.name.split(".", 1)[0].capitalize()
-    peer_msp = "{}MSP".format(peer_organization_name)
-    peer_domain_name = get_domain_name(organization.name, Node.Type.PEER, peer.name)
-    peer_dir = get_peer_directory(organization.name, peer_domain_name)
-    peer_root_cert = os.path.join(peer_dir, "tls/ca.crt")
-    peer_address = "{}:7051".format(peer_domain_name)
+    peer_env: Dict[str, str] = get_peers_root_certs_and_addresses_and_envs(
+        organization.name,
+        [peer]  # type: ignore
+    )[2][0]
     command = [
-        "go", 
+        "go",
         "run",
         os.path.join(CELLO_HOME, "chaincode", "application-gateway", "main.go"),
         action.name,
@@ -243,16 +266,34 @@ def send_chaincode_request(
     subprocess.run(
         command,
         env={
-            "CORE_PEER_TLS_ENABLED": "true",
-            "CORE_PEER_LOCALMSPID": peer_msp,
-            "CORE_PEER_TLS_ROOTCERT_FILE": peer_root_cert,
-            "CORE_PEER_MSPCONFIGPATH": "{}/users/Admin@{}/msp".format(
-                get_org_directory(organization.name, Node.Type.PEER),
-                organization.name
-            ),
-            "CORE_PEER_ADDRESS": peer_address,
-            "FABRIC_CFG_PATH": peer_dir,
+            **peer_env,
             "CHANNEL_NAME": channel.name,
             "CHAINCODE_NAME": chaincode.name
         },
         check=True)
+
+def get_peers_root_certs_and_addresses_and_envs(
+        organization_name: str,
+        peers: List[Node]) -> Tuple[List[str], List[str], List[Dict[str, str]]]:
+    peer_root_certs: List[str] = []
+    peer_addresses: List[str] = []
+    peer_envs: List[Dict[str, str]] = []
+    for peer_name in [peer.name for peer in peers]:
+        peer_domain_name: str = get_domain_name(organization_name, Node.Type.PEER, peer_name)
+        peer_dir: str = get_peer_directory(organization_name, peer_domain_name)
+        peer_root_cert: str = os.path.join(peer_dir, "tls/ca.crt")
+        peer_address: str = "{}:7051".format(peer_domain_name)
+        peer_root_certs.append(peer_root_cert)
+        peer_addresses.append(peer_address)
+        peer_envs.append({
+            "CORE_PEER_TLS_ENABLED": "true",
+            "CORE_PEER_LOCALMSPID": "{}MSP".format(organization_name.split(".", 1)[0].capitalize()),
+            "CORE_PEER_TLS_ROOTCERT_FILE": peer_root_cert,
+            "CORE_PEER_MSPCONFIGPATH": "{}/users/Admin@{}/msp".format(
+                get_org_directory(organization_name, Node.Type.PEER),
+                organization_name
+            ),
+            "CORE_PEER_ADDRESS": peer_address,
+            "FABRIC_CFG_PATH": peer_dir,
+        })
+    return peer_root_certs, peer_addresses, peer_envs
