@@ -20,6 +20,9 @@ LOG = logging.getLogger(__name__)
 
 peer_command = os.path.join(FABRIC_TOOL, "peer")
 
+def get_chaincode(id: str) -> Optional[Chaincode]:
+    return Chaincode.objects.get(id=id)
+
 def create_chaincode(
         name: str,
         version: str,
@@ -50,14 +53,14 @@ def create_chaincode(
     chaincode.save()
     chaincode.peers.add(*peers)
 
-    peer_root_certs, peer_addresses, peer_envs = get_peers_root_certs_and_addresses_and_envs(
+    peer_envs = get_peers_root_certs_and_addresses_and_envs(
         organization.name,
         peers
-    )
+    )[2]
 
-    set_chaincode_package_id(peer_envs[0], chaincode)
-    install_chaincode_with_envs(peer_envs, chaincode)
-    approve_chaincode_with_envs(peer_envs[0], organization, chaincode)
+    _set_chaincode_package_id(peer_envs[0], chaincode)
+    _install_chaincode_with_envs(peer_envs, chaincode)
+    _approve_chaincode_with_envs(peer_envs[0], organization, chaincode)
     return chaincode
 
 def get_metadata(file) -> Optional[Dict[str, Any]]:
@@ -82,11 +85,11 @@ def install_chaincode(organization: Organization, chaincode: Chaincode) -> None:
     )[2]
 
     if chaincode.package_id is None:
-        set_chaincode_package_id(peer_envs[0], chaincode)
+        _set_chaincode_package_id(peer_envs[0], chaincode)
 
-    install_chaincode_with_envs(peer_envs, chaincode)
+    _install_chaincode_with_envs(peer_envs, chaincode)
 
-def set_chaincode_package_id(peer_env: Dict[str, str], chaincode: Chaincode) -> None:
+def _set_chaincode_package_id(peer_env: Dict[str, str], chaincode: Chaincode) -> None:
     command: List[str] = [
         peer_command,
         "lifecycle",
@@ -105,7 +108,7 @@ def set_chaincode_package_id(peer_env: Dict[str, str], chaincode: Chaincode) -> 
         ).stdout
         chaincode.save()
 
-def install_chaincode_with_envs(peer_envs: List[Dict[str, str]], chaincode: Chaincode) -> None:
+def _install_chaincode_with_envs(peer_envs: List[Dict[str, str]], chaincode: Chaincode) -> None:
     command = [
         peer_command,
         "lifecycle",
@@ -120,14 +123,10 @@ def install_chaincode_with_envs(peer_envs: List[Dict[str, str]], chaincode: Chai
             env=peer_env,
             check=True)
 
-    with transaction.atomic():
-        chaincode.status = Chaincode.Status.INSTALLED
-        chaincode.save()
-
 def approve_chaincode(
         organization: Organization,
         chaincode: Chaincode) -> None:
-    approve_chaincode_with_envs(
+    _approve_chaincode_with_envs(
         get_peers_root_certs_and_addresses_and_envs(
             organization.name,
             [chaincode.peers[0]]  # type: ignore
@@ -136,7 +135,7 @@ def approve_chaincode(
         chaincode
     )
 
-def approve_chaincode_with_envs(
+def _approve_chaincode_with_envs(
         peer_env: Dict[str, str],
         organization: Organization,
         chaincode: Chaincode) -> None:
@@ -184,11 +183,6 @@ def approve_chaincode_with_envs(
         env=peer_env,
         check=True)
 
-    with transaction.atomic():
-        chaincode.status = Chaincode.Status.APPROVED
-        chaincode.save()
-
-
 def commit_chaincode(
         organization: Organization,
         chaincode: Chaincode) -> None:
@@ -234,25 +228,20 @@ def commit_chaincode(
         env=peer_envs[0],
         check=True)
 
-    with transaction.atomic():
-        chaincode.status = Chaincode.Status.COMMITTED
-        chaincode.save()
-
 class ChaincodeAction(Enum):
     SUBMIT = auto()
     EVALUATE = auto()
 
 def send_chaincode_request(
-        channel: Channel,
         organization: Organization,
-        peer: Node,
         chaincode: Chaincode,
         action: ChaincodeAction,
         function: str,
         *args: str):
+    # Pick any organization peer
     peer_env: Dict[str, str] = get_peers_root_certs_and_addresses_and_envs(
         organization.name,
-        [peer]  # type: ignore
+        [chaincode.peers.filter(organization=organization)[0]]  # type: ignore
     )[2][0]
     command = [
         "go",
@@ -263,14 +252,17 @@ def send_chaincode_request(
         *args
     ]
     LOG.info(" ".join(command))
-    subprocess.run(
+    response: str = subprocess.run(
         command,
         env={
             **peer_env,
-            "CHANNEL_NAME": channel.name,
+            "CHANNEL_NAME": chaincode.channel.name,
             "CHAINCODE_NAME": chaincode.name
         },
-        check=True)
+        check=True,
+        capture_output=True,
+        text=True).stdout
+    LOG.info(response)
 
 def get_peers_root_certs_and_addresses_and_envs(
         organization_name: str,

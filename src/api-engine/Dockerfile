@@ -17,4 +17,11 @@ RUN curl -L --retry 5 --retry-delay 3 "https://github.com/hyperledger/fabric/rel
 # Install python dependencies
 RUN	pip3 install -r requirements.txt
 
+# Install go
+ENV GO_VERSION=1.24.0
+RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz \
+    && tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz \
+    && rm go${GO_VERSION}.linux-amd64.tar.gz
+ENV PATH="${PATH}:/usr/local/go/bin"
+
 CMD ["bash", "entrypoint.sh"]

@@ -4,7 +4,7 @@ from typing import List, Dict, Any
 from django.core.validators import MinValueValidator
 from rest_framework import serializers
 from chaincode.models import Chaincode
-from chaincode.service import create_chaincode, get_metadata, install_chaincode, approve_chaincode, commit_chaincode
+from chaincode.service import ChaincodeAction, create_chaincode, get_chaincode, get_metadata, install_chaincode, approve_chaincode, commit_chaincode, send_chaincode_request
 from channel.models import Channel
 from channel.serializers import ChannelID
 from common.serializers import ListResponseSerializer
@@ -16,6 +16,9 @@ class ChaincodeID(serializers.ModelSerializer):
     class Meta:
         model = Chaincode
         fields = ("id",)
+
+    def create(self, validated_data: Dict[str, Any]) -> Chaincode:
+        return get_chaincode(validated_data["id"])
 
 
 class ChaincodeResponse(ChaincodeID):
@@ -113,23 +116,40 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
 
 
 class ChaincodeInstallBody(ChaincodeID):
-    def update(self, instance: Chaincode, validated_data: Dict[str, Any]):
+    def create(self, validated_data: Dict[str, Any]):
         install_chaincode(
             self.context["organization"],
-            instance
+            super().create(validated_data)
         )
 
 
 class ChaincodeApproveBody(ChaincodeID):
-    def update(self, instance: Chaincode, validated_data: Dict[str, Any]):
+    def create(self, validated_data: Dict[str, Any]):
         approve_chaincode(
             self.context["organization"],
-            instance
+            super().create(validated_data)
         )
 
 class ChaincodeCommitBody(ChaincodeID):
-    def update(self, instance: Chaincode, validated_data: Dict[str, Any]):
+    def create(self, validated_data: Dict[str, Any]):
         commit_chaincode(
             self.context["organization"],
-            instance
+            super().create(validated_data)
+        )
+
+class ChaincodeRequestBody(ChaincodeID):
+    action = serializers.ChoiceField(choices=[(tag.name, tag.name) for tag in ChaincodeAction])
+    function = serializers.CharField()
+    args = serializers.ListField(
+        child=serializers.CharField(),
+        allow_empty=True
+    )
+
+    def create(self, validated_data: Dict[str, Any]):
+        send_chaincode_request(
+            self.context["organization"],
+            super().create(validated_data),
+            validated_data["action"],
+            validated_data["function"],
+            validated_data["args"]
         )
