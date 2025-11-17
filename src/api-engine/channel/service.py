@@ -265,7 +265,10 @@ def create(
             "mod_policy": "Admins",
             "value": {
                 "anchor_peers": [
-                    {"host": "{}:7051".format(anchor_peer_domain_name)}
+                    {
+                        "host": anchor_peer_domain_name,
+                        "port": 7051
+                    }
                 ]
             },
             "version": 0,
