@@ -1,8 +1,7 @@
- package main
+package main
 
 import (
     "bytes"
-    "context"
     "crypto/x509"
     "encoding/json"
     "fmt"
@@ -46,7 +45,7 @@ func main() {
 
     /* Check if the action and function are given */
     if len(os.Args) < 3 {
-        panic(fmt.Printf("Error: expected at lease 2 arguments but only %s is given.", len(os.Args) - 1))
+        panic(fmt.Sprintf("Error: expected at lease 2 arguments but only %s is given.", len(os.Args) - 1))
     }
 
     /* submit/evaluate */
@@ -98,7 +97,7 @@ func main() {
             }
             printJSON(result)
         default:
-            panic(fmt.Printf("Error: invalid action %s (should be 'submit' or 'evaluate').", action))
+            panic(fmt.Sprintf("Error: invalid action %s (should be 'submit' or 'evaluate').", action))
     }
 }
 

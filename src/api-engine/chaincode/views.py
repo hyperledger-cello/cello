@@ -8,7 +8,7 @@ from rest_framework.response import Response
 
 from api.common.response import make_response_serializer
 from chaincode.models import Chaincode
-from chaincode.serializers import ChaincodeList, ChaincodeCreateBody, ChaincodeID, ChaincodeResponse, \
+from chaincode.serializers import ChaincodeCommitBody, ChaincodeList, ChaincodeCreateBody, ChaincodeID, ChaincodeRequestBody, ChaincodeResponse, \
     ChaincodeInstallBody, ChaincodeApproveBody
 from common.responses import with_common_response, ok
 from common.serializers import PageQuerySerializer
@@ -75,7 +75,11 @@ class ChaincodeViewSet(viewsets.ViewSet):
     )
     @action(detail=True, methods=["PUT"])
     def install(self, request, pk=None):
-        serializer = ChaincodeInstallBody(id=pk, context={"organization": request.user.organization})
+        serializer = ChaincodeInstallBody(
+            data={
+                "id": pk
+            }, 
+            context={"organization": request.user.organization})
         serializer.save()
         return Response(
             status=status.HTTP_204_NO_CONTENT,
@@ -89,7 +93,47 @@ class ChaincodeViewSet(viewsets.ViewSet):
     )
     @action(detail=True, methods=["PUT"])
     def approve(self, request, pk=None):
-        serializer = ChaincodeApproveBody(id=pk, context={"organization": request.user.organization})
+        serializer = ChaincodeApproveBody(
+            data={
+                "id": pk
+            }, 
+            context={"organization": request.user.organization})
+        serializer.save()
+        return Response(
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
+    @swagger_auto_schema(
+        operation_summary="Commit a chaincode to its channel",
+        responses=with_common_response(
+            {status.HTTP_204_NO_CONTENT: None}
+        ),
+    )
+    @action(detail=True, methods=["PUT"])
+    def commit(self, request, pk=None):
+        serializer = ChaincodeCommitBody(
+            data={
+                "id": pk
+            }, 
+            context={"organization": request.user.organization})
+        serializer.save()
+        return Response(
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
+    @swagger_auto_schema(
+        operation_summary="Invoke/Query a chaincode for the current organization",
+        responses=with_common_response(
+            {status.HTTP_204_NO_CONTENT: None}
+        ),
+    )
+    @action(detail=True, methods=["PUT"])
+    def transact(self, request, pk=None):
+        serializer = ChaincodeRequestBody(
+            data={
+                "id": pk
+            }, 
+            context={"organization": request.user.organization})
         serializer.save()
         return Response(
             status=status.HTTP_204_NO_CONTENT,
