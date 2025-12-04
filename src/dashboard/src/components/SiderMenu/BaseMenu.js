@@ -18,11 +18,7 @@ import {
 import { Link } from 'umi';
 import { urlToList } from '../_utils/pathTools';
 import { getMenuMatches } from './SiderMenuUtils';
-// import { isUrl } from '@/utils/utils';
-// import styles from './index.less';
-// import IconFont from '@/components/IdocsconFont';
 
-const { SubMenu } = Menu;
 const menus = {
   eye: <EyeOutlined />,
   dashboard: <DashboardFilled />,
@@ -65,82 +61,49 @@ export default class BaseMenu extends PureComponent {
     if (!menusData) {
       return [];
     }
+    const { isMobile, onCollapse, location } = this.props;
     return menusData
       .filter(item => item.name && !item.hideInMenu && isFromTop !== (item.isBottom ?? false))
-      .map(item => this.getSubMenuOrItem(item))
-      .filter(item => item);
+      .map(item => {
+        const itemNode = {
+          key: item.path,
+          icon: getIcon(item.icon),
+          // label 可以是 ReactNode（Link / <a> / 字串）
+          label: item.isExternal ? (
+            <a href={this.conversionPath(item.path)} target={item.target}>
+              <span>{item.name}</span>
+            </a>
+          ) : (
+            <Link
+              to={this.conversionPath(item.path)}
+              target={item.target}
+              replace={this.conversionPath(item.path) === location.pathname}
+              onClick={
+                isMobile
+                  ? () => {
+                      onCollapse(true);
+                    }
+                  : undefined
+              }
+            >
+              <span>{item.name}</span>
+            </Link>
+          ),
+        };
+
+        // 如果有子節點且沒有 hideChildrenInMenu，遞迴產生 children
+        if (item.children && !item.hideChildrenInMenu && item.children.some(c => c.name)) {
+          itemNode.children = this.getNavMenuItems(item.children, isFromTop);
+        }
+
+        return itemNode;
+      });
   };
 
   // Get the currently selected menu
   getSelectedMenuKeys = pathname => {
     const { flatMenuKeys } = this.props;
     return urlToList(pathname).map(itemPath => getMenuMatches(flatMenuKeys, itemPath).pop());
-  };
-
-  /**
-   * get SubMenu or Item
-   */
-  getSubMenuOrItem = item => {
-    // doc: add hideChildrenInMenu
-    if (item.children && !item.hideChildrenInMenu && item.children.some(child => child.name)) {
-      const { name } = item;
-      return (
-        <SubMenu
-          title={
-            item.icon ? (
-              <span>
-                {getIcon(item.icon)}
-                <span>{name}</span>
-              </span>
-            ) : (
-              name
-            )
-          }
-          key={item.path}
-        >
-          {this.getNavMenuItems(item.children)}
-        </SubMenu>
-      );
-    }
-    return <Menu.Item key={item.path}>{this.getMenuItemPath(item)}</Menu.Item>;
-  };
-
-  /**
-   * 判断是否是http链接.返回 Link 或 a
-   * Judge whether it is http link.return a or Link
-   * @memberof SiderMenu
-   */
-  getMenuItemPath = item => {
-    const itemPath = this.conversionPath(item.path);
-    const icon = getIcon(item.icon);
-    const { name, target, isExternal } = item;
-    // Is it a http link
-    if (isExternal) {
-      return (
-        <a href={itemPath} target={target}>
-          {icon}
-          <span>{name}</span>
-        </a>
-      );
-    }
-    const { location, isMobile, onCollapse } = this.props;
-    return (
-      <Link
-        to={itemPath}
-        target={target}
-        replace={itemPath === location.pathname}
-        onClick={
-          isMobile
-            ? () => {
-                onCollapse(true);
-              }
-            : undefined
-        }
-      >
-        {icon}
-        <span>{name}</span>
-      </Link>
-    );
   };
 
   conversionPath = path => {
@@ -200,9 +163,8 @@ export default class BaseMenu extends PureComponent {
           className={cls}
           {...props}
           getPopupContainer={() => this.getPopupContainer(fixedHeader, layout)}
-        >
-          {this.getNavMenuItems(menuData, true)}
-        </Menu>
+          items={this.getNavMenuItems(menuData, true)}
+        />
         <div style={{ flexGrow: 1 }} />
         <Menu
           key="Lower Menu"
@@ -214,9 +176,8 @@ export default class BaseMenu extends PureComponent {
           className={cls}
           {...props}
           getPopupContainer={() => this.getPopupContainer(fixedHeader, layout)}
-        >
-          {this.getNavMenuItems(menuData, false)}
-        </Menu>
+          items={this.getNavMenuItems(menuData, false)}
+        />
         <div ref={this.getRef} />
       </div>
     );
