@@ -130,12 +130,14 @@ class ChaincodeApproveBody(ChaincodeID):
             super().create(validated_data)
         )
 
+
 class ChaincodeCommitBody(ChaincodeID):
     def create(self, validated_data: Dict[str, Any]):
         commit_chaincode(
             self.context["organization"],
             super().create(validated_data)
         )
+
 
 class ChaincodeRequestBody(ChaincodeID):
     action = serializers.ChoiceField(choices=[(tag.name, tag.name) for tag in ChaincodeAction])
