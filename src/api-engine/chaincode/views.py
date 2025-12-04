@@ -78,7 +78,7 @@ class ChaincodeViewSet(viewsets.ViewSet):
         serializer = ChaincodeInstallBody(
             data={
                 "id": pk
-            }, 
+            },
             context={"organization": request.user.organization})
         serializer.save()
         return Response(
@@ -96,7 +96,7 @@ class ChaincodeViewSet(viewsets.ViewSet):
         serializer = ChaincodeApproveBody(
             data={
                 "id": pk
-            }, 
+            },
             context={"organization": request.user.organization})
         serializer.save()
         return Response(
@@ -114,7 +114,7 @@ class ChaincodeViewSet(viewsets.ViewSet):
         serializer = ChaincodeCommitBody(
             data={
                 "id": pk
-            }, 
+            },
             context={"organization": request.user.organization})
         serializer.save()
         return Response(
@@ -132,7 +132,7 @@ class ChaincodeViewSet(viewsets.ViewSet):
         serializer = ChaincodeRequestBody(
             data={
                 "id": pk
-            }, 
+            },
             context={"organization": request.user.organization})
         serializer.save()
         return Response(
