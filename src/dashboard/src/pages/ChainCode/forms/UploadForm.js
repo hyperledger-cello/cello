@@ -248,16 +248,16 @@ const UploadForm = props => {
         <FormItem
           {...formItemLayout}
           label={intl.formatMessage({
-            id: 'app.chainCode.form.install.nodes',
-            defaultMessage: 'Please select node',
+            id: 'app.chainCode.form.install.peers',
+            defaultMessage: 'Peers',
           })}
           name="peers"
           rules={[
             {
               required: true,
               message: intl.formatMessage({
-                id: 'app.chainCode.form.install.nodes',
-                defaultMessage: 'Please select node',
+                id: 'app.chainCode.form.install.checkPeers',
+                defaultMessage: 'Please select peers',
               }),
             },
           ]}
