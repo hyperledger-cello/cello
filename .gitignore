@@ -256,3 +256,5 @@ tests/postman/junitResult.xml
 
 # Postgres
 pgdata/
+
+src/api-engine/cello
