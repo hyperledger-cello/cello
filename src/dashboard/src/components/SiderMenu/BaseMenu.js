@@ -35,7 +35,7 @@ const menus = {
   agent: <DesktopOutlined />,
   docs: <BookOutlined />,
   github: <GithubOutlined />,
-  api: <ApiOutlined />
+  api: <ApiOutlined />,
 };
 
 // Allow menu.js config icon as string or ReactNode
@@ -66,7 +66,7 @@ export default class BaseMenu extends PureComponent {
       return [];
     }
     return menusData
-      .filter(item => item.name && !item.hideInMenu && (isFromTop !== (item.isBottom ?? false)))
+      .filter(item => item.name && !item.hideInMenu && isFromTop !== (item.isBottom ?? false))
       .map(item => this.getSubMenuOrItem(item))
       .filter(item => item);
   };
@@ -189,9 +189,9 @@ export default class BaseMenu extends PureComponent {
     });
 
     return (
-      <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 64px)" }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)' }}>
         <Menu
-          key="Menu"
+          key="Upper Menu"
           mode={mode}
           theme={theme}
           onOpenChange={handleOpenChange}
@@ -205,7 +205,7 @@ export default class BaseMenu extends PureComponent {
         </Menu>
         <div style={{ flexGrow: 1 }} />
         <Menu
-          key="Menu"
+          key="Lower Menu"
           mode={mode}
           theme={theme}
           onOpenChange={handleOpenChange}
