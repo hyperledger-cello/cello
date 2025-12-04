@@ -20,8 +20,10 @@ LOG = logging.getLogger(__name__)
 
 peer_command = os.path.join(FABRIC_TOOL, "peer")
 
+
 def get_chaincode(id: str) -> Optional[Chaincode]:
     return Chaincode.objects.get(id=id)
+
 
 def create_chaincode(
         name: str,
@@ -63,6 +65,7 @@ def create_chaincode(
     _approve_chaincode_with_envs(peer_envs[0], organization, chaincode)
     return chaincode
 
+
 def get_metadata(file) -> Optional[Dict[str, Any]]:
     file.seek(0)
     res = None
@@ -78,6 +81,7 @@ def get_metadata(file) -> Optional[Dict[str, Any]]:
     file.seek(0)
     return res
 
+
 def install_chaincode(organization: Organization, chaincode: Chaincode) -> None:
     peer_envs: List[Dict[str, str]] = get_peers_root_certs_and_addresses_and_envs(
         organization.name,
@@ -88,6 +92,7 @@ def install_chaincode(organization: Organization, chaincode: Chaincode) -> None:
         _set_chaincode_package_id(peer_envs[0], chaincode)
 
     _install_chaincode_with_envs(peer_envs, chaincode)
+
 
 def _set_chaincode_package_id(peer_env: Dict[str, str], chaincode: Chaincode) -> None:
     command: List[str] = [
@@ -108,6 +113,7 @@ def _set_chaincode_package_id(peer_env: Dict[str, str], chaincode: Chaincode) ->
         ).stdout
         chaincode.save()
 
+
 def _install_chaincode_with_envs(peer_envs: List[Dict[str, str]], chaincode: Chaincode) -> None:
     command = [
         peer_command,
@@ -123,6 +129,7 @@ def _install_chaincode_with_envs(peer_envs: List[Dict[str, str]], chaincode: Cha
             env=peer_env,
             check=True)
 
+
 def approve_chaincode(
         organization: Organization,
         chaincode: Chaincode) -> None:
@@ -134,6 +141,7 @@ def approve_chaincode(
         organization,
         chaincode
     )
+
 
 def _approve_chaincode_with_envs(
         peer_env: Dict[str, str],
@@ -183,6 +191,7 @@ def _approve_chaincode_with_envs(
         env=peer_env,
         check=True)
 
+
 def commit_chaincode(
         organization: Organization,
         chaincode: Chaincode) -> None:
@@ -228,9 +237,11 @@ def commit_chaincode(
         env=peer_envs[0],
         check=True)
 
+
 class ChaincodeAction(Enum):
     SUBMIT = auto()
     EVALUATE = auto()
+
 
 def send_chaincode_request(
         organization: Organization,
@@ -263,6 +274,7 @@ def send_chaincode_request(
         capture_output=True,
         text=True).stdout
     LOG.info(response)
+
 
 def get_peers_root_certs_and_addresses_and_envs(
         organization_name: str,
