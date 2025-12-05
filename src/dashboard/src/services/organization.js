@@ -1,30 +1,16 @@
-import { stringify } from 'qs';
-import request from '@/utils/request';
+/*
+ SPDX-License-Identifier: Apache-2.0
+*/
+import { createCrudService } from '@/utils/serviceFactory';
 
-export async function getOrganization(params) {
-  return request(`/api/v1/organizations?${params.id}`);
-}
+// Create standard CRUD service for organizations
+const organizationService = createCrudService('organizations');
 
-export async function listOrganization(params) {
-  return request(`/api/v1/organizations?${stringify(params)}`);
-}
+// Export standard CRUD operations
+export const listOrganization = organizationService.list;
+export const createOrganization = organizationService.create;
+export const updateOrganization = params => organizationService.update(params.id, params);
+export const deleteOrganization = organizationService.delete;
 
-export async function createOrganization(params) {
-  return request('/api/v1/organizations', {
-    method: 'POST',
-    data: params,
-  });
-}
-
-export async function updateOrganization(params) {
-  return request(`/api/v1/organizations/${params.id}`, {
-    method: 'PUT',
-    data: params,
-  });
-}
-
-export async function deleteOrganization(id) {
-  return request(`/api/v1/organizations/${id}`, {
-    method: 'DELETE',
-  });
-}
+// Get a single organization by ID
+export const getOrganization = params => organizationService.get(params.id);
