@@ -52,7 +52,6 @@ def create_chaincode(
         creator=user,
         description=description,
     )
-    chaincode.save()
     chaincode.peers.add(*peers)
 
     peer_envs = get_peers_root_certs_and_addresses_and_envs(
@@ -87,9 +86,6 @@ def install_chaincode(organization: Organization, chaincode: Chaincode) -> None:
         organization.name,
         chaincode.peers
     )[2]
-
-    if chaincode.package_id is None:
-        _set_chaincode_package_id(peer_envs[0], chaincode)
 
     _install_chaincode_with_envs(peer_envs, chaincode)
 
