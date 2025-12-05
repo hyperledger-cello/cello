@@ -1,63 +1,49 @@
+/*
+ SPDX-License-Identifier: Apache-2.0
+*/
 import { stringify } from 'qs';
-import request from '@/utils/request';
+import {
+  createCrudService,
+  customRequest,
+  formDataRequest,
+  blobRequest,
+} from '@/utils/serviceFactory';
 
-export async function listNode(params) {
-  return request(`/api/v1/nodes?${stringify(params)}`);
-}
+// Create standard CRUD service for nodes
+const nodeService = createCrudService('nodes');
 
-export async function createNode(params) {
-  return request('/api/v1/nodes', {
-    method: 'POST',
-    data: params,
-  });
-}
+// Export standard CRUD operations
+export const listNode = nodeService.list;
+export const createNode = nodeService.create;
+export const deleteNode = nodeService.delete;
 
-export async function getNode(params) {
-  return request(`/api/v1/nodes/${stringify(params)}`);
-}
+// Note: Original implementation used stringify for get, keeping same behavior
+export const getNode = params => customRequest(`/api/v1/nodes/${stringify(params)}`);
 
-export async function listUserForNode(params) {
-  return request(`/api/v1/nodes/${stringify(params)}/users`);
-}
+// Custom endpoint for listing users of a node
+export const listUserForNode = params => customRequest(`/api/v1/nodes/${stringify(params)}/users`);
 
-export async function registerUserToNode(params) {
-  return request(`/api/v1/nodes/${params.id}/users`, {
+// Register a user to a node
+export const registerUserToNode = params =>
+  customRequest(`/api/v1/nodes/${params.id}/users`, {
     method: 'POST',
     data: params.message,
   });
-}
 
-export async function deleteNode(params) {
-  return request(`/api/v1/nodes/${params}`, {
-    method: 'DELETE',
-  });
-}
-
-export async function operateNode(params) {
-  return request(`/api/v1/nodes/${params.id}/operations`, {
+// Operate on a node (start, stop, etc.)
+export const operateNode = params =>
+  customRequest(`/api/v1/nodes/${params.id}/operations`, {
     method: 'POST',
     data: { action: params.message },
   });
-}
 
-export async function downloadNodeConfig(params) {
-  return request(`/api/v1/nodes/${params.id}/config`, {
-    method: 'GET',
-    responseType: 'blob',
-    getResponse: true,
-  });
-}
+// Download node configuration (returns blob)
+export const downloadNodeConfig = params => blobRequest(`/api/v1/nodes/${params.id}/config`);
 
-export async function uploadNodeConfig(params) {
-  return request(`/api/v1/nodes/${params.id}/config`, {
-    method: 'POST',
-    body: params.form,
-  });
-}
+// Upload node configuration
+export const uploadNodeConfig = params =>
+  formDataRequest(`/api/v1/nodes/${params.id}/config`, params.form);
 
-export async function nodeJoinChannel(params) {
-  return request(`/api/v1/nodes/${params.id}/block`, {
-    method: 'POST',
-    body: params.form,
-  });
-}
+// Node join channel
+export const nodeJoinChannel = params =>
+  formDataRequest(`/api/v1/nodes/${params.id}/block`, params.form);

@@ -1,43 +1,23 @@
-import { stringify } from 'qs';
-import request from '@/utils/request';
+/*
+ SPDX-License-Identifier: Apache-2.0
+*/
+import { createCrudService, customRequest } from '@/utils/serviceFactory';
 
-export async function listAgent(params) {
-  return request(`/api/v1/agents?${stringify(params)}`);
-}
+// Create standard CRUD service for agents
+const agentService = createCrudService('agents');
 
-export async function getAgent(params) {
-  return request(`/api/v1/agents/${params.id}`);
-}
+// Export standard CRUD operations
+export const listAgent = agentService.list;
+export const getAgent = params => agentService.get(params.id);
+export const createAgent = agentService.create;
+export const updateAgent = params => agentService.update(params.id, params);
+export const deleteAgent = agentService.delete;
 
-export async function createAgent(params) {
-  return request('/api/v1/agents', {
-    method: 'POST',
-    data: params,
-  });
-}
+// applyAgent is identical to createAgent, keep as alias for backward compatibility
+export const applyAgent = agentService.create;
 
-export async function applyAgent(params) {
-  return request('/api/v1/agents', {
-    method: 'POST',
-    data: params,
-  });
-}
-
-export async function updateAgent(params) {
-  return request(`/api/v1/agents/${params.id}`, {
-    method: 'PUT',
-    data: params,
-  });
-}
-
-export async function deleteAgent(params) {
-  return request(`/api/v1/agents/${params}`, {
+// Custom endpoint for releasing agent from organization
+export const releaseAgent = id =>
+  customRequest(`/api/v1/agents/${id}/organization`, {
     method: 'DELETE',
   });
-}
-
-export async function releaseAgent(params) {
-  return request(`/api/v1/agents/${params}/organization`, {
-    method: 'DELETE',
-  });
-}
