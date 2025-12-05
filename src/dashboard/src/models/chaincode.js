@@ -1,3 +1,6 @@
+/*
+ SPDX-License-Identifier: Apache-2.0
+*/
 import {
   listChainCode,
   createChainCode,
@@ -6,84 +9,42 @@ import {
   approveChainCode,
   commitChainCode,
 } from '@/services/chaincode';
+import { createModel, createListEffect, createSimpleEffect } from '@/utils/modelFactory';
 
-export default {
+export default createModel({
   namespace: 'chainCode',
 
   state: {
     chainCodes: [],
-    pagination: {
-      total: 0,
-      current: 1,
-      pageSize: 10,
-    },
   },
 
   effects: {
-    *listChainCode({ payload }, { call, put, select }) {
-      const response = yield call(listChainCode, payload);
-      const pagination = yield select(state => state.chainCode.pagination);
-      const pageSize = payload ? payload.per_page || pagination.pageSize : pagination.pageSize;
-      const current = payload ? payload.page || pagination.current : pagination.current;
+    listChainCode: createListEffect({
+      service: listChainCode,
+      namespace: 'chainCode',
+      dataKey: 'chainCodes',
+      // ChainCode API returns total in response.data.total instead of response.total
+      getTotalFromResponse: response => response.data.total,
+    }),
 
-      pagination.total = response.data.total;
-      pagination.pageSize = pageSize;
-      pagination.current = current;
-      yield put({
-        type: 'save',
-        payload: {
-          pagination,
-          chainCodes: response.data.data,
-        },
-      });
-    },
-    *createChainCode({ payload, callback }, { call }) {
-      const response = yield call(createChainCode, payload);
-      if (callback) {
-        callback(response);
-      }
-    },
-    *uploadChainCode({ payload, callback }, { call }) {
-      const response = yield call(uploadChainCode, payload);
-      if (callback) {
-        callback(response);
-      }
-    },
-    *installChainCode({ payload, callback }, { call }) {
-      const response = yield call(installChainCode, payload);
-      if (callback) {
-        callback(response);
-      }
-    },
-    *approveChainCode({ payload, callback }, { call }) {
-      const response = yield call(approveChainCode, payload);
-      if (callback) {
-        callback(response);
-      }
-    },
-    *commitChainCode({ payload, callback }, { call }) {
-      const response = yield call(commitChainCode, payload);
-      if (callback) {
-        callback(response);
-      }
-    },
+    createChainCode: createSimpleEffect(createChainCode, {
+      includePayloadInCallback: false,
+    }),
+
+    uploadChainCode: createSimpleEffect(uploadChainCode, {
+      includePayloadInCallback: false,
+    }),
+
+    installChainCode: createSimpleEffect(installChainCode, {
+      includePayloadInCallback: false,
+    }),
+
+    approveChainCode: createSimpleEffect(approveChainCode, {
+      includePayloadInCallback: false,
+    }),
+
+    commitChainCode: createSimpleEffect(commitChainCode, {
+      includePayloadInCallback: false,
+    }),
   },
-  reducers: {
-    save(state, { payload }) {
-      return {
-        ...state,
-        ...payload,
-      };
-    },
-    clear() {
-      return {
-        chainCodes: [],
-        pagination: {
-          total: 0,
-          current: 1,
-          pageSize: 10,
-        },
-      };
-    },
-  },
-};
+});
