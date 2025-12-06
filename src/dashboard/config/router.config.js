@@ -84,18 +84,6 @@ export default [
               },
             ],
           },
-          // {
-          //   path: '/network',
-          //   name: 'network',
-          //   icon: 'network',
-          //   component: './Network/Network',
-          // },
-          // {
-          //   path: '/network/newNetwork',
-          //   name: 'newNetwork',
-          //   component: './Network/newNetwork',
-          //   hideInMenu: true,
-          // },
           {
             path: '/channel',
             name: 'channel',
