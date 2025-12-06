@@ -1,8 +1,8 @@
 /*
  SPDX-License-Identifier: Apache-2.0
 */
-import React, { PureComponent, Fragment } from 'react';
-import { connect, injectIntl, useIntl } from 'umi';
+import React, { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { connect, useIntl } from 'umi';
 import {
   Card,
   Button,
@@ -22,6 +22,7 @@ import moment from 'moment';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import StandardTable from '@/components/StandardTable';
 import { getAuthority } from '@/utils/authority';
+import { useDeleteConfirm, useTableManagement } from '@/hooks';
 import styles from '../styles.less';
 
 const FormItem = Form.Item;
@@ -291,534 +292,434 @@ const CreateNode = props => {
   );
 };
 
-@connect(({ node, loading }) => ({
-  node,
-  loadingNodes: loading.effects['node/listNode'],
-  registeringUser: loading.effects['node/registerUserToNode'],
-  creating: loading.effects['node/createNode'],
-}))
-class Index extends PureComponent {
-  state = {
-    selectedRows: [],
-    formValues: {},
-    registerUserFormVisible: false,
-    targetNodeId: '',
-    createModalVisible: false,
-  };
+const Index = ({ dispatch, node = {}, loadingNodes, registeringUser, creating }) => {
+  const intl = useIntl();
+  const { nodes = [], pagination = {} } = node;
+  const userRole = getAuthority()[0];
 
-  componentDidMount() {
-    this.queryNodeList();
-  }
+  const { selectedRows, handleSelectRows, handleTableChange, refreshList } = useTableManagement({
+    dispatch,
+    listAction: 'node/listNode',
+  });
+  const { showDeleteConfirm } = useDeleteConfirm({ dispatch, intl });
 
-  componentWillUnmount() {
-    const { dispatch } = this.props;
+  const [registerUserFormVisible, setRegisterUserFormVisible] = useState(false);
+  const [targetNodeId, setTargetNodeId] = useState('');
+  const [createModalVisible, setCreateModalVisible] = useState(false);
 
-    dispatch({
-      type: 'node/clear',
-    });
-  }
-
-  queryNodeList = () => {
-    const {
-      dispatch,
-      node: { pagination },
-    } = this.props;
-    const { formValues } = this.state;
-
-    dispatch({
-      type: 'node/listNode',
-      payload: {
-        ...formValues,
+  const queryNodeList = useCallback(
+    (extra = {}) => {
+      refreshList({
         per_page: pagination.pageSize,
         page: pagination.current,
-      },
-    });
-  };
+        ...extra,
+      });
+    },
+    [pagination.current, pagination.pageSize, refreshList]
+  );
 
-  handleSelectRows = rows => {
-    this.setState({
-      selectedRows: rows,
-    });
-  };
-
-  handleTableChange = pagination => {
-    const { dispatch } = this.props;
-    const { formValues } = this.state;
-    const { current, pageSize } = pagination;
-    const params = {
-      page: current,
-      per_page: pageSize,
-      ...formValues,
+  useEffect(() => {
+    queryNodeList();
+    return () => {
+      dispatch({ type: 'node/clear' });
     };
-    dispatch({
-      type: 'node/listNode',
-      payload: params,
-    });
-  };
+  }, [dispatch, queryNodeList]);
 
-  registerUserCallback = () => {
-    const { intl } = this.props;
+  const registerUserCallback = useCallback(() => {
     message.success(
       intl.formatMessage({
         id: 'app.node.modal.success',
         defaultMessage: 'Registered User Successful.',
       })
     );
-    this.handleModalVisible();
-  };
+    setRegisterUserFormVisible(false);
+  }, [intl]);
 
-  handleModalVisible = visible => {
-    this.setState({
-      registerUserFormVisible: !!visible,
-    });
-  };
+  const handleModalVisible = useCallback(visible => {
+    setRegisterUserFormVisible(!!visible);
+  }, []);
 
-  handleRegisterUser = row => {
-    this.setState({
-      targetNodeId: row.id,
-    });
-    this.handleModalVisible(true);
-  };
+  const handleRegisterUser = useCallback(
+    row => {
+      setTargetNodeId(row.id);
+      handleModalVisible(true);
+    },
+    [handleModalVisible]
+  );
 
-  handleSubmit = values => {
-    const { dispatch } = this.props;
+  const handleSubmit = useCallback(
+    values => {
+      dispatch({
+        type: 'node/registerUserToNode',
+        payload: values,
+        callback: registerUserCallback,
+      });
+    },
+    [dispatch, registerUserCallback]
+  );
 
-    dispatch({
-      type: 'node/registerUserToNode',
-      payload: values,
-      callback: this.registerUserCallback,
-    });
-  };
+  const handleDeleteNode = useCallback(
+    record => {
+      showDeleteConfirm({
+        record,
+        deleteAction: 'node/deleteNode',
+        titleId: 'app.node.delete.title',
+        contentId: 'app.node.delete.confirm',
+        successId: 'app.node.delete.success',
+        failId: 'app.node.delete.fail',
+        getPayload: r => r.id,
+        onSuccess: () => queryNodeList(),
+      });
+    },
+    [queryNodeList, showDeleteConfirm]
+  );
 
-  deleteCallBack = res => {
-    const { intl } = this.props;
-
-    if (res.status === 'successful') {
-      message.success(
-        intl.formatMessage({
-          id: 'app.node.delete.success',
-          defaultMessage: 'Delete Node Successful.',
-        })
-      );
-      this.queryNodeList();
-    } else {
-      message.error(
-        intl.formatMessage({
-          id: 'app.node.delete.fail',
-          defaultMessage: 'Delete Node Failed.',
-        })
-      );
-    }
-  };
-
-  handleDeleteNode = row => {
-    const { dispatch, intl } = this.props;
-    const { deleteCallBack } = this;
-    const { id } = row;
-
-    Modal.confirm({
-      title: intl.formatMessage({
-        id: 'app.node.delete.title',
-        defaultMessage: 'Delete Node',
-      }),
-      content: intl.formatMessage(
-        {
-          id: 'app.node.delete.confirm',
-          defaultMessage:
-            'Deleting node {name} may cause abnormality in the blockchain network. Confirm delete?',
+  const operationForNode = useCallback(
+    (action, row) => {
+      dispatch({
+        type: 'node/operateNode',
+        payload: {
+          id: row.id,
+          message: action,
         },
-        {
-          name: row.name,
-        }
-      ),
-      okText: intl.formatMessage({ id: 'form.button.confirm', defaultMessage: 'Confirm' }),
-      cancelText: intl.formatMessage({ id: 'form.button.cancel', defaultMessage: 'Cancel' }),
-      onOk() {
-        dispatch({
-          type: 'node/deleteNode',
-          payload: id,
-          callback: deleteCallBack,
-        });
-      },
-    });
-  };
+        callback: data => {
+          message.success(
+            intl.formatMessage({
+              id: `app.node.operation.${data.payload.message}.success`,
+              defaultMessage: `${data.payload.message.substring(0, 1).toUpperCase() +
+                data.payload.message.substring(1)} Node Successful.`,
+            })
+          );
+          queryNodeList();
+        },
+      });
+    },
+    [dispatch, intl, queryNodeList]
+  );
 
-  operationForNodeCallback = data => {
-    const { intl } = this.props;
-    message.success(
-      intl.formatMessage({
-        id: `app.node.operation.${data.payload.message}.success`,
-        defaultMessage: `${data.payload.message.substring(0, 1).toUpperCase() +
-          data.payload.message.substring(1)} Node Successful.`,
-      })
-    );
-    this.queryNodeList();
-  };
+  const handleCreateModalVisible = useCallback(visible => {
+    setCreateModalVisible(!!visible);
+  }, []);
 
-  operationForNode = (action, row) => {
-    const { dispatch } = this.props;
+  const handleCreate = useCallback(
+    (values, callback) => {
+      dispatch({
+        type: 'node/createNode',
+        payload: values,
+        callback,
+      });
+    },
+    [dispatch]
+  );
 
-    dispatch({
-      type: 'node/operateNode',
-      payload: {
-        id: row.id,
-        message: action,
-      },
-      callback: this.operationForNodeCallback,
-    });
-  };
+  const handleDownloadConfig = useCallback(
+    row => {
+      dispatch({
+        type: 'node/downloadNodeConfig',
+        payload: { id: row.id },
+        callback: response => {
+          message.success(
+            intl.formatMessage({
+              id: 'app.node.download.success',
+              defaultMessage: 'Download Node Config File Successful.',
+            })
+          );
+          const dispositionHeader = response.response.headers.get('Content-Disposition');
+          const blob = response.data;
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(new Blob([blob], { type: 'application/zip' }));
+          link.download = dispositionHeader.split('filename=')[1];
+          document.body.appendChild(link);
+          link.click();
+          URL.revokeObjectURL(link.href);
+        },
+      });
+    },
+    [dispatch, intl]
+  );
 
-  handleCreateModalVisible = visible => {
-    this.setState({
-      createModalVisible: !!visible,
-    });
-  };
+  const handleUploadConfig = useCallback(
+    (row, formData) => {
+      dispatch({
+        type: 'node/uploadNodeConfig',
+        payload: { id: row.id, form: formData },
+        callback: () => {
+          message.success(
+            intl.formatMessage({
+              id: 'app.node.upload.success',
+              defaultMessage: 'Upload config file succeed',
+            })
+          );
+        },
+      });
+    },
+    [dispatch, intl]
+  );
 
-  handleCreate = (values, callback) => {
-    const { dispatch } = this.props;
+  const handleJoinChannel = useCallback(
+    (row, formData) => {
+      dispatch({
+        type: 'node/nodeJoinChannel',
+        payload: { id: row.id, form: formData },
+        callback: () => {
+          message.success(
+            intl.formatMessage({
+              id: 'app.node.joinChannel.success',
+              defaultMessage: 'Join Channel succeed',
+            })
+          );
+        },
+      });
+    },
+    [dispatch, intl]
+  );
 
-    dispatch({
-      type: 'node/createNode',
-      payload: values,
-      callback,
-    });
-  };
-
-  handleDownloadConfig = row => {
-    const { dispatch } = this.props;
-    const params = {
-      id: row.id,
-    };
-    dispatch({
-      type: 'node/downloadNodeConfig',
-      payload: params,
-      callback: this.downloadCallBack,
-    });
-  };
-
-  downloadCallBack = response => {
-    const { intl } = this.props;
-    message.success(
-      intl.formatMessage({
-        id: 'app.node.download.success',
-        defaultMessage: 'Download Node Config File Successful.',
-      })
-    );
-    const dispositionHeader = response.response.headers.get('Content-Disposition');
-    const blob = response.data;
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(new Blob([blob], { type: 'application/zip' }));
-    link.download = dispositionHeader.split('filename=')[1];
-    document.body.appendChild(link);
-    link.click();
-    URL.revokeObjectURL(link.href);
-  };
-
-  handleUploadConfig = (row, formData) => {
-    const { dispatch } = this.props;
-    const params = {
-      id: row.id,
-      form: formData,
-    };
-    dispatch({
-      type: 'node/uploadNodeConfig',
-      payload: params,
-      callback: this.uploadCallBack,
-    });
-  };
-
-  uploadCallBack = () => {
-    const { intl } = this.props;
-    message.success(
-      intl.formatMessage({
-        id: 'app.node.upload.success',
-        defaultMessage: 'Upload config file succeed',
-      })
-    );
-  };
-
-  handleJoinChannel = (row, formData) => {
-    const { dispatch } = this.props;
-    const params = {
-      id: row.id,
-      form: formData,
-    };
-    dispatch({
-      type: 'node/nodeJoinChannel',
-      payload: params,
-      callback: this.joinCallBack,
-    });
-  };
-
-  joinCallBack = () => {
-    const { intl } = this.props;
-    message.success(
-      intl.formatMessage({
-        id: 'app.node.joinChannel.success',
-        defaultMessage: 'Join Channel succeed',
-      })
-    );
-  };
-
-  render() {
-    const { selectedRows, registerUserFormVisible, targetNodeId, createModalVisible } = this.state;
-
-    const userRole = getAuthority()[0];
-
-    const {
-      node: { nodes, pagination },
-      loadingNodes,
-      registeringUser,
-      intl,
-      creating,
-    } = this.props;
-
-    const formProps = {
+  const formProps = useMemo(
+    () => ({
       registerUserFormVisible,
-      handleSubmit: this.handleSubmit,
-      handleModalVisible: this.handleModalVisible,
+      handleSubmit,
+      handleModalVisible,
       registeringUser,
       targetNodeId,
       intl,
-    };
+    }),
+    [registerUserFormVisible, handleSubmit, handleModalVisible, registeringUser, targetNodeId, intl]
+  );
 
-    const createFormProps = {
+  const createFormProps = useMemo(
+    () => ({
       createModalVisible,
-      handleCreate: this.handleCreate,
-      handleModalVisible: this.handleCreateModalVisible,
+      handleCreate,
+      handleModalVisible: handleCreateModalVisible,
       creating,
       intl,
-      queryNodeList: this.queryNodeList,
-    };
+      queryNodeList,
+    }),
+    [createModalVisible, handleCreate, handleCreateModalVisible, creating, intl, queryNodeList]
+  );
 
-    function badgeStatus(status) {
-      let statusOfBadge = 'default';
-      switch (status) {
-        case 'running':
-          statusOfBadge = 'success';
-          break;
-        case 'deploying':
-          statusOfBadge = 'processing';
-          break;
-        case 'deleting':
-          statusOfBadge = 'processing';
-          break;
-        case 'stopped':
-          statusOfBadge = 'warning';
-          break;
-        default:
-          break;
-      }
-
-      return statusOfBadge;
+  const badgeStatus = status => {
+    let statusOfBadge = 'default';
+    switch (status) {
+      case 'running':
+        statusOfBadge = 'success';
+        break;
+      case 'deploying':
+      case 'deleting':
+        statusOfBadge = 'processing';
+        break;
+      case 'stopped':
+        statusOfBadge = 'warning';
+        break;
+      default:
+        break;
     }
+    return statusOfBadge;
+  };
 
-    // prevent the default http upload request in antd
-    const dummyRequest = ({ onSuccess }) => {
-      setTimeout(() => {
-        onSuccess('ok');
-      }, 0);
-    };
+  const dummyRequest = ({ onSuccess }) => {
+    setTimeout(() => {
+      onSuccess('ok');
+    }, 0);
+  };
 
-    const menu = record => (
-      <Menu>
-        {record.type.toLowerCase() === 'ca' && (
-          <Menu.Item>
-            <a onClick={() => this.handleRegisterUser(record)}>
-              {intl.formatMessage({
-                id: 'app.node.table.operation.registerUser',
-                defaultMessage: 'Register User',
-              })}
-            </a>
-          </Menu.Item>
-        )}
-        {(record.type.toLowerCase() === 'peer' || record.type.toLowerCase() === 'orderer') && (
-          <Menu.Item>
-            <a onClick={() => this.handleDownloadConfig(record)}>
-              {intl.formatMessage({ id: 'form.menu.item.download', defaultMessage: 'Download' })}
-            </a>
-          </Menu.Item>
-        )}
-        {(record.type.toLowerCase() === 'peer' || record.type.toLowerCase() === 'orderer') && (
-          <Menu.Item>
-            <Upload
-              {...{
-                showUploadList: false,
-                customRequest: dummyRequest,
-                onChange: info => {
-                  if (info.file.name.split('.').pop() !== 'yaml') {
-                    message.error('Only accept yaml file.');
-                    return;
-                  }
-                  if (info.file.status === 'done') {
-                    const formData = new FormData();
-                    formData.append('file', info.fileList[0].originFileObj);
-                    this.handleUploadConfig(record, formData);
-                  }
-                },
-              }}
-            >
-              <a style={{ color: 'inherit' }}>
-                {intl.formatMessage({ id: 'form.menu.item.upload', defaultMessage: 'Upload' })}
-              </a>
-            </Upload>
-          </Menu.Item>
-        )}
-        {record.type.toLowerCase() === 'peer' && (
-          <Menu.Item>
-            <Upload
-              {...{
-                showUploadList: false,
-                customRequest: dummyRequest,
-                onChange: info => {
-                  if (info.file.name.split('.').pop() !== 'block') {
-                    message.error('Only accept block file.');
-                    return;
-                  }
-                  if (info.file.status === 'done') {
-                    const formData = new FormData();
-                    formData.append('file', info.fileList[0].originFileObj);
-                    this.handleJoinChannel(record, formData);
-                  }
-                },
-              }}
-            >
-              <a style={{ color: 'inherit' }}>
-                {intl.formatMessage({
-                  id: 'form.menu.item.joinChannel',
-                  defaultMessage: 'Join Channel',
-                })}
-              </a>
-            </Upload>
-          </Menu.Item>
-        )}
+  const menu = record => (
+    <Menu>
+      {record.type.toLowerCase() === 'ca' && (
         <Menu.Item>
-          <a onClick={() => this.handleDeleteNode(record)}>
-            {intl.formatMessage({ id: 'form.menu.item.delete', defaultMessage: 'Delete' })}
+          <a onClick={() => handleRegisterUser(record)}>
+            {intl.formatMessage({
+              id: 'app.node.table.operation.registerUser',
+              defaultMessage: 'Register User',
+            })}
           </a>
         </Menu.Item>
-      </Menu>
-    );
-
-    const MoreBtn = record => (
-      <Dropdown overlay={menu(record)}>
-        <a>
-          {intl.formatMessage({
-            id: 'app.node.table.operation.more',
-            defaultMessage: 'More',
-          })}{' '}
-          <DownOutlined />
+      )}
+      {(record.type.toLowerCase() === 'peer' || record.type.toLowerCase() === 'orderer') && (
+        <Menu.Item>
+          <a onClick={() => handleDownloadConfig(record)}>
+            {intl.formatMessage({ id: 'form.menu.item.download', defaultMessage: 'Download' })}
+          </a>
+        </Menu.Item>
+      )}
+      {(record.type.toLowerCase() === 'peer' || record.type.toLowerCase() === 'orderer') && (
+        <Menu.Item>
+          <Upload
+            showUploadList={false}
+            customRequest={dummyRequest}
+            onChange={info => {
+              if (info.file.name.split('.').pop() !== 'yaml') {
+                message.error('Only accept yaml file.');
+                return;
+              }
+              if (info.file.status === 'done') {
+                const formData = new FormData();
+                formData.append('file', info.fileList[0].originFileObj);
+                handleUploadConfig(record, formData);
+              }
+            }}
+          >
+            <a style={{ color: 'inherit' }}>
+              {intl.formatMessage({ id: 'form.menu.item.upload', defaultMessage: 'Upload' })}
+            </a>
+          </Upload>
+        </Menu.Item>
+      )}
+      {record.type.toLowerCase() === 'peer' && (
+        <Menu.Item>
+          <Upload
+            showUploadList={false}
+            customRequest={dummyRequest}
+            onChange={info => {
+              if (info.file.name.split('.').pop() !== 'block') {
+                message.error('Only accept block file.');
+                return;
+              }
+              if (info.file.status === 'done') {
+                const formData = new FormData();
+                formData.append('file', info.fileList[0].originFileObj);
+                handleJoinChannel(record, formData);
+              }
+            }}
+          >
+            <a style={{ color: 'inherit' }}>
+              {intl.formatMessage({
+                id: 'form.menu.item.joinChannel',
+                defaultMessage: 'Join Channel',
+              })}
+            </a>
+          </Upload>
+        </Menu.Item>
+      )}
+      <Menu.Item>
+        <a onClick={() => handleDeleteNode(record)}>
+          {intl.formatMessage({ id: 'form.menu.item.delete', defaultMessage: 'Delete' })}
         </a>
-      </Dropdown>
-    );
+      </Menu.Item>
+    </Menu>
+  );
 
-    const columns = [
-      {
-        title: intl.formatMessage({
-          id: 'app.node.table.header.name',
-          defaultMessage: 'Name',
-        }),
-        dataIndex: 'name',
-      },
-      {
-        title: intl.formatMessage({
-          id: 'app.node.table.header.type',
-          defaultMessage: 'Type',
-        }),
-        dataIndex: 'type',
-        render: text => text.toLowerCase(),
-      },
-      {
-        title: intl.formatMessage({
-          id: 'app.node.table.header.creationTime',
-          defaultMessage: 'Creation Time',
-        }),
-        dataIndex: 'created_at',
-        render: text => <span>{moment(text).format('YYYY-MM-DD HH:mm:ss')}</span>,
-      },
-      {
-        title: intl.formatMessage({
-          id: 'app.node.table.header.status',
-          defaultMessage: 'Status',
-        }),
-        dataIndex: 'status',
-        render: text => (
-          <Badge status={badgeStatus(text.toLowerCase())} text={text.toLowerCase()} />
-        ),
-      },
-      {
-        title: intl.formatMessage({
-          id: 'form.table.header.operation',
-          defaultMessage: 'Operation',
-        }),
-        render: (text, record) => (
-          <Fragment>
-            {record.status.toLowerCase() === 'running' && (
-              <a onClick={() => this.operationForNode('stop', record)}>
+  const MoreBtn = record => (
+    <Dropdown overlay={menu(record)}>
+      <a>
+        {intl.formatMessage({
+          id: 'app.node.table.operation.more',
+          defaultMessage: 'More',
+        })}{' '}
+        <DownOutlined />
+      </a>
+    </Dropdown>
+  );
+
+  const columns = [
+    {
+      title: intl.formatMessage({
+        id: 'app.node.table.header.name',
+        defaultMessage: 'Name',
+      }),
+      dataIndex: 'name',
+    },
+    {
+      title: intl.formatMessage({
+        id: 'app.node.table.header.type',
+        defaultMessage: 'Type',
+      }),
+      dataIndex: 'type',
+      render: text => text.toLowerCase(),
+    },
+    {
+      title: intl.formatMessage({
+        id: 'app.node.table.header.creationTime',
+        defaultMessage: 'Creation Time',
+      }),
+      dataIndex: 'created_at',
+      render: text => <span>{moment(text).format('YYYY-MM-DD HH:mm:ss')}</span>,
+    },
+    {
+      title: intl.formatMessage({
+        id: 'app.node.table.header.status',
+        defaultMessage: 'Status',
+      }),
+      dataIndex: 'status',
+      render: text => <Badge status={badgeStatus(text.toLowerCase())} text={text.toLowerCase()} />,
+    },
+    {
+      title: intl.formatMessage({
+        id: 'form.table.header.operation',
+        defaultMessage: 'Operation',
+      }),
+      render: (text, record) => (
+        <Fragment>
+          {record.status.toLowerCase() === 'running' && (
+            <a onClick={() => operationForNode('stop', record)}>
+              {intl.formatMessage({
+                id: 'app.node.table.operation.stop',
+                defaultMessage: 'Stop',
+              })}
+            </a>
+          )}
+          {record.status.toLowerCase() === 'stopped' && (
+            <Menu.Item>
+              <a onClick={() => operationForNode('start', record)}>
                 {intl.formatMessage({
-                  id: 'app.node.table.operation.stop',
-                  defaultMessage: 'Stop',
+                  id: 'app.node.table.operation.start',
+                  defaultMessage: 'Start',
                 })}
               </a>
-            )}
-            {record.status.toLowerCase() === 'stopped' && (
-              <Menu.Item>
-                <a onClick={() => this.operationForNode('start', record)}>
-                  {intl.formatMessage({
-                    id: 'app.node.table.operation.start',
-                    defaultMessage: 'Start',
-                  })}
-                </a>
-              </Menu.Item>
-            )}
-            <Divider type="vertical" />
-            <MoreBtn {...record} />
-          </Fragment>
-        ),
-      },
-    ];
+            </Menu.Item>
+          )}
+          <Divider type="vertical" />
+          <MoreBtn {...record} />
+        </Fragment>
+      ),
+    },
+  ];
 
-    return (
-      <PageHeaderWrapper
-        title={
-          <span>
-            {<NodeIndexOutlined style={{ marginRight: 15 }} />}
-            {intl.formatMessage({
-              id: 'app.node.title',
-              defaultMessage: 'Node Management',
-            })}
-          </span>
-        }
-      >
-        <Card bordered={false}>
-          <div className={styles.tableList}>
-            <div className={styles.tableListOperator}>
-              {userRole !== 'operator' && (
-                <Button type="primary" onClick={() => this.handleCreateModalVisible(true)}>
-                  <PlusOutlined />
-                  {intl.formatMessage({ id: 'form.button.new', defaultMessage: 'New' })}
-                </Button>
-              )}
-            </div>
-            <StandardTable
-              selectedRows={selectedRows}
-              loading={loadingNodes}
-              rowKey="id"
-              data={{
-                list: nodes,
-                pagination,
-              }}
-              columns={columns}
-              onSelectRow={this.handleSelectRows}
-              onChange={this.handleTableChange}
-            />
+  return (
+    <PageHeaderWrapper
+      title={
+        <span>
+          <NodeIndexOutlined style={{ marginRight: 15 }} />
+          {intl.formatMessage({
+            id: 'app.node.title',
+            defaultMessage: 'Node Management',
+          })}
+        </span>
+      }
+    >
+      <Card bordered={false}>
+        <div className={styles.tableList}>
+          <div className={styles.tableListOperator}>
+            {userRole !== 'operator' && (
+              <Button type="primary" onClick={() => handleCreateModalVisible(true)}>
+                <PlusOutlined />
+                {intl.formatMessage({ id: 'form.button.new', defaultMessage: 'New' })}
+              </Button>
+            )}
           </div>
-        </Card>
-        <RegisterUserForm {...formProps} />
-        <CreateNode {...createFormProps} />
-      </PageHeaderWrapper>
-    );
-  }
-}
+          <StandardTable
+            selectedRows={selectedRows}
+            loading={loadingNodes}
+            rowKey="id"
+            data={{
+              list: nodes,
+              pagination,
+            }}
+            columns={columns}
+            onSelectRow={handleSelectRows}
+            onChange={handleTableChange}
+          />
+        </div>
+      </Card>
+      <RegisterUserForm {...formProps} />
+      <CreateNode {...createFormProps} />
+    </PageHeaderWrapper>
+  );
+};
 
-export default injectIntl(Index);
+export default connect(({ node, loading }) => ({
+  node,
+  loadingNodes: loading.effects['node/listNode'],
+  registeringUser: loading.effects['node/registerUserToNode'],
+  creating: loading.effects['node/createNode'],
+}))(Index);

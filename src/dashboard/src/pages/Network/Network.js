@@ -1,197 +1,131 @@
 /*
  SPDX-License-Identifier: Apache-2.0
 */
-import React, { PureComponent, Fragment } from 'react';
-import { connect, injectIntl, history } from 'umi';
-import { Card, Button, Modal, message, Divider } from 'antd';
+import React, { Fragment, useEffect } from 'react';
+import { connect, history, useIntl } from 'umi';
+import { Card, Button, Divider } from 'antd';
 import { PlusOutlined, ApartmentOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import StandardTable from '@/components/StandardTable';
+import { useDeleteConfirm, useTableManagement } from '@/hooks';
 import styles from './styles.less';
 
-@connect(({ network, loading }) => ({
-  network,
-  loadingNetworks: loading.effects['network/listNetwork'],
-}))
-class Network extends PureComponent {
-  state = {
-    selectedRows: [],
-    formValues: {},
-  };
+const Network = ({ dispatch, network = {}, loadingNetworks }) => {
+  const intl = useIntl();
+  const { networks = [], pagination = {} } = network;
 
-  componentDidMount() {
-    const { dispatch } = this.props;
+  const {
+    selectedRows,
+    handleSelectRows,
+    handleTableChange,
+    refreshList,
+    clearSelectedRows,
+  } = useTableManagement({
+    dispatch,
+    listAction: 'network/listNetwork',
+  });
+  const { showDeleteConfirm } = useDeleteConfirm({ dispatch, intl });
 
-    dispatch({
-      type: 'network/listNetwork',
-    });
-  }
-
-  componentWillUnmount() {
-    this.queryNetworkList();
-  }
-
-  handleTableChange = pagination => {
-    const { dispatch } = this.props;
-    const { formValues } = this.state;
-    const { current, pageSize } = pagination;
-    const params = {
-      page: current,
-      per_page: pageSize,
-      ...formValues,
+  useEffect(() => {
+    dispatch({ type: 'network/listNetwork' });
+    // Preserve original unmount behavior (re-query on unmount)
+    return () => {
+      dispatch({ type: 'network/listNetwork' });
     };
-    dispatch({
-      type: 'network/listNetwork',
-      payload: params,
-    });
-  };
+  }, [dispatch]);
 
-  newNetwork = () => {
+  const newNetwork = () => {
     history.push('/network/newNetwork');
   };
 
-  queryNetworkList = () => {
-    const { dispatch } = this.props;
-
-    dispatch({
-      type: 'network/listNetwork',
+  const handleDeleteNetwork = record => {
+    showDeleteConfirm({
+      record,
+      deleteAction: 'network/deleteNetwork',
+      titleId: 'app.network.form.delete.title',
+      contentId: 'app.network.form.delete.content',
+      successId: 'app.network.delete.success',
+      failId: 'app.network.delete.fail',
+      onSuccess: () => {
+        clearSelectedRows();
+        refreshList();
+      },
     });
   };
 
-  handleDeleteNetwork = row => {
-    const { dispatch, intl } = this.props;
-    const { deleteCallBack } = this;
-    const { id } = row;
-
-    Modal.confirm({
+  const columns = [
+    {
       title: intl.formatMessage({
-        id: 'app.network.form.delete.title',
-        defaultMessage: 'Delete Network',
+        id: 'app.network.table.header.name',
+        defaultMessage: 'Network Name',
       }),
-      content: intl.formatMessage(
-        {
-          id: 'app.network.form.delete.content',
-          defaultMessage: 'Confirm to delete network {name}?',
-        },
-        {
-          name: row.name,
-        }
+      dataIndex: 'name',
+    },
+    {
+      title: intl.formatMessage({
+        id: 'app.network.table.header.creationTime',
+        defaultMessage: 'Create Time',
+      }),
+      dataIndex: 'created_at',
+      render: text => <span>{moment(text).format('YYYY-MM-DD HH:mm:ss')}</span>,
+    },
+    {
+      title: intl.formatMessage({
+        id: 'form.table.header.operation',
+        defaultMessage: 'Operation',
+      }),
+      render: (text, record) => (
+        <Fragment>
+          <a>{intl.formatMessage({ id: 'form.menu.item.update', defaultMessage: 'Update' })}</a>
+          <Divider type="vertical" />
+          <a className={styles.danger} onClick={() => handleDeleteNetwork(record)}>
+            {intl.formatMessage({ id: 'form.menu.item.delete', defaultMessage: 'Delete' })}
+          </a>
+        </Fragment>
       ),
-      okText: intl.formatMessage({ id: 'form.button.confirm', defaultMessage: 'Confirm' }),
-      cancelText: intl.formatMessage({ id: 'form.button.cancel', defaultMessage: 'Cancel' }),
-      onOk() {
-        dispatch({
-          type: 'network/deleteNetwork',
-          payload: id,
-          callback: deleteCallBack,
-        });
-      },
-    });
-  };
+    },
+  ];
 
-  deleteCallBack = response => {
-    const { intl } = this.props;
-    if (response.status === 'successful') {
-      message.success(
-        intl.formatMessage({
-          id: 'app.network.delete.success',
-          defaultMessage: 'Delete Network success.',
-        })
-      );
-      this.queryNetworkList();
-    } else {
-      message.error(
-        intl.formatMessage({
-          id: 'app.network.delete.fail',
-          defaultMessage: 'Delete Network failed.',
-        })
-      );
-    }
-  };
-
-  handleSelectRows = rows => {
-    this.setState({
-      selectedRows: rows,
-    });
-  };
-
-  render() {
-    const { selectedRows } = this.state;
-    const {
-      network: { networks, pagination },
-      loadingNetworks,
-      intl,
-    } = this.props;
-    const columns = [
-      {
-        title: intl.formatMessage({
-          id: 'app.network.table.header.name',
-          defaultMessage: 'Network Name',
-        }),
-        dataIndex: 'name',
-      },
-      {
-        title: intl.formatMessage({
-          id: 'app.network.table.header.creationTime',
-          defaultMessage: 'Create Time',
-        }),
-        dataIndex: 'created_at',
-        render: text => <span>{moment(text).format('YYYY-MM-DD HH:mm:ss')}</span>,
-      },
-      {
-        title: intl.formatMessage({
-          id: 'form.table.header.operation',
-          defaultMessage: 'Operation',
-        }),
-        render: (text, record) => (
-          <Fragment>
-            <a>{intl.formatMessage({ id: 'form.menu.item.update', defaultMessage: 'Update' })}</a>
-            <Divider type="vertical" />
-            <a className={styles.danger} onClick={() => this.handleDeleteNetwork(record)}>
-              {intl.formatMessage({ id: 'form.menu.item.delete', defaultMessage: 'Delete' })}
-            </a>
-          </Fragment>
-        ),
-      },
-    ];
-    return (
-      <PageHeaderWrapper
-        title={
-          <span>
-            {<ApartmentOutlined style={{ marginRight: 15 }} />}
-            {intl.formatMessage({
-              id: 'app.network.title',
-              defaultMessage: 'Network Management',
-            })}
-          </span>
-        }
-      >
-        <Card bordered={false}>
-          <div className={styles.tableList}>
-            <div className={styles.tableListOperator}>
-              <Button type="primary" onClick={() => this.newNetwork()}>
-                <PlusOutlined />
-                {intl.formatMessage({ id: 'form.button.new', defaultMessage: 'New' })}
-              </Button>
-            </div>
-            <StandardTable
-              selectedRows={selectedRows}
-              loading={loadingNetworks}
-              rowKey="id"
-              data={{
-                list: networks,
-                pagination,
-              }}
-              columns={columns}
-              onSelectRow={this.handleSelectRows}
-              onChange={this.handleTableChange}
-            />
+  return (
+    <PageHeaderWrapper
+      title={
+        <span>
+          <ApartmentOutlined style={{ marginRight: 15 }} />
+          {intl.formatMessage({
+            id: 'app.network.title',
+            defaultMessage: 'Network Management',
+          })}
+        </span>
+      }
+    >
+      <Card bordered={false}>
+        <div className={styles.tableList}>
+          <div className={styles.tableListOperator}>
+            <Button type="primary" onClick={newNetwork}>
+              <PlusOutlined />
+              {intl.formatMessage({ id: 'form.button.new', defaultMessage: 'New' })}
+            </Button>
           </div>
-        </Card>
-      </PageHeaderWrapper>
-    );
-  }
-}
+          <StandardTable
+            selectedRows={selectedRows}
+            loading={loadingNetworks}
+            rowKey="id"
+            data={{
+              list: networks,
+              pagination,
+            }}
+            columns={columns}
+            onSelectRow={handleSelectRows}
+            onChange={handleTableChange}
+          />
+        </div>
+      </Card>
+    </PageHeaderWrapper>
+  );
+};
 
-export default injectIntl(Network);
+export default connect(({ network, loading }) => ({
+  network,
+  loadingNetworks: loading.effects['network/listNetwork'],
+}))(Network);
