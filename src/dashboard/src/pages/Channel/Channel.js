@@ -1,12 +1,13 @@
 /*
  SPDX-License-Identifier: Apache-2.0
 */
-import React, { PureComponent, Fragment } from 'react';
-import { connect, injectIntl, useIntl } from 'umi';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { connect, useIntl } from 'umi';
 import { Card, Button, Modal, message, Input, Select, Form, Tag, Upload } from 'antd';
 import { PlusOutlined, UploadOutlined, DeploymentUnitOutlined } from '@ant-design/icons';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import StandardTable from '@/components/StandardTable';
+import { useTableManagement } from '@/hooks';
 import styles from './styles.less';
 
 const FormItem = Form.Item;
@@ -342,264 +343,171 @@ const UpdateChannel = props => {
   );
 };
 
-@connect(({ channel, node, loading }) => ({
+const Channel = ({ dispatch, channel = {}, node = {}, loadingChannels, creating, updating }) => {
+  const intl = useIntl();
+  const { channels = [], pagination = {} } = channel;
+  const { nodes = {} } = node;
+
+  const { selectedRows, handleSelectRows, handleTableChange, refreshList } = useTableManagement({
+    dispatch,
+    listAction: 'channel/listChannel',
+  });
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [updateModalVisible, setUpdateModalVisible] = useState(false);
+  const [channelData, setChannelData] = useState({});
+  const [newFile, setFile] = useState(null);
+
+  useEffect(() => {
+    dispatch({ type: 'channel/listChannel' });
+    dispatch({ type: 'node/listNode' });
+    return () => {
+      dispatch({ type: 'channel/clear' });
+    };
+  }, [dispatch]);
+
+  const fetchChannels = useCallback(() => {
+    refreshList();
+    dispatch({ type: 'node/listNode' });
+  }, [dispatch, refreshList]);
+
+  const handleModalVisible = useCallback(visible => {
+    setModalVisible(!!visible);
+  }, []);
+
+  const handleUpdateModalVisible = useCallback((visible, record) => {
+    setUpdateModalVisible(!!visible);
+    setChannelData(record || {});
+  }, []);
+
+  const onCreateChannel = useCallback(() => {
+    handleModalVisible(true);
+  }, [handleModalVisible]);
+
+  const handleCreate = useCallback(
+    (values, callback) => {
+      dispatch({
+        type: 'channel/createChannel',
+        payload: values,
+        callback,
+      });
+    },
+    [dispatch]
+  );
+
+  const handleUpdate = useCallback(
+    (id, values, callback) => {
+      const formData = new FormData();
+      Object.keys(values).forEach(key => {
+        formData.append(key, values[key]);
+      });
+      dispatch({
+        type: 'channel/updateChannel',
+        id,
+        payload: formData,
+        callback,
+      });
+    },
+    [dispatch]
+  );
+
+  const formProps = useMemo(
+    () => ({
+      modalVisible,
+      handleCreate,
+      handleModalVisible,
+      fetchChannels,
+      creating,
+      intl,
+      nodes,
+    }),
+    [modalVisible, handleCreate, handleModalVisible, fetchChannels, creating, intl, nodes]
+  );
+
+  const updateFormProps = useMemo(
+    () => ({
+      updateModalVisible,
+      handleUpdate,
+      handleModalVisible: handleUpdateModalVisible,
+      fetchChannels,
+      updating,
+      channelData,
+      newFile,
+      setFile,
+      intl,
+    }),
+    [
+      updateModalVisible,
+      handleUpdate,
+      handleUpdateModalVisible,
+      fetchChannels,
+      updating,
+      channelData,
+      newFile,
+      intl,
+    ]
+  );
+
+  const columns = [
+    {
+      title: intl.formatMessage({
+        id: 'app.channel.table.header.name',
+        defaultMessage: 'Channel Name',
+      }),
+      dataIndex: 'name',
+    },
+    {
+      title: intl.formatMessage({
+        id: 'form.table.header.operation',
+        defaultMessage: 'Operation',
+      }),
+    },
+  ];
+
+  return (
+    <PageHeaderWrapper
+      title={
+        <span>
+          <DeploymentUnitOutlined style={{ marginRight: 15 }} />
+          {intl.formatMessage({
+            id: 'app.channel.title',
+            defaultMessage: 'Channel Management',
+          })}
+        </span>
+      }
+    >
+      <Card bordered={false}>
+        <div className={styles.tableList}>
+          <div className={styles.tableListOperator}>
+            <Button type="primary" onClick={onCreateChannel}>
+              <PlusOutlined />
+              {intl.formatMessage({ id: 'form.button.new', defaultMessage: 'New' })}
+            </Button>
+          </div>
+          <StandardTable
+            selectedRows={selectedRows}
+            loading={loadingChannels}
+            rowKey="id"
+            data={{
+              list: channels,
+              pagination,
+            }}
+            columns={columns}
+            onSelectRow={handleSelectRows}
+            onChange={handleTableChange}
+          />
+        </div>
+      </Card>
+      <CreateChannel {...formProps} />
+      <UpdateChannel {...updateFormProps} />
+    </PageHeaderWrapper>
+  );
+};
+
+export default connect(({ channel, node, loading }) => ({
   channel,
   node,
   loadingChannels: loading.effects['channel/listChannel'],
   creating: loading.effects['channel/createChannel'],
   updating: loading.effects['channel/updateChannel'],
-}))
-class Channel extends PureComponent {
-  state = {
-    selectedRows: [],
-    formValues: {},
-    modalVisible: false,
-    updateModalVisible: false,
-    channelData: {},
-    newFile: '',
-  };
-
-  componentDidMount() {
-    this.fetchChannels();
-  }
-
-  componentWillUnmount() {
-    const { dispatch } = this.props;
-
-    dispatch({
-      type: 'channel/clear',
-    });
-  }
-
-  fetchChannels = () => {
-    const {
-      dispatch,
-      channel: { pagination },
-    } = this.props;
-    const { formValues } = this.state;
-
-    dispatch({
-      type: 'channel/listChannel',
-      payload: {
-        ...formValues,
-        per_page: pagination.pageSize,
-        page: pagination.current,
-      },
-    });
-
-    dispatch({
-      type: 'node/listNode',
-    });
-  };
-
-  handleTableChange = pagination => {
-    const { dispatch } = this.props;
-    const { formValues } = this.state;
-    const { current, pageSize } = pagination;
-    const params = {
-      page: current,
-      per_page: pageSize,
-      ...formValues,
-    };
-    dispatch({
-      type: 'channel/listChannel',
-      payload: params,
-    });
-  };
-
-  handleModalVisible = visible => {
-    this.setState({
-      modalVisible: !!visible,
-    });
-  };
-
-  handleUpdateModalVisible = (visible, record) => {
-    this.setState({
-      updateModalVisible: !!visible,
-      channelData: record,
-    });
-  };
-
-  onUpdateChannel = record => {
-    this.handleUpdateModalVisible(true, record);
-  };
-
-  setFile = file => {
-    this.setState({ newFile: file });
-  };
-
-  onCreateChannel = () => {
-    this.handleModalVisible(true);
-  };
-
-  handleCreate = (values, callback) => {
-    const { dispatch } = this.props;
-
-    dispatch({
-      type: 'channel/createChannel',
-      payload: values,
-      callback,
-    });
-  };
-
-  handleDownloadConfig = row => {
-    const { dispatch } = this.props;
-    const params = {
-      id: row.id,
-    };
-    dispatch({
-      type: 'channel/getNodeConfig',
-      payload: params,
-      callback: this.downloadCallBack,
-    });
-  };
-
-  downloadCallBack = response => {
-    const { intl } = this.props;
-    message.success(
-      intl.formatMessage({
-        id: 'app.channel.download.success',
-        defaultMessage: 'Download Channel Config File Successful.',
-      })
-    );
-    const blob = response.data;
-    const prettyJSON = JSON.stringify(blob, null, 2);
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(new Blob([prettyJSON], { type: 'application/json' }));
-    link.download = 'configs.json';
-    document.body.appendChild(link);
-    link.click();
-    URL.revokeObjectURL(link.href);
-  };
-
-  handleUpdate = (id, values, callback) => {
-    const { dispatch } = this.props;
-    const formData = new FormData();
-
-    Object.keys(values).forEach(key => {
-      formData.append(key, values[key]);
-    });
-
-    dispatch({
-      type: 'channel/updateChannel',
-      id,
-      payload: formData,
-      callback,
-    });
-  };
-
-  handleSelectRows = rows => {
-    this.setState({
-      selectedRows: rows,
-    });
-  };
-
-  render() {
-    const { selectedRows, modalVisible, channelData, updateModalVisible, newFile } = this.state;
-    const {
-      channel: { channels, pagination },
-      node: { nodes },
-      loadingChannels,
-      intl,
-      creating,
-      updating,
-    } = this.props;
-
-    const formProps = {
-      modalVisible,
-      handleCreate: this.handleCreate,
-      handleModalVisible: this.handleModalVisible,
-      fetchChannels: this.fetchChannels,
-      creating,
-      intl,
-      nodes,
-    };
-
-    const updateFormProps = {
-      updateModalVisible,
-      handleUpdate: this.handleUpdate,
-      handleModalVisible: this.handleUpdateModalVisible,
-      fetchChannels: this.fetchChannels,
-      updating,
-      intl,
-      channelData,
-      newFile,
-      setFile: this.setFile,
-    };
-
-    const columns = [
-      {
-        title: intl.formatMessage({
-          id: 'app.channel.table.header.name',
-          defaultMessage: 'Channel Name',
-        }),
-        dataIndex: 'name',
-      },
-      // {
-      //   title: intl.formatMessage({
-      //     id: 'app.channel.table.header.network',
-      //     defaultMessage: 'Network',
-      //   }),
-      //   render: (text, record) => record.network.name,
-      // },
-      {
-        title: intl.formatMessage({
-          id: 'form.table.header.operation',
-          defaultMessage: 'Operation',
-        }),
-        // eslint-disable-next-line no-unused-vars
-        render: (text, record) => (
-          <Fragment>
-            {/* <a onClick={() => this.onUpdateChannel(record)}>
-              {intl.formatMessage({ id: 'form.menu.item.update', defaultMessage: 'Update' })}
-            </a>
-            <Divider type="vertical" />
-            <a onClick={() => this.handleDownloadConfig(record)}>
-              {intl.formatMessage({ id: 'form.menu.item.download', defaultMessage: 'Download' })}
-            </a> */}
-          </Fragment>
-        ),
-      },
-    ];
-    return (
-      <PageHeaderWrapper
-        title={
-          <span>
-            {<DeploymentUnitOutlined style={{ marginRight: 15 }} />}
-            {intl.formatMessage({
-              id: 'app.channel.title',
-              defaultMessage: 'Channel Management',
-            })}
-          </span>
-        }
-      >
-        <Card bordered={false}>
-          <div className={styles.tableList}>
-            <div className={styles.tableListOperator}>
-              <Button type="primary" onClick={this.onCreateChannel}>
-                <PlusOutlined />
-                {intl.formatMessage({ id: 'form.button.new', defaultMessage: 'New' })}
-              </Button>
-            </div>
-            <StandardTable
-              selectedRows={selectedRows}
-              loading={loadingChannels}
-              rowKey="id"
-              data={{
-                list: channels,
-                pagination,
-              }}
-              columns={columns}
-              onSelectRow={this.handleSelectRows}
-              onChange={this.handleTableChange}
-            />
-          </div>
-        </Card>
-        <CreateChannel {...formProps} />
-        <UpdateChannel {...updateFormProps} />
-      </PageHeaderWrapper>
-    );
-  }
-}
-
-export default injectIntl(Channel);
+}))(Channel);

@@ -1,10 +1,11 @@
-import React, { PureComponent } from 'react';
-import { connect, useIntl, injectIntl } from 'umi';
+import React, { useCallback, useEffect } from 'react';
+import { connect, useIntl } from 'umi';
 import { Card, Button, message, List, Badge, Row, Col, Modal, Form, Select, Input } from 'antd';
 import { PlusOutlined, DesktopOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import { getAuthority } from '@/utils/authority';
+import { useDeleteConfirm, useModalForm, useTableManagement } from '@/hooks';
 import styles from '../styles.less';
 
 const FormItem = Form.Item;
@@ -128,351 +129,239 @@ const ApplyAgentForm = props => {
   );
 };
 
-@connect(({ agent, organization, user, loading }) => ({
-  agent,
-  organization,
-  user,
-  loadingAgents: loading.effects['agent/listAgent'],
-  applyingAgent: loading.effects['agent/applyAgent'],
-}))
-class Agent extends PureComponent {
-  state = {
-    modalVisible: false,
-    action: 'create',
-    agentData: {},
-  };
+const Agent = ({ dispatch, agent = {}, loadingAgents, applyingAgent }) => {
+  const intl = useIntl();
+  const { agents = [], pagination = {} } = agent;
+  const pageSize = pagination.pageSize || 10;
+  const currentPage = pagination.current || 1;
+  const userRole = getAuthority()[0];
 
-  componentDidMount() {
-    this.queryAgentList();
-  }
+  const { refreshList } = useTableManagement({
+    dispatch,
+    listAction: 'agent/listAgent',
+  });
+  const { showDeleteConfirm } = useDeleteConfirm({ dispatch, intl });
+  const {
+    modalVisible,
+    modalMethod,
+    currentRecord: agentData,
+    openCreateModal,
+    openUpdateModal,
+    closeModal,
+    handleModalVisible,
+  } = useModalForm();
 
-  componentWillUnmount() {
-    const { dispatch } = this.props;
-
-    dispatch({
-      type: 'agent/clear',
-    });
-  }
-
-  queryAgentList = () => {
-    const {
-      dispatch,
-      agent: { pagination },
-    } = this.props;
-    const userRole = getAuthority()[0];
-
-    dispatch({
-      type: 'agent/listAgent',
-      payload: {
-        per_page: pagination.pageSize,
-        page: pagination.current,
-      },
-    });
-    if (userRole === 'admin') {
-      dispatch({
-        type: 'organization/listOrganization',
+  const queryAgentList = useCallback(
+    (page = currentPage, perPage = pageSize) => {
+      refreshList({
+        page,
+        per_page: perPage,
       });
-    }
-  };
-
-  submitCallback = response => {
-    if (response.status === 'successful') {
-      const { intl } = this.props;
-      if (response.action === 'create') {
-        message.success(
-          intl.formatMessage({
-            id: 'app.applyAgent.success',
-            defaultMessage: 'Successful application for agent.',
-          })
-        );
-      } else {
-        message.success(
-          intl.formatMessage({
-            id: 'app.updateAgent.success',
-            defaultMessage: 'Successful application for agent.',
-          })
-        );
+      if (userRole === 'admin') {
+        dispatch({ type: 'organization/listOrganization' });
       }
-      this.queryAgentList();
-      this.handleModalVisible();
-    }
-  };
+    },
+    [dispatch, refreshList, userRole, currentPage, pageSize]
+  );
 
-  handleModalVisible = (visible, action, data) => {
-    this.setState({
-      modalVisible: !!visible,
-      action: action || 'create',
-      agentData: data || {},
-    });
-  };
-
-  handleSubmit = (values, action) => {
-    const { dispatch } = this.props;
-    if (action === 'create') {
-      dispatch({
-        type: 'agent/applyAgent',
-        payload: { data: values, action },
-        callback: this.submitCallback,
-      });
-    } else {
-      dispatch({
-        type: 'agent/updateAgent',
-        payload: { data: values, action },
-        callback: this.submitCallback,
-      });
-    }
-  };
-
-  onAddAgent = () => {
-    this.handleModalVisible(true);
-  };
-
-  deleteCallback = res => {
-    const { intl } = this.props;
-    const userRole = getAuthority()[0];
-    if (res.status === 'successful') {
-      const id = userRole === 'admin' ? 'app.agent.delete.success' : 'app.agent.release.success';
-      const defaultMessage =
-        userRole === 'admin' ? 'Delete agent success.' : 'Release agent success.';
-
-      message.success(
-        intl.formatMessage({
-          id,
-          defaultMessage,
-        })
-      );
-      this.queryAgentList();
-    } else {
-      const id = userRole === 'admin' ? 'app.agent.delete.fail' : 'app.agent.release.fail';
-      const defaultMessage =
-        userRole === 'admin' ? 'Delete agent failed.' : 'Release agent failed.';
-
-      message.error(
-        intl.formatMessage({
-          id,
-          defaultMessage,
-        })
-      );
-    }
-  };
-
-  handleTableChange = page => {
-    const {
-      dispatch,
-      agent: { pagination },
-    } = this.props;
-    const params = {
-      page,
-      per_page: pagination.pageSize,
+  useEffect(() => {
+    queryAgentList();
+    return () => {
+      dispatch({ type: 'agent/clear' });
     };
-    dispatch({
-      type: 'agent/listAgent',
-      payload: params,
-    });
-  };
+  }, [dispatch, queryAgentList]);
 
-  editAgent = agent => {
-    this.handleModalVisible(true, 'update', agent);
-  };
-
-  // TODO: remove these two comment lines after add the functional code
-  // eslint-disable-next-line no-unused-vars
-  nodeList = agent => {};
-
-  deleteAgent = agent => {
-    const { dispatch } = this.props;
-    const userRole = getAuthority()[0];
-
-    if (userRole === 'admin') {
-      dispatch({
-        type: 'agent/deleteAgent',
-        payload: agent.id,
-        callback: this.deleteCallback,
-      });
-    } else {
-      dispatch({
-        type: 'agent/deleteAgent',
-        payload: agent.id,
-        callback: this.deleteCallback,
-      });
-    }
-  };
-
-  handleDelete = agent => {
-    const { intl } = this.props;
-    const userRole = getAuthority()[0];
-    const titleMessageId =
-      userRole === 'admin' ? 'app.agent.form.delete.title' : 'app.agent.form.release.title';
-    const titleDefaultMessage = userRole === 'admin' ? 'Delete Agent' : 'Release Agent';
-    const contentMessageId =
-      userRole === 'admin' ? 'app.agent.form.delete.content' : 'app.agent.form.release.content';
-    const contentDefaultMessage =
-      userRole === 'admin'
-        ? 'Confirm to delete the agent {name}?'
-        : 'Confirm to release the agent {name}?';
-
-    Modal.confirm({
-      title: intl.formatMessage({
-        id: titleMessageId,
-        defaultMessage: titleDefaultMessage,
-      }),
-      content: intl.formatMessage(
-        {
-          id: contentMessageId,
-          defaultMessage: contentDefaultMessage,
-        },
-        {
-          name: agent.name,
+  const submitCallback = useCallback(
+    response => {
+      if (response.status === 'successful') {
+        if (response.action === 'create') {
+          message.success(
+            intl.formatMessage({
+              id: 'app.applyAgent.success',
+              defaultMessage: 'Successful application for agent.',
+            })
+          );
+        } else {
+          message.success(
+            intl.formatMessage({
+              id: 'app.updateAgent.success',
+              defaultMessage: 'Successful application for agent.',
+            })
+          );
         }
-      ),
-      okText: intl.formatMessage({ id: 'form.button.confirm', defaultMessage: 'Confirm' }),
-      cancelText: intl.formatMessage({ id: 'form.button.cancel', defaultMessage: 'Cancel' }),
-      onOk: () => this.deleteAgent(agent),
-    });
+        queryAgentList();
+        closeModal();
+      }
+    },
+    [closeModal, intl, queryAgentList]
+  );
+
+  const handleSubmit = useCallback(
+    (values, action) => {
+      const type = action === 'create' ? 'agent/applyAgent' : 'agent/updateAgent';
+      dispatch({
+        type,
+        payload: { data: values, action },
+        callback: submitCallback,
+      });
+    },
+    [dispatch, submitCallback]
+  );
+
+  const handlePageChange = useCallback(
+    (page, perPage) => {
+      queryAgentList(page, perPage || pageSize);
+    },
+    [queryAgentList, pageSize]
+  );
+
+  const handleDelete = useCallback(
+    agentItem => {
+      const titleId =
+        userRole === 'admin' ? 'app.agent.form.delete.title' : 'app.agent.form.release.title';
+      const contentId =
+        userRole === 'admin' ? 'app.agent.form.delete.content' : 'app.agent.form.release.content';
+      const successId =
+        userRole === 'admin' ? 'app.agent.delete.success' : 'app.agent.release.success';
+      const failId = userRole === 'admin' ? 'app.agent.delete.fail' : 'app.agent.release.fail';
+
+      showDeleteConfirm({
+        record: agentItem,
+        deleteAction: 'agent/deleteAgent',
+        titleId,
+        contentId,
+        successId,
+        failId,
+        onSuccess: () => queryAgentList(),
+      });
+    },
+    [queryAgentList, showDeleteConfirm, userRole]
+  );
+
+  const nodeList = useCallback(agentItem => agentItem, []);
+
+  const badgeStatus = status => {
+    let statusOfBadge = 'default';
+    switch (status) {
+      case 'active':
+        statusOfBadge = 'success';
+        break;
+      case 'inactive':
+        statusOfBadge = 'error';
+        break;
+      default:
+        break;
+    }
+    return statusOfBadge;
   };
 
-  render() {
-    const {
-      agent: { agents, pagination },
-      // eslint-disable-next-line no-unused-vars
-      organization: { organizations },
-      loadingAgents,
-      applyingAgent,
-      user: {
-        // eslint-disable-next-line no-unused-vars
-        currentUser: { organization = {} },
-      },
-      intl,
-    } = this.props;
+  const paginationProps = {
+    showQuickJumper: true,
+    total: pagination.total,
+    pageSize,
+    current: currentPage,
+    onChange: handlePageChange,
+  };
 
-    const { modalVisible, action, agentData } = this.state;
-    // eslint-disable-next-line no-unused-vars
-    const userRole = getAuthority()[0];
-
-    function badgeStatus(status) {
-      let statusOfBadge = 'default';
-      switch (status) {
-        case 'active':
-          statusOfBadge = 'success';
-          break;
-        case 'inactive':
-          statusOfBadge = 'error';
-          break;
-        default:
-          break;
-      }
-
-      return statusOfBadge;
-    }
-
-    const paginationProps = {
-      showQuickJumper: true,
-      total: pagination.total,
-      pageSize: pagination.pageSize,
-      currentPage: pagination.current,
-      onChange: this.handleTableChange,
-    };
-
-    const ListContent = ({ data: { type, created_at: createdAt, status } }) => (
-      <div>
-        <Row gutter={15} className={styles.ListContentRow}>
-          <Col span={8}>
-            <p>{intl.formatMessage({ id: 'app.agent.type', defaultMessage: 'Type' })}</p>
-            <p>{type}</p>
-          </Col>
-          <Col span={10}>
-            <p>
-              {intl.formatMessage({
-                id: 'app.agent.table.header.creationTime',
-                defaultMessage: 'Creation Time',
-              })}
-            </p>
-            <p>{moment(createdAt).format('YYYY-MM-DD HH:mm:ss')}</p>
-          </Col>
-          <Col span={6}>
-            <Badge status={badgeStatus(status)} text={status} />
-          </Col>
-        </Row>
-      </div>
-    );
-
-    const formProps = {
-      visible: modalVisible,
-      handleSubmit: this.handleSubmit,
-      handleModalVisible: this.handleModalVisible,
-      confirmLoading: applyingAgent,
-      action,
-      agentData,
-    };
-
-    return (
-      <PageHeaderWrapper
-        title={
-          <span>
-            {<DesktopOutlined style={{ marginRight: 15 }} />}
+  const ListContent = ({ data: { type, created_at: createdAt, status } }) => (
+    <div>
+      <Row gutter={15} className={styles.ListContentRow}>
+        <Col span={8}>
+          <p>{intl.formatMessage({ id: 'app.agent.type', defaultMessage: 'Type' })}</p>
+          <p>{type}</p>
+        </Col>
+        <Col span={10}>
+          <p>
             {intl.formatMessage({
-              id: 'app.agent.title',
-              defaultMessage: 'Agent Management',
+              id: 'app.agent.table.header.creationTime',
+              defaultMessage: 'Creation Time',
             })}
-          </span>
-        }
-      >
-        <Card bordered={false}>
-          <div className={styles.tableList}>
-            <div className={styles.tableListOperator}>
-              <Button
-                className={styles.newAgentButton}
-                type="dashed"
-                onClick={() => this.onAddAgent()}
-              >
-                <PlusOutlined />{' '}
-                {intl.formatMessage({ id: 'form.button.new', defaultMessage: 'New' })}
-              </Button>
-            </div>
-            <List
-              size="large"
-              rowKey="id"
-              loading={loadingAgents}
-              pagination={agents.length > 0 ? paginationProps : false}
-              dataSource={agents}
-              renderItem={item => (
-                <List.Item
-                  actions={[
-                    <a onClick={() => this.editAgent(item)}>
-                      {intl.formatMessage({
-                        id: 'form.menu.item.update',
-                        defaultMessage: 'Update',
-                      })}
-                    </a>,
-                    <a onClick={() => this.nodeList(item)}>
-                      {intl.formatMessage({ id: 'menu.node', defaultMessage: 'Node' })}
-                    </a>,
-                    <a onClick={() => this.handleDelete(item)}>
-                      {intl.formatMessage({
-                        id: 'form.menu.item.delete',
-                        defaultMessage: 'Delete',
-                      })}
-                    </a>,
-                  ]}
-                >
-                  <List.Item.Meta
-                    title={<span className={styles.ListItemTitle}>{item.name}</span>}
-                    description={
-                      <div>
-                        <p>{item.ip}</p>
-                      </div>
-                    }
-                  />
-                  <ListContent data={item} />
-                </List.Item>
-              )}
-            />
-          </div>
-        </Card>
-        <ApplyAgentForm {...formProps} />
-      </PageHeaderWrapper>
-    );
-  }
-}
+          </p>
+          <p>{moment(createdAt).format('YYYY-MM-DD HH:mm:ss')}</p>
+        </Col>
+        <Col span={6}>
+          <Badge status={badgeStatus(status)} text={status} />
+        </Col>
+      </Row>
+    </div>
+  );
 
-export default injectIntl(Agent);
+  const formProps = {
+    visible: modalVisible,
+    handleSubmit,
+    handleModalVisible,
+    confirmLoading: applyingAgent,
+    action: modalMethod,
+    agentData,
+  };
+
+  return (
+    <PageHeaderWrapper
+      title={
+        <span>
+          <DesktopOutlined style={{ marginRight: 15 }} />
+          {intl.formatMessage({
+            id: 'app.agent.title',
+            defaultMessage: 'Agent Management',
+          })}
+        </span>
+      }
+    >
+      <Card bordered={false}>
+        <div className={styles.tableList}>
+          <div className={styles.tableListOperator}>
+            <Button className={styles.newAgentButton} type="dashed" onClick={openCreateModal}>
+              <PlusOutlined />{' '}
+              {intl.formatMessage({ id: 'form.button.new', defaultMessage: 'New' })}
+            </Button>
+          </div>
+          <List
+            size="large"
+            rowKey="id"
+            loading={loadingAgents}
+            pagination={agents.length > 0 ? paginationProps : false}
+            dataSource={agents}
+            renderItem={item => (
+              <List.Item
+                actions={[
+                  <a onClick={() => openUpdateModal(item)}>
+                    {intl.formatMessage({
+                      id: 'form.menu.item.update',
+                      defaultMessage: 'Update',
+                    })}
+                  </a>,
+                  <a onClick={() => nodeList(item)}>
+                    {intl.formatMessage({ id: 'menu.node', defaultMessage: 'Node' })}
+                  </a>,
+                  <a onClick={() => handleDelete(item)}>
+                    {intl.formatMessage({
+                      id: 'form.menu.item.delete',
+                      defaultMessage: 'Delete',
+                    })}
+                  </a>,
+                ]}
+              >
+                <List.Item.Meta
+                  title={<span className={styles.ListItemTitle}>{item.name}</span>}
+                  description={
+                    <div>
+                      <p>{item.ip}</p>
+                    </div>
+                  }
+                />
+                <ListContent data={item} />
+              </List.Item>
+            )}
+          />
+        </div>
+      </Card>
+      <ApplyAgentForm {...formProps} />
+    </PageHeaderWrapper>
+  );
+};
+
+export default connect(({ agent, loading }) => ({
+  agent,
+  loadingAgents: loading.effects['agent/listAgent'],
+  applyingAgent: loading.effects['agent/applyAgent'] || loading.effects['agent/updateAgent'],
+}))(Agent);

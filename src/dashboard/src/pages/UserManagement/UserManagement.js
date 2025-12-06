@@ -1,8 +1,8 @@
 /*
  SPDX-License-Identifier: Apache-2.0
 */
-import React, { PureComponent, Fragment } from 'react';
-import { connect, injectIntl } from 'umi';
+import React, { Fragment, useCallback, useEffect } from 'react';
+import { connect, useIntl } from 'umi';
 import {
   Card,
   Button,
@@ -21,6 +21,7 @@ import isEmail from 'validator/lib/isEmail';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import StandardTable from '@/components/StandardTable';
 import { getAuthority } from '@/utils/authority';
+import { useDeleteConfirm, useModalForm, useTableManagement } from '@/hooks';
 import styles from '../styles.less';
 
 const FormItem = Form.Item;
@@ -268,357 +269,324 @@ const CreateUpdateForm = props => {
   );
 };
 
-@connect(({ user, organization, loading }) => ({
+const UserManagement = ({ dispatch, user = {}, organization = {}, loadingUsers, creatingUser }) => {
+  const intl = useIntl();
+  const { users = {}, pagination = {}, currentUser = {} } = user;
+  const { organizations = [] } = organization;
+  const userRole = getAuthority()[0];
+
+  const {
+    selectedRows,
+    handleSelectRows,
+    handleTableChange,
+    refreshList,
+    clearSelectedRows,
+  } = useTableManagement({
+    dispatch,
+    listAction: 'user/fetch',
+  });
+  const { showDeleteConfirm } = useDeleteConfirm({ dispatch, intl });
+  const {
+    modalVisible,
+    modalMethod,
+    openCreateModal,
+    closeModal,
+    handleModalVisible,
+  } = useModalForm();
+
+  useEffect(() => {
+    refreshList();
+  }, [refreshList]);
+
+  const handleFormReset = useCallback(() => {
+    refreshList();
+  }, [refreshList]);
+
+  const createCallback = useCallback(
+    data => {
+      if (data.id) {
+        message.success(
+          intl.formatMessage(
+            {
+              id: 'app.user.create.success',
+              defaultMessage: 'Create user {name} success',
+            },
+            {
+              name: data.username,
+            }
+          )
+        );
+        closeModal();
+        handleFormReset();
+      } else {
+        message.success(
+          intl.formatMessage(
+            {
+              id: 'app.user.create.fail',
+              defaultMessage: 'Create user {name} failed',
+            },
+            {
+              name: data.username,
+            }
+          )
+        );
+      }
+    },
+    [closeModal, handleFormReset, intl]
+  );
+
+  const deleteCallback = useCallback(
+    data => {
+      const { code, payload } = data;
+      const { username } = payload || {};
+      if (code) {
+        message.error(
+          intl.formatMessage(
+            {
+              id: 'app.user.delete.fail',
+              defaultMessage: 'Delete user {name} failed',
+            },
+            {
+              name: username,
+            }
+          )
+        );
+      } else {
+        message.success(
+          intl.formatMessage(
+            {
+              id: 'app.user.delete.success',
+              defaultMessage: 'Delete user {name} success',
+            },
+            {
+              name: username,
+            }
+          )
+        );
+        handleFormReset();
+      }
+    },
+    [handleFormReset, intl]
+  );
+
+  const handleDelete = useCallback(
+    record => {
+      showDeleteConfirm({
+        record,
+        deleteAction: 'user/deleteUser',
+        titleId: 'app.user.form.delete.title',
+        contentId: 'app.user.form.delete.content',
+        successId: 'app.user.delete.success',
+        failId: 'app.user.delete.fail',
+        getPayload: r => ({ ...r }),
+        onSuccess: deleteCallback,
+      });
+    },
+    [deleteCallback, showDeleteConfirm]
+  );
+
+  const handleSubmit = useCallback(
+    (method, values) => {
+      const { organization: currentOrg = {} } = currentUser;
+
+      // eslint-disable-next-line no-param-reassign
+      delete values.passwordConfirm;
+      if (userRole === 'administrator' && currentOrg.id) {
+        // eslint-disable-next-line no-param-reassign
+        values.organization = currentOrg.id;
+      }
+
+      switch (method) {
+        case 'create':
+          dispatch({
+            type: 'user/createUser',
+            payload: values,
+            callback: createCallback,
+          });
+          break;
+        default:
+          break;
+      }
+    },
+    [createCallback, currentUser, dispatch, userRole]
+  );
+
+  const handleMenuClick = useCallback(
+    e => {
+      if (e.key !== 'remove' || selectedRows.length === 0) return;
+      const names = selectedRows.map(item => item.username);
+      Modal.confirm({
+        title: intl.formatMessage({
+          id: 'app.user.form.delete.title',
+          defaultMessage: 'Delete User',
+        }),
+        content: intl.formatMessage(
+          {
+            id: 'app.user.form.delete.content',
+            defaultMessage: 'Confirm to delete user {name}',
+          },
+          {
+            name: names.join(', '),
+          }
+        ),
+        okText: intl.formatMessage({ id: 'form.button.confirm', defaultMessage: 'Confirm' }),
+        cancelText: intl.formatMessage({ id: 'form.button.cancel', defaultMessage: 'Cancel' }),
+        onOk: () => {
+          selectedRows.forEach(userItem => {
+            dispatch({
+              type: 'user/deleteUser',
+              payload: { ...userItem },
+              callback: deleteCallback,
+            });
+          });
+          clearSelectedRows();
+        },
+      });
+    },
+    [clearSelectedRows, deleteCallback, dispatch, intl, selectedRows]
+  );
+
+  const columns = [
+    {
+      title: intl.formatMessage({
+        id: 'app.user.table.header.name',
+        defaultMessage: 'User Name',
+      }),
+      dataIndex: 'email',
+    },
+    {
+      title: intl.formatMessage({
+        id: 'app.user.table.header.role',
+        defaultMessage: 'User Role',
+      }),
+      dataIndex: 'role',
+      render: text =>
+        intl.formatMessage({
+          id: `app.user.role.${(text || '').toLowerCase()}`,
+          defaultMessage: 'User',
+        }),
+    },
+    {
+      title: intl.formatMessage({
+        id: 'app.user.table.header.organization',
+        defaultMessage: 'Organization',
+      }),
+      dataIndex: 'organization',
+      render: text => (text ? text.name : ''),
+    },
+    {
+      title: intl.formatMessage({
+        id: 'app.organization.table.header.createTime',
+        defaultMessage: 'Create Time',
+      }),
+      dataIndex: 'created_at',
+      render: text => <span>{moment(text).format('YYYY-MM-DD HH:mm:ss')}</span>,
+    },
+    {
+      title: intl.formatMessage({
+        id: 'form.table.header.operation',
+        defaultMessage: 'Operation',
+      }),
+      render: (text, record) => (
+        <Fragment>
+          <a className={styles.danger} onClick={() => handleDelete(record)}>
+            {intl.formatMessage({
+              id: 'form.menu.item.delete',
+              defaultMessage: 'Delete',
+            })}
+          </a>
+        </Fragment>
+      ),
+    },
+  ];
+
+  const formProps = {
+    intl,
+    visible: modalVisible,
+    method: modalMethod,
+    handleModalVisible,
+    handleSubmit,
+    confirmLoading: creatingUser,
+    organizations,
+    onSearchOrganization(value) {
+      dispatch({
+        type: 'organization/listOrganization',
+        payload: {
+          name: value,
+        },
+      });
+    },
+  };
+
+  const menu = (
+    <Menu onClick={handleMenuClick} selectedKeys={[]}>
+      <Menu.Item key="remove">
+        {intl.formatMessage({
+          id: 'form.menu.item.delete',
+          defaultMessage: 'Delete',
+        })}
+      </Menu.Item>
+    </Menu>
+  );
+
+  return (
+    <PageHeaderWrapper
+      title={
+        <span>
+          <UserOutlined style={{ marginRight: 15 }} />
+          {intl.formatMessage({
+            id: 'app.user.title',
+            defaultMessage: 'User Management',
+          })}
+        </span>
+      }
+    >
+      <Card bordered={false}>
+        <div className={styles.tableList}>
+          <div className={styles.tableListOperator}>
+            <Button type="primary" onClick={openCreateModal}>
+              <PlusOutlined />
+              {intl.formatMessage({
+                id: 'form.button.new',
+                defaultMessage: 'New',
+              })}
+            </Button>
+            {selectedRows.length > 0 && (
+              <span>
+                <Dropdown overlay={menu}>
+                  <Button>
+                    {intl.formatMessage({
+                      id: 'form.button.moreActions',
+                      defaultMessage: 'More Actions',
+                    })}{' '}
+                    <DownOutlined />
+                  </Button>
+                </Dropdown>
+              </span>
+            )}
+          </div>
+          <StandardTable
+            selectedRows={selectedRows}
+            loading={loadingUsers}
+            rowKey="id"
+            data={{
+              list: users.data,
+              pagination,
+            }}
+            columns={columns}
+            onSelectRow={handleSelectRows}
+            onChange={handleTableChange}
+          />
+        </div>
+      </Card>
+      <CreateUpdateForm {...formProps} />
+    </PageHeaderWrapper>
+  );
+};
+
+export default connect(({ user, organization, loading }) => ({
   user,
   organization,
   loadingUsers: loading.effects['user/fetch'],
   creatingUser: loading.effects['user/createUser'],
-}))
-class UserManagement extends PureComponent {
-  state = {
-    modalVisible: false,
-    modalMethod: 'create',
-    selectedRows: [],
-    // formValues: {},
-  };
-
-  componentDidMount() {
-    const { dispatch } = this.props;
-
-    dispatch({
-      type: 'user/fetch',
-    });
-  }
-
-  handleModalVisible = visible => {
-    this.setState({
-      modalVisible: !!visible,
-    });
-  };
-
-  handleSelectRows = rows => {
-    this.setState({
-      selectedRows: rows,
-    });
-  };
-
-  createCallback = data => {
-    const { intl } = this.props;
-    if (data.id) {
-      message.success(
-        intl.formatMessage(
-          {
-            id: 'app.user.create.success',
-            defaultMessage: 'Create user {name} success',
-          },
-          {
-            name: data.username,
-          }
-        )
-      );
-      this.handleModalVisible();
-      this.handleFormReset();
-    } else {
-      message.success(
-        intl.formatMessage(
-          {
-            id: 'app.user.create.fail',
-            defaultMessage: 'Create user {name} failed',
-          },
-          {
-            name: data.username,
-          }
-        )
-      );
-    }
-  };
-
-  deleteCallback = data => {
-    const { code, payload } = data;
-    const { intl } = this.props;
-    const { username } = payload;
-    if (code) {
-      message.error(
-        intl.formatMessage(
-          {
-            id: 'app.user.delete.fail',
-            defaultMessage: 'Delete user {name} failed',
-          },
-          {
-            name: username,
-          }
-        )
-      );
-    } else {
-      message.success(
-        intl.formatMessage(
-          {
-            id: 'app.user.delete.success',
-            defaultMessage: 'Delete user {name} success',
-          },
-          {
-            name: username,
-          }
-        )
-      );
-      this.handleFormReset();
-    }
-  };
-
-  deleteUser = (record, callback = this.deleteCallback) => {
-    const { dispatch } = this.props;
-    dispatch({
-      type: 'user/deleteUser',
-      payload: {
-        ...record,
-      },
-      callback,
-    });
-  };
-
-  handleDelete = record => {
-    const { intl } = this.props;
-    Modal.confirm({
-      title: intl.formatMessage({
-        id: 'app.user.form.delete.title',
-        defaultMessage: 'Delete User',
-      }),
-      content: intl.formatMessage(
-        {
-          id: 'app.user.form.delete.content',
-          defaultMessage: 'Confirm to delete user {name}',
-        },
-        {
-          name: record.username,
-        }
-      ),
-      okText: intl.formatMessage({ id: 'form.button.confirm', defaultMessage: 'Confirm' }),
-      cancelText: intl.formatMessage({ id: 'form.button.cancel', defaultMessage: 'Cancel' }),
-      onOk: () => this.deleteUser(record),
-    });
-  };
-
-  handleFormReset = () => {
-    const { dispatch } = this.props;
-    // this.setState({
-    //   formValues: {},
-    // });
-    dispatch({
-      type: 'user/fetch',
-    });
-  };
-
-  handleSubmit = (method, values) => {
-    const {
-      dispatch,
-      user: {
-        currentUser: { organization = {} },
-      },
-    } = this.props;
-    const userRole = getAuthority()[0];
-
-    // eslint-disable-next-line no-param-reassign
-    delete values.passwordConfirm;
-    if (userRole === 'administrator' && organization.id) {
-      // eslint-disable-next-line no-param-reassign
-      values.organization = organization.id;
-    }
-    switch (method) {
-      case 'create':
-        dispatch({
-          type: 'user/createUser',
-          payload: values,
-          callback: this.createCallback,
-        });
-        break;
-      default:
-        break;
-    }
-  };
-
-  handleMenuClick = e => {
-    const { selectedRows } = this.state;
-    const { intl } = this.props;
-    let names = [];
-
-    switch (e.key) {
-      case 'remove':
-        names = selectedRows.map(item => item.username);
-        Modal.confirm({
-          title: intl.formatMessage({
-            id: 'app.user.form.delete.title',
-            defaultMessage: 'Delete User',
-          }),
-          content: intl.formatMessage(
-            {
-              id: 'app.user.form.delete.content',
-              defaultMessage: 'Confirm to delete user {name}',
-            },
-            {
-              name: names.join(', '),
-            }
-          ),
-          okText: intl.formatMessage({ id: 'form.button.confirm', defaultMessage: 'Confirm' }),
-          cancelText: intl.formatMessage({ id: 'form.button.cancel', defaultMessage: 'Cancel' }),
-          onOk: () => {
-            selectedRows.map(user => this.deleteUser(user));
-            this.setState({
-              selectedRows: [],
-            });
-            Modal.destroyAll();
-          },
-        });
-        break;
-      default:
-        break;
-    }
-  };
-
-  render() {
-    const { modalVisible, modalMethod, selectedRows } = this.state;
-    const {
-      user: { users, pagination },
-      organization: { organizations },
-      loadingUsers,
-      creatingUser,
-      dispatch,
-      intl,
-    } = this.props;
-    const columns = [
-      {
-        title: intl.formatMessage({
-          id: 'app.user.table.header.name',
-          defaultMessage: 'User Name',
-        }),
-        dataIndex: 'email',
-      },
-      {
-        title: intl.formatMessage({
-          id: 'app.user.table.header.role',
-          defaultMessage: 'User Role',
-        }),
-        dataIndex: 'role',
-        render: text =>
-          intl.formatMessage({
-            id: `app.user.role.${text.toLowerCase()}`,
-            defaultMessage: 'User',
-          }),
-      },
-      {
-        title: intl.formatMessage({
-          id: 'app.user.table.header.organization',
-          defaultMessage: 'Organization',
-        }),
-        dataIndex: 'organization',
-        render: text => (text ? text.name : ''),
-      },
-      {
-        title: intl.formatMessage({
-          id: 'app.organization.table.header.createTime',
-          defaultMessage: 'Create Time',
-        }),
-        dataIndex: 'created_at',
-        render: text => <span>{moment(text).format('YYYY-MM-DD HH:mm:ss')}</span>,
-      },
-      {
-        title: intl.formatMessage({
-          id: 'form.table.header.operation',
-          defaultMessage: 'Operation',
-        }),
-        render: (text, record) => (
-          <Fragment>
-            <a className={styles.danger} onClick={() => this.handleDelete(record)}>
-              {intl.formatMessage({
-                id: 'form.menu.item.delete',
-                defaultMessage: 'Delete',
-              })}
-            </a>
-          </Fragment>
-        ),
-      },
-    ];
-
-    const formProps = {
-      intl,
-      visible: modalVisible,
-      method: modalMethod,
-      handleModalVisible: this.handleModalVisible,
-      handleSubmit: this.handleSubmit,
-      confirmLoading: creatingUser,
-      organizations,
-      onSearchOrganization(value) {
-        dispatch({
-          type: 'organization/listOrganization',
-          payload: {
-            name: value,
-          },
-        });
-      },
-    };
-    const menu = (
-      <Menu onClick={this.handleMenuClick} selectedKeys={[]}>
-        <Menu.Item key="remove">
-          {intl.formatMessage({
-            id: 'form.menu.item.delete',
-            defaultMessage: 'Delete',
-          })}
-        </Menu.Item>
-      </Menu>
-    );
-    return (
-      <PageHeaderWrapper
-        title={
-          <span>
-            {<UserOutlined style={{ marginRight: 15 }} />}
-            {intl.formatMessage({
-              id: 'app.user.title',
-              defaultMessage: 'User Management',
-            })}
-          </span>
-        }
-      >
-        <Card bordered={false}>
-          <div className={styles.tableList}>
-            <div className={styles.tableListOperator}>
-              <Button type="primary" onClick={() => this.handleModalVisible(true)}>
-                <PlusOutlined />
-                {intl.formatMessage({
-                  id: 'form.button.new',
-                  defaultMessage: 'New',
-                })}
-              </Button>
-              {selectedRows.length > 0 && (
-                <span>
-                  <Dropdown overlay={menu}>
-                    <Button>
-                      {intl.formatMessage({
-                        id: 'form.button.moreActions',
-                        defaultMessage: 'More Actions',
-                      })}{' '}
-                      <DownOutlined />
-                    </Button>
-                  </Dropdown>
-                </span>
-              )}
-            </div>
-            <StandardTable
-              selectedRows={selectedRows}
-              loading={loadingUsers}
-              rowKey="id"
-              data={{
-                list: users.data,
-                pagination,
-              }}
-              columns={columns}
-              onSelectRow={this.handleSelectRows}
-              onChange={this.handleTableChange}
-            />
-          </div>
-        </Card>
-        <CreateUpdateForm {...formProps} />
-      </PageHeaderWrapper>
-    );
-  }
-}
-
-export default injectIntl(UserManagement);
+}))(UserManagement);
