@@ -1,6 +1,6 @@
 import os
-from api.config import FABRIC_CFG
 
+from api_engine.settings import FABRIC_CFG
 
 # Command class reads local environment variables by given their names
 class Command:

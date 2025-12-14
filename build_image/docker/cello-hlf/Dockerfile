@@ -102,7 +102,6 @@ RUN wget -O /go/bin/yq https://github.com/mikefarah/yq/releases/download/2.4.1/y
 RUN go install github.com/golang/protobuf/protoc-gen-go@latest \
         && go install github.com/maxbrunsfeld/counterfeiter/v6@latest \
         && go install github.com/axw/gocov/gocov@latest \
-        && go install github.com/axw/gocov/gocov@latest \
         && go install golang.org/x/tools/cmd/goimports@latest \
         && go install github.com/onsi/ginkgo/ginkgo@latest
 
