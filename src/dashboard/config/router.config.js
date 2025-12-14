@@ -38,24 +38,24 @@ export default [
             icon: 'team',
             component: './Organization/Organization',
           },
-          {
-            path: '/agent',
-            name: 'agent',
-            icon: 'agent',
-            component: './Agent/Agent',
-          },
-          {
-            path: '/agent/newAgent',
-            name: 'newAgent',
-            component: './Agent/newAgent',
-            hideInMenu: true,
-          },
-          {
-            path: '/agent/editAgent',
-            name: 'editAgent',
-            component: './Agent/newAgent',
-            hideInMenu: true,
-          },
+          // {
+          //   path: '/agent',
+          //   name: 'agent',
+          //   icon: 'agent',
+          //   component: './Agent/Agent',
+          // },
+          // {
+          //   path: '/agent/newAgent',
+          //   name: 'newAgent',
+          //   component: './Agent/newAgent',
+          //   hideInMenu: true,
+          // },
+          // {
+          //   path: '/agent/editAgent',
+          //   name: 'editAgent',
+          //   component: './Agent/newAgent',
+          //   hideInMenu: true,
+          // },
           {
             path: '/node',
             name: 'node',
@@ -84,18 +84,18 @@ export default [
               },
             ],
           },
-          {
-            path: '/network',
-            name: 'network',
-            icon: 'network',
-            component: './Network/Network',
-          },
-          {
-            path: '/network/newNetwork',
-            name: 'newNetwork',
-            component: './Network/newNetwork',
-            hideInMenu: true,
-          },
+          // {
+          //   path: '/network',
+          //   name: 'network',
+          //   icon: 'network',
+          //   component: './Network/Network',
+          // },
+          // {
+          //   path: '/network/newNetwork',
+          //   name: 'newNetwork',
+          //   component: './Network/newNetwork',
+          //   hideInMenu: true,
+          // },
           {
             path: '/channel',
             name: 'channel',

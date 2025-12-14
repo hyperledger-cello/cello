@@ -5,9 +5,9 @@ import styles from './index.less';
 
 export default class HeaderDropdown extends PureComponent {
   render() {
-    const { overlayClassName, ...props } = this.props;
+    const { className, ...props } = this.props;
     return (
-      <Dropdown overlayClassName={classNames(styles.container, overlayClassName)} {...props} />
+      <Dropdown className={classNames(styles.container, className)} {...props} />
     );
   }
 }

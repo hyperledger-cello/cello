@@ -1,0 +1,66 @@
+services:
+  cello-dashboard:
+    build:
+      context: ./src/dashboard
+    image: cello/dashboard:latest
+    container_name: cello-dashboard
+    restart: unless-stopped
+    ports:
+      - "${DASHBOARD_SERVICE_PORT:-8081}:8081"
+    networks:
+      - cello-net
+    depends_on:
+      - cello-api-engine
+
+  cello-postgres:
+    image: postgres:12.0
+    container_name: cello-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=api_engine
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123456
+    ports:
+      - "5432:5432"
+    volumes:
+      - cello-postgres:/var/lib/postgresql/data
+    networks:
+      - cello-net
+
+  cello-api-engine:
+    build:
+      context: ./src/api-engine
+    image: cello/api-engine:latest
+    container_name: cello-api-engine
+    restart: unless-stopped
+    stdin_open: true
+    dns_search: .
+    environment:
+      - GODEBUG=netdns=go
+      - DB_NAME=api_engine
+      - DB_USER=postgres
+      - DB_PASSWORD=123456
+      - DB_HOST=cello-postgres
+      - DB_PORT=5432
+      - DEBUG=True
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - FABRIC_LOGGING_SPEC=INFO
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - cello-api-engine:/cello
+      - cello-api-engine-chaincode:/media
+    networks:
+      - cello-net
+    depends_on:
+      - cello-postgres
+
+networks:
+  cello-net:
+    name: cello-net
+
+volumes:
+  cello-postgres:
+  cello-api-engine:
+  cello-api-engine-chaincode:
