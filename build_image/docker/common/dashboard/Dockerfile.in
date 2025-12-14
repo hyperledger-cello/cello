@@ -2,7 +2,7 @@ FROM node:20.15
 
 WORKDIR /usr/src/app/
 USER root
-RUN mkdir -p /usr/src/app && cd /usr/src/app
+RUN cd /usr/src/app
 COPY src/dashboard /usr/src/app
 RUN export NODE_OPTIONS=--openssl-legacy-provider && yarn --network-timeout 600000 && yarn run build
 
