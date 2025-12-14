@@ -1,10 +1,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-from subprocess import call
-from api.config import CELLO_HOME, FABRIC_TOOL, FABRIC_VERSION
+import os
+from subprocess import check_call
+
 
 import logging
+
+from api_engine.settings import CELLO_HOME, FABRIC_TOOL, FABRIC_VERSION
 
 LOG = logging.getLogger(__name__)
 
@@ -40,16 +43,17 @@ class CryptoGen:
         return:
         """
         try:
+            org_filepath = os.path.join(self.filepath, self.name)
             command = [
                 self.cryptogen,
                 "generate",
-                "--output={}/{}/{}".format(self.filepath, self.name, output),
-                "--config={}/{}/{}".format(self.filepath, self.name, config),
+                "--output={}".format(os.path.join(org_filepath, output)),
+                "--config={}".format(os.path.join(org_filepath, config)),
             ]
 
             LOG.info(" ".join(command))
 
-            call(command)
+            check_call(command)
 
         except Exception as e:
             err_msg = "cryptogen generate fail for {}!".format(e)
@@ -72,7 +76,7 @@ class CryptoGen:
 
             LOG.info(" ".join(command))
 
-            call(command)
+            check_call(command)
 
         except Exception as e:
             err_msg = "cryptogen extend fail for {}!".format(e)

@@ -22,9 +22,9 @@ const ApproveForm = props => {
   useEffect(() => {
     async function fetchData() {
       const response = await listChannel();
-      const newChannels = Object.keys(response.data.data).map(item => ({
-        label: response.data.data[item].name,
-        value: response.data.data[item].name,
+      const newChannels = Object.keys(response.data).map(item => ({
+        label: response.data[item].name,
+        value: response.data[item].name,
       }));
       setChannels(newChannels);
     }
