@@ -27,14 +27,6 @@ import styles from '../styles.less';
 const FormItem = Form.Item;
 const { Option } = Select;
 
-// function str2bytes (str) {
-//    var bytes = new Uint8Array(str.length);
-//    for (var i=0; i<str.length; i++) {
-//       bytes[i] = str.charCodeAt(i);
-//     }
-//     return bytes;
-// }
-
 const RegisterUserForm = props => {
   const {
     registerUserFormVisible,
@@ -190,7 +182,7 @@ const CreateNode = props => {
   const { createModalVisible, handleCreate, handleModalVisible, creating, queryNodeList } = props;
 
   const createCallback = response => {
-    if (response.status !== 'successful') {
+    if (response.status.toLowerCase() !== 'successful') {
       message.error(
         intl.formatMessage({
           id: 'app.node.new.createFail',
@@ -230,7 +222,7 @@ const CreateNode = props => {
     },
   };
 
-  const types = ['orderer', 'peer'];
+  const types = ['ORDERER', 'PEER'];
   const typeOptions = types.map(item => (
     <Option value={item} key={item}>
       <span style={{ color: '#8c8f88' }}>{item}</span>
@@ -630,7 +622,7 @@ class Index extends PureComponent {
 
     const menu = record => (
       <Menu>
-        {record.type === 'ca' && (
+        {record.type.toLowerCase() === 'ca' && (
           <Menu.Item>
             <a onClick={() => this.handleRegisterUser(record)}>
               {intl.formatMessage({
@@ -640,14 +632,14 @@ class Index extends PureComponent {
             </a>
           </Menu.Item>
         )}
-        {(record.type === 'peer' || record.type === 'orderer') && (
+        {(record.type.toLowerCase() === 'peer' || record.type.toLowerCase() === 'orderer') && (
           <Menu.Item>
             <a onClick={() => this.handleDownloadConfig(record)}>
               {intl.formatMessage({ id: 'form.menu.item.download', defaultMessage: 'Download' })}
             </a>
           </Menu.Item>
         )}
-        {(record.type === 'peer' || record.type === 'orderer') && (
+        {(record.type.toLowerCase() === 'peer' || record.type.toLowerCase() === 'orderer') && (
           <Menu.Item>
             <Upload
               {...{
@@ -672,7 +664,7 @@ class Index extends PureComponent {
             </Upload>
           </Menu.Item>
         )}
-        {record.type === 'peer' && (
+        {record.type.toLowerCase() === 'peer' && (
           <Menu.Item>
             <Upload
               {...{
@@ -734,6 +726,7 @@ class Index extends PureComponent {
           defaultMessage: 'Type',
         }),
         dataIndex: 'type',
+        render: text => text.toLowerCase(),
       },
       {
         title: intl.formatMessage({
@@ -749,7 +742,9 @@ class Index extends PureComponent {
           defaultMessage: 'Status',
         }),
         dataIndex: 'status',
-        render: text => <Badge status={badgeStatus(text)} text={text} />,
+        render: text => (
+          <Badge status={badgeStatus(text.toLowerCase())} text={text.toLowerCase()} />
+        ),
       },
       {
         title: intl.formatMessage({
@@ -758,7 +753,7 @@ class Index extends PureComponent {
         }),
         render: (text, record) => (
           <Fragment>
-            {record.status === 'running' && (
+            {record.status.toLowerCase() === 'running' && (
               <a onClick={() => this.operationForNode('stop', record)}>
                 {intl.formatMessage({
                   id: 'app.node.table.operation.stop',
@@ -766,7 +761,7 @@ class Index extends PureComponent {
                 })}
               </a>
             )}
-            {record.status === 'stopped' && (
+            {record.status.toLowerCase() === 'stopped' && (
               <Menu.Item>
                 <a onClick={() => this.operationForNode('start', record)}>
                   {intl.formatMessage({

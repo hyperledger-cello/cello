@@ -57,7 +57,7 @@ class ChainCode extends PureComponent {
     const { dispatch } = this.props;
 
     dispatch({
-      type: 'chainCode/listNode',
+      type: 'node/listNode',
     });
   };
 
@@ -165,14 +165,13 @@ class ChainCode extends PureComponent {
     const { dispatch } = this.props;
     const formData = new FormData();
 
-    Object.keys(values)
-      .filter(key => !(key === 'description' && !values[key])) // filter out empty description
-      .forEach(key => {
-        formData.append(key, values[key]);
-      });
+    /* convert object to FormData */
+    Object.keys(values).forEach(key => {
+      formData.append(key, values[key]);
+    });
 
     dispatch({
-      type: 'chainCode/uploadChainCode',
+      type: 'chainCode/createChainCode',
       payload: formData,
       callback,
     });

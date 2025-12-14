@@ -1,6 +1,10 @@
 import { stringify } from 'qs';
 import request from '@/utils/request';
 
+export async function getOrganization(params) {
+  return request(`/api/v1/organizations?${params.id}`);
+}
+
 export async function listOrganization(params) {
   return request(`/api/v1/organizations?${stringify(params)}`);
 }
