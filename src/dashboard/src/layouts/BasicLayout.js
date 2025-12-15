@@ -1,10 +1,10 @@
 /*
  SPDX-License-Identifier: Apache-2.0
 */
-import React, { Component } from 'react';
+import React, { useEffect, useCallback, useMemo } from 'react';
 import { Layout } from 'antd';
 import { Helmet } from 'react-helmet';
-import { connect, setLocale, getLocale } from 'umi';
+import { connect, useIntl } from 'umi';
 import { ContainerQuery } from 'react-container-query';
 import classNames from 'classnames';
 import Media from 'react-media';
@@ -15,9 +15,6 @@ import Footer from './Footer';
 import Header from './Header';
 import Context from './MenuContext';
 import styles from './BasicLayout.less';
-
-// lazy load SettingDrawer
-const SettingDrawer = React.lazy(() => import('@/components/SettingDrawer'));
 
 const { Content } = Layout;
 
@@ -46,12 +43,28 @@ const query = {
   },
 };
 
-class BasicLayout extends Component {
-  componentDidMount() {
-    const {
-      dispatch,
-      route: { routes, path, authority },
-    } = this.props;
+const BasicLayout = props => {
+  const {
+    dispatch,
+    route: { routes, path, authority },
+    navTheme,
+    layout: propsLayout,
+    children,
+    location,
+    location: { pathname },
+    isMobile,
+    menuData,
+    breadcrumbNameMap,
+    fixedHeader,
+    fixSiderbar,
+    collapsed,
+  } = props;
+
+  // Subscribe to locale changes - this ensures the component re-renders when language switches
+  const intl = useIntl();
+
+  // Initialize on mount (equivalent to componentDidMount)
+  useEffect(() => {
     dispatch({
       type: 'setting/getSetting',
     });
@@ -59,121 +72,90 @@ class BasicLayout extends Component {
       type: 'menu/getMenuData',
       payload: { routes, path, authority },
     });
+  }, [dispatch, routes, path, authority]);
 
-    // Initialize language from localStorage or default to English
-    const savedLocale = localStorage.getItem('umi_locale');
-    const currentLocale = getLocale();
-
-    if (savedLocale && savedLocale !== currentLocale) {
-      setLocale(savedLocale);
-    } else if (!savedLocale) {
-      setLocale('en-US');
-      localStorage.setItem('umi_locale', 'en-US');
-    }
-  }
-
-  getContext() {
-    const { location, breadcrumbNameMap } = this.props;
-    return {
+  // Memoized context value
+  const contextValue = useMemo(
+    () => ({
       location,
       breadcrumbNameMap,
-    };
-  }
+    }),
+    [location, breadcrumbNameMap]
+  );
 
-  getLayoutStyle = () => {
-    const { fixSiderbar, isMobile, collapsed, layout } = this.props;
-    if (fixSiderbar && layout !== 'topmenu' && !isMobile) {
+  // Calculate layout style
+  const layoutStyle = useMemo(() => {
+    if (fixSiderbar && propsLayout !== 'topmenu' && !isMobile) {
       return {
         paddingLeft: collapsed ? '80px' : '256px',
       };
     }
     return null;
-  };
+  }, [fixSiderbar, propsLayout, isMobile, collapsed]);
 
-  handleMenuCollapse = collapsed => {
-    const { dispatch } = this.props;
-    dispatch({
-      type: 'global/changeLayoutCollapsed',
-      payload: collapsed,
-    });
-  };
+  // Handle menu collapse
+  const handleMenuCollapse = useCallback(
+    collapsedState => {
+      dispatch({
+        type: 'global/changeLayoutCollapsed',
+        payload: collapsedState,
+      });
+    },
+    [dispatch]
+  );
 
-  renderSettingDrawer = () => {
-    // Do not render SettingDrawer in production
-    // unless it is deployed in preview.pro.ant.design as demo
-    // preview.pro.ant.design only do not use in your production ; preview.pro.ant.design 专用环境变量，请不要在你的项目中使用它。
-    if (
-      process.env.NODE_ENV === 'production' &&
-      ANT_DESIGN_PRO_ONLY_DO_NOT_USE_IN_YOUR_PRODUCTION !== 'site'
-    ) {
-      return null;
-    }
-    return <SettingDrawer />;
-  };
+  const isTop = propsLayout === 'topmenu';
+  const contentStyle = !fixedHeader ? { paddingTop: 0 } : {};
 
-  render() {
-    const {
-      navTheme,
-      layout: PropsLayout,
-      children,
-      location: { pathname },
-      isMobile,
-      menuData,
-      breadcrumbNameMap,
-      fixedHeader,
-    } = this.props;
-
-    const isTop = PropsLayout === 'topmenu';
-    const contentStyle = !fixedHeader ? { paddingTop: 0 } : {};
-    const layout = (
-      <Layout>
-        {isTop && !isMobile ? null : (
-          <SiderMenu
-            logo={logo}
-            theme={navTheme}
-            onCollapse={this.handleMenuCollapse}
-            menuData={menuData}
-            isMobile={isMobile}
-            {...this.props}
-          />
-        )}
-        <Layout
-          style={{
-            ...this.getLayoutStyle(),
-            minHeight: '100vh',
-          }}
-        >
-          <Header
-            menuData={menuData}
-            handleMenuCollapse={this.handleMenuCollapse}
-            logo={logo}
-            isMobile={isMobile}
-            {...this.props}
-          />
-          <Content className={styles.content} style={contentStyle}>
-            {children}
-          </Content>
-          <Footer />
-        </Layout>
+  const layoutContent = (
+    <Layout>
+      {isTop && !isMobile ? null : (
+        <SiderMenu
+          logo={logo}
+          theme={navTheme}
+          onCollapse={handleMenuCollapse}
+          menuData={menuData}
+          isMobile={isMobile}
+          {...props}
+        />
+      )}
+      <Layout
+        style={{
+          ...layoutStyle,
+          minHeight: '100vh',
+        }}
+      >
+        <Header
+          menuData={menuData}
+          handleMenuCollapse={handleMenuCollapse}
+          logo={logo}
+          isMobile={isMobile}
+          {...props}
+        />
+        <Content className={styles.content} style={contentStyle}>
+          {children}
+        </Content>
+        <Footer />
       </Layout>
-    );
-    return (
-      <>
-        <Helmet>
-          <title>{getPageTitle(pathname, breadcrumbNameMap)}</title>
-        </Helmet>
+    </Layout>
+  );
 
-        <ContainerQuery query={query}>
-          {params => (
-            <Context.Provider value={this.getContext()}>
-              <div className={classNames(params)}>{layout}</div>
-            </Context.Provider>
-          )}
-        </ContainerQuery>
-      </>
-    );
-  }
-}
+  return (
+    <>
+      <Helmet>
+        <title>{getPageTitle(pathname, breadcrumbNameMap, intl)}</title>
+      </Helmet>
+
+      <ContainerQuery query={query}>
+        {params => (
+          <Context.Provider value={contextValue}>
+            <div className={classNames(params)}>{layoutContent}</div>
+          </Context.Provider>
+        )}
+      </ContainerQuery>
+    </>
+  );
+};
 
 export default connect(({ global, setting, menu: menuModel }) => ({
   collapsed: global.collapsed,

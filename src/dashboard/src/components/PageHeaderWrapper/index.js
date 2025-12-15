@@ -68,11 +68,14 @@ const PageHeaderWrapper = ({
               {...restProps}
               breadcrumb={
                 !hiddenBreadcrumb &&
-                conversionBreadcrumbList({
-                  ...value,
-                  ...restProps,
-                  home: intl.formatMessage({ id: 'menu.home', defaultMessage: 'Home' }),
-                })
+                conversionBreadcrumbList(
+                  {
+                    ...value,
+                    ...restProps,
+                    home: intl.formatMessage({ id: 'menu.home', defaultMessage: 'Home' }),
+                  },
+                  intl
+                )
               }
               className={styles.pageHeader}
               linkElement={Link}

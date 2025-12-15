@@ -1,6 +1,6 @@
 import React from 'react';
 import { pathToRegexp } from 'path-to-regexp';
-import { Link, formatMessage } from 'umi';
+import { Link } from 'umi';
 import { urlToList } from '../_utils/pathTools';
 import { menu } from '../../defaultSettings';
 
@@ -19,11 +19,12 @@ const itemRender = (route, params, routes, paths) => {
   );
 };
 
-const renderItemLocal = item => {
-  if (item.locale) {
+// Translate menu item - now receives intl as parameter
+const renderItemLocal = (item, intl) => {
+  if (item.locale && intl) {
     const name = menu.disableLocal
       ? item.name
-      : formatMessage({ id: item.locale, defaultMessage: item.name });
+      : intl.formatMessage({ id: item.locale, defaultMessage: item.name });
     return name;
   }
   return item.name;
@@ -64,7 +65,7 @@ const conversionFromProps = props => {
   });
 };
 
-const conversionFromLocation = (routerLocation, breadcrumbNameMap, props) => {
+const conversionFromLocation = (routerLocation, breadcrumbNameMap, props, intl) => {
   const { home } = props;
   // Convert the url to an array
   const pathSnippets = urlToList(routerLocation.pathname);
@@ -75,7 +76,7 @@ const conversionFromLocation = (routerLocation, breadcrumbNameMap, props) => {
       if (currentBreadcrumb.inherited) {
         return null;
       }
-      const name = renderItemLocal(currentBreadcrumb);
+      const name = renderItemLocal(currentBreadcrumb, intl);
       const { hideInBreadcrumb } = currentBreadcrumb;
       return name && !hideInBreadcrumb
         ? {
@@ -98,8 +99,10 @@ const conversionFromLocation = (routerLocation, breadcrumbNameMap, props) => {
 /**
  * 将参数转化为面包屑
  * Convert parameters into breadcrumbs
+ * @param {Object} props - Component props
+ * @param {Object} intl - intl object from useIntl hook
  */
-export const conversionBreadcrumbList = props => {
+export const conversionBreadcrumbList = (props, intl) => {
   const { breadcrumbList } = props;
   const { routes, params, routerLocation, breadcrumbNameMap } = getBreadcrumbProps(props);
   if (breadcrumbList && breadcrumbList.length) {
@@ -122,7 +125,7 @@ export const conversionBreadcrumbList = props => {
   // Generate breadcrumbs based on location
   if (routerLocation && routerLocation.pathname) {
     return {
-      routes: conversionFromLocation(routerLocation, breadcrumbNameMap, props),
+      routes: conversionFromLocation(routerLocation, breadcrumbNameMap, props, intl),
       itemRender,
     };
   }
