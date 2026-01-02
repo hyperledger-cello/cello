@@ -1,8 +1,7 @@
-from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.parsers import FileUploadParser, JSONParser, FormParser, MultiPartParser
+from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -21,9 +20,9 @@ class ChaincodeViewSet(viewsets.ViewSet):
     ]
 
     def get_parsers(self):
-        if getattr(self, 'action', None) == "create" or getattr(getattr(self, 'request', None), "FILES", None) is not None:
-            return [MultiPartParser]
-        return [JSONParser]
+        if getattr(self, 'action', None) == "create":
+            return [MultiPartParser()]
+        return [JSONParser()]
 
     @swagger_auto_schema(
         operation_summary="List all chaincodes of the current organization",
@@ -126,6 +125,7 @@ class ChaincodeViewSet(viewsets.ViewSet):
 
     @swagger_auto_schema(
         operation_summary="Invoke/Query a chaincode for the current organization",
+        request_body=ChaincodeRequestBody(),
         responses=with_common_response(
             {status.HTTP_204_NO_CONTENT: None}
         ),
@@ -134,7 +134,8 @@ class ChaincodeViewSet(viewsets.ViewSet):
     def transact(self, request, pk=None):
         serializer = ChaincodeRequestBody(
             data={
-                "id": pk
+                "id": pk,
+                **request.data
             },
             context={"organization": request.user.organization})
         serializer.is_valid(raise_exception=True)

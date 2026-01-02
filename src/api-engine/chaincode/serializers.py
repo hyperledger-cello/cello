@@ -104,12 +104,12 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
 
         return value
 
-    def validate_channel(self, value: Channel):
+    def validate_channel(self, value: Channel) -> Channel:
         if not value.organizations.contains(self.context["organization"]):
             raise serializers.ValidationError("You can only install chaincodes on your organization.")
         return value
 
-    def validate_peers(self, value: List[Node]):
+    def validate_peers(self, value: List[Node]) -> List[Node]:
         for node in value:
             if Node.Type.PEER != node.type:
                 raise serializers.ValidationError(
@@ -128,7 +128,7 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
 
 
 class ChaincodeInstallBody(ChaincodeID):
-    def update(self, instance: Chaincode, validated_data: Dict[str, Any]):
+    def update(self, instance: Chaincode, validated_data: Dict[str, Any]) -> Chaincode:
         install_chaincode(
             self.context["organization"],
             instance
@@ -137,7 +137,7 @@ class ChaincodeInstallBody(ChaincodeID):
 
 
 class ChaincodeApproveBody(ChaincodeID):
-    def update(self, instance: Chaincode, validated_data: Dict[str, Any]):
+    def update(self, instance: Chaincode, validated_data: Dict[str, Any]) -> Chaincode:
         approve_chaincode(
             self.context["organization"],
             instance
@@ -146,7 +146,7 @@ class ChaincodeApproveBody(ChaincodeID):
 
 
 class ChaincodeCommitBody(ChaincodeID):
-    def update(self, instance: Chaincode, validated_data: Dict[str, Any]):
+    def update(self, instance: Chaincode, validated_data: Dict[str, Any]) -> Chaincode:
         commit_chaincode(
             self.context["organization"],
             instance
@@ -157,16 +157,28 @@ class ChaincodeCommitBody(ChaincodeID):
 class ChaincodeRequestBody(ChaincodeID):
     action = serializers.ChoiceField(choices=[(tag.name, tag.name) for tag in ChaincodeAction])
     function = serializers.CharField()
-    args = serializers.ListField(
+    arguments = serializers.ListField(
         child=serializers.CharField(),
-        allow_empty=True
+        allow_empty=True,
+        required=False,
+        default=[],
     )
 
-    def create(self, validated_data: Dict[str, Any]):
+    class Meta:
+        model = Chaincode
+        fields = ("id", "action", "function", "arguments")
+        extra_kwargs = {
+            # Temporarily make "id" writable only for validation purposes
+            "id": {"read_only": False},
+            "arguments": {"required": False},
+        }
+
+    def update(self, instance: Chaincode, validated_data: Dict[str, Any]) -> Chaincode:
         send_chaincode_request(
             self.context["organization"],
-            super().create(validated_data),
-            validated_data["action"],
+            instance,
+            ChaincodeAction[validated_data["action"]],
             validated_data["function"],
-            validated_data["args"]
+            validated_data["arguments"]
         )
+        return instance
