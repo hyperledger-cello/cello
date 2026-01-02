@@ -258,4 +258,4 @@ FABRIC_CFG = os.path.join(CELLO_HOME, "node")
 FABRIC_PEER_CFG = os.path.join(FABRIC_CFG, "core.yaml.bak")
 FABRIC_ORDERER_CFG = os.path.join(FABRIC_CFG, "orderer.yaml.bak")
 
-FABRIC_VERSION = "2.5.13"
+FABRIC_VERSION = "2.5.14"
