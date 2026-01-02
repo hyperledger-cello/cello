@@ -258,3 +258,4 @@ tests/postman/junitResult.xml
 pgdata/
 
 src/api-engine/cello
+src/api-engine/api/v1/media
