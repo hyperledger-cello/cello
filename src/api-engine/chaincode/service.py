@@ -4,6 +4,7 @@ import logging
 import os
 import subprocess
 import tarfile
+import threading
 from typing import Optional, List, Any, Dict, Tuple
 
 from django.db import transaction
@@ -34,7 +35,7 @@ def create_chaincode(
         user: UserProfile,
         organization: Organization,
         peers: List[Node],
-        description: str,
+        description: str = None,
         init_required: bool = False,
         signature_policy: str = None) -> Chaincode:
     metadata = get_metadata(package)
@@ -52,6 +53,7 @@ def create_chaincode(
         creator=user,
         description=description,
     )
+    chaincode.save()
     chaincode.peers.add(*peers)
 
     peer_envs = get_peers_root_certs_and_addresses_and_envs(
@@ -60,8 +62,10 @@ def create_chaincode(
     )[2]
 
     _set_chaincode_package_id(peer_envs[0], chaincode)
-    _install_chaincode_with_envs(peer_envs, chaincode)
-    _approve_chaincode_with_envs(peer_envs[0], organization, chaincode)
+    threading.Thread(
+        target=_install_and_approve_chaincode_with_envs, 
+        args=(peer_envs, organization, chaincode), 
+        daemon=True).start()
     return chaincode
 
 
@@ -84,10 +88,13 @@ def get_metadata(file) -> Optional[Dict[str, Any]]:
 def install_chaincode(organization: Organization, chaincode: Chaincode) -> None:
     peer_envs: List[Dict[str, str]] = get_peers_root_certs_and_addresses_and_envs(
         organization.name,
-        chaincode.peers
+        chaincode.peers.all()
     )[2]
 
-    _install_chaincode_with_envs(peer_envs, chaincode)
+    threading.Thread(
+        target=_install_and_approve_chaincode_with_envs, 
+        args=(peer_envs, organization, chaincode), 
+        daemon=True).start()
 
 
 def _set_chaincode_package_id(peer_env: Dict[str, str], chaincode: Chaincode) -> None:
@@ -108,6 +115,14 @@ def _set_chaincode_package_id(peer_env: Dict[str, str], chaincode: Chaincode) ->
             text=True
         ).stdout
         chaincode.save()
+
+
+def _install_and_approve_chaincode_with_envs(
+        peer_envs: List[Dict[str, str]], 
+        organization: Organization, 
+        chaincode: Chaincode) -> None:
+    _install_chaincode_with_envs(peer_envs, chaincode)
+    _approve_chaincode_with_envs(peer_envs[0], organization, chaincode)
 
 
 def _install_chaincode_with_envs(peer_envs: List[Dict[str, str]], chaincode: Chaincode) -> None:
@@ -132,7 +147,7 @@ def approve_chaincode(
     _approve_chaincode_with_envs(
         get_peers_root_certs_and_addresses_and_envs(
             organization.name,
-            [chaincode.peers[0]]  # type: ignore
+            [chaincode.peers.first()]
         )[2][0],
         organization,
         chaincode
@@ -193,7 +208,7 @@ def commit_chaincode(
         chaincode: Chaincode) -> None:
     peer_root_certs, peer_addresses, peer_envs = get_peers_root_certs_and_addresses_and_envs(
         organization.name,
-        chaincode.peers
+        chaincode.peers.all()
     )
     orderer_domain_name = get_domain_name(
         organization.name,
@@ -224,7 +239,7 @@ def commit_chaincode(
             organization.name.split(".", 1)[1],
         )
     ]
-    for i in range(len(chaincode.peers)):
+    for i in range(len(chaincode.peers.all())):
         command.extend(["--peerAddresses", peer_addresses[i], "--tlsRootCertFiles", peer_root_certs[i]])
 
     LOG.info(" ".join(command))
@@ -248,7 +263,7 @@ def send_chaincode_request(
     # Pick any organization peer
     peer_env: Dict[str, str] = get_peers_root_certs_and_addresses_and_envs(
         organization.name,
-        [chaincode.peers.filter(organization=organization)[0]]  # type: ignore
+        [chaincode.peers.filter(organization=organization).first()]
     )[2][0]
     command = [
         "go",

@@ -16,9 +16,20 @@ class ChaincodeID(serializers.ModelSerializer):
     class Meta:
         model = Chaincode
         fields = ("id",)
+        extra_kwargs = {
+            # Temporarily make "id" writable only for validation purposes
+            "id": {"read_only": False}
+        }
 
-    def create(self, validated_data: Dict[str, Any]) -> Chaincode:
-        return get_chaincode(validated_data["id"])
+    def validate(self, attrs: Dict[str, Any]) -> Dict[str, Any]:
+        chaincode = get_chaincode(attrs["id"])
+        if chaincode is None:
+            raise serializers.ValidationError("Chaincode with id {} does not exist.".format(attrs["id"]))
+        self.instance = chaincode
+        return attrs
+
+    def update(self, instance: Chaincode, validated_data: Dict[str, Any]) -> Chaincode:
+        return instance
 
 
 class ChaincodeResponse(ChaincodeID):
@@ -70,6 +81,7 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
             },
             "init_required": {"required": False},
             "signature_policy": {"required": False},
+            "description": {"required": False},
         }
 
     @staticmethod
@@ -116,27 +128,30 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
 
 
 class ChaincodeInstallBody(ChaincodeID):
-    def create(self, validated_data: Dict[str, Any]):
+    def update(self, instance: Chaincode, validated_data: Dict[str, Any]):
         install_chaincode(
             self.context["organization"],
-            super().create(validated_data)
+            instance
         )
+        return instance
 
 
 class ChaincodeApproveBody(ChaincodeID):
-    def create(self, validated_data: Dict[str, Any]):
+    def update(self, instance: Chaincode, validated_data: Dict[str, Any]):
         approve_chaincode(
             self.context["organization"],
-            super().create(validated_data)
+            instance
         )
+        return instance
 
 
 class ChaincodeCommitBody(ChaincodeID):
-    def create(self, validated_data: Dict[str, Any]):
+    def update(self, instance: Chaincode, validated_data: Dict[str, Any]):
         commit_chaincode(
             self.context["organization"],
-            super().create(validated_data)
+            instance
         )
+        return instance
 
 
 class ChaincodeRequestBody(ChaincodeID):
