@@ -21,7 +21,7 @@
 # Workdir is set to $GOPATH/src/github.com/hyperledger/fabric
 # Data is stored under /var/hyperledger/production
 
-FROM golang:1.24.2
+FROM golang:1.25.5
 LABEL maintainer="Baohua Yang <yeasy.github.com>"
 
 # Orderer, peer, ca, operation api
@@ -34,11 +34,11 @@ ENV FABRIC_ROOT=$GOPATH/src/github.com/hyperledger/fabric \
     FABRIC_CA_ROOT=$GOPATH/src/github.com/hyperledger/fabric-ca
 
 # BASE_VERSION is used in metadata.Version as major version
-ENV BASE_VERSION=2.5.13
+ENV BASE_VERSION=2.5.14
 
 # PROJECT_VERSION is required in core.yaml for fabric-baseos and fabric-ccenv
-ENV PROJECT_VERSION=2.5.13
-ENV HLF_CA_VERSION=1.5.13
+ENV PROJECT_VERSION=2.5.14
+ENV HLF_CA_VERSION=1.5.16
 
 # generic environment (core.yaml) for builder and runtime: e.g., builder: $(DOCKER_NS)/fabric-ccenv:$(TWO_DIGIT_VERSION), golang, java, node
 ENV DOCKER_NS=hyperledger
@@ -95,13 +95,12 @@ RUN apt-get update \
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Install yq to update config for fabric-ca
-RUN wget -O /go/bin/yq https://github.com/mikefarah/yq/releases/download/2.4.1/yq_linux_amd64 \
+RUN wget -O /go/bin/yq https://github.com/mikefarah/yq/releases/download/v4.50.1/yq_linux_amd64 \
         && chmod a+x /go/bin/yq
 
 # Install gotools
-RUN go install github.com/golang/protobuf/protoc-gen-go@latest \
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest \
         && go install github.com/maxbrunsfeld/counterfeiter/v6@latest \
-        && go install github.com/axw/gocov/gocov@latest \
         && go install golang.org/x/tools/cmd/goimports@latest \
         && go install github.com/onsi/ginkgo/ginkgo@latest
 
