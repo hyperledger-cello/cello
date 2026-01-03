@@ -22,8 +22,71 @@ LOG = logging.getLogger(__name__)
 peer_command = os.path.join(FABRIC_TOOL, "peer")
 
 
-def get_chaincode(id: str) -> Optional[Chaincode]:
-    return Chaincode.objects.get(id=id)
+def get_chaincode(pk: str) -> Optional[Chaincode]:
+    return Chaincode.objects.get(id=pk)
+
+
+def get_status(organization: Organization, chaincode: Chaincode) -> Chaincode.Status:
+    peer_env = get_peers_root_certs_and_addresses_and_envs(
+        organization.name,
+        [chaincode.peers.first()]
+    )[2][0]
+    try:
+        LOG.info(subprocess.run(
+            [
+                peer_command,
+                "lifecycle",
+                "chaincode",
+                "queryinstalled",
+                "--output",
+                "json"
+            ],
+            env=peer_env,
+            check=True,
+            capture_output = True,
+            text = True
+        ).stdout)
+        LOG.info(subprocess.run(
+            [
+                peer_command,
+                "lifecycle",
+                "chaincode",
+                "queryapproved",
+                "-C",
+                chaincode.channel.name,
+                "-n",
+                chaincode.name,
+                "--sequence",
+                str(chaincode.sequence),
+                "--output",
+                "json"
+            ],
+            env=peer_env,
+            check=True,
+            capture_output=True,
+            text=True
+        ).stdout)
+        LOG.info(subprocess.run(
+            [
+                peer_command,
+                "lifecycle",
+                "chaincode",
+                "querycommitted",
+                "-C",
+                chaincode.channel.name,
+                "-n",
+                chaincode.name,
+                "--output",
+                "json"
+            ],
+            env=peer_env,
+            check=True,
+            capture_output=True,
+            text=True
+        ).stdout)
+    except subprocess.CalledProcessError as e:
+        LOG.error(e.stderr)
+    return Chaincode.Status.INSTALLED
 
 
 def create_chaincode(
@@ -113,7 +176,7 @@ def _set_chaincode_package_id(peer_env: Dict[str, str], chaincode: Chaincode) ->
             check=True,
             capture_output=True,
             text=True
-        ).stdout
+        ).stdout.rstrip("\n")
         chaincode.save()
 
 
@@ -265,26 +328,44 @@ def send_chaincode_request(
         organization.name,
         [chaincode.peers.filter(organization=organization).first()]
     )[2][0]
-    command = [
-        "go",
-        "run",
-        os.path.join(CELLO_HOME, "chaincode", "application-gateway", "main.go"),
-        action.name,
-        function,
-        *args
-    ]
-    LOG.info(" ".join(command))
-    response: str = subprocess.run(
-        command,
-        env={
-            **peer_env,
-            "CHANNEL_NAME": chaincode.channel.name,
-            "CHAINCODE_NAME": chaincode.name
-        },
+    go = subprocess.run(
+        ["which", "go"],
         check=True,
         capture_output=True,
-        text=True).stdout
-    LOG.info(response)
+        text=True).stdout.rstrip('\n')
+    try:
+        command = [
+            go,
+            "run",
+            ".",
+            action.name,
+            function,
+            *args
+        ]
+        LOG.info(" ".join(command))
+        LOG.info(subprocess.run(
+            command,
+            env={
+                **peer_env,
+                "CHANNEL_NAME": chaincode.channel.name,
+                "CHAINCODE_NAME": chaincode.name,
+                "GOPATH": subprocess.run(
+                    [go, "env", "GOPATH"],
+                    check=True,
+                    capture_output=True,
+                    text=True).stdout.rstrip('\n'),
+                "GOCACHE": subprocess.run(
+                [go, "env", "GOCACHE"],
+                    check=True,
+                    capture_output=True,
+                    text=True).stdout.rstrip('\n')
+            },
+            cwd=os.path.join(CELLO_HOME, "application-gateway"),
+            check=True,
+            capture_output=True,
+            text=True).stdout)
+    except subprocess.CalledProcessError as e:
+        LOG.error(e.stderr)
 
 
 def get_peers_root_certs_and_addresses_and_envs(

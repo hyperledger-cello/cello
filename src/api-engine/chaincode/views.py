@@ -20,9 +20,13 @@ class ChaincodeViewSet(viewsets.ViewSet):
     ]
 
     def get_parsers(self):
-        if getattr(self, 'action', None) == "create":
-            return [MultiPartParser()]
-        return [JSONParser()]
+        request_action = getattr(self, 'action', None)
+        if request_action is not None:
+            if request_action == 'create':
+                return [MultiPartParser()]
+            if request_action == 'transact':
+                return [JSONParser()]
+        return [MultiPartParser(), JSONParser()]
 
     @swagger_auto_schema(
         operation_summary="List all chaincodes of the current organization",
@@ -42,10 +46,13 @@ class ChaincodeViewSet(viewsets.ViewSet):
                 "total": p.count,
                 "data": ChaincodeResponse(
                     p.get_page(serializer.data["page"])
-                    .object_list,
-                    many=True
-                ).data,
-            }).data),
+                        .object_list,
+                    many=True,
+                    context={
+                        "organization": request.user.organization,
+                    }
+                ).data}
+            ).data),
         )
 
     @swagger_auto_schema(
