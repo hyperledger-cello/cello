@@ -4,7 +4,8 @@ from typing import List, Dict, Any
 from django.core.validators import MinValueValidator
 from rest_framework import serializers
 from chaincode.models import Chaincode
-from chaincode.service import ChaincodeAction, create_chaincode, get_chaincode, get_metadata, install_chaincode, approve_chaincode, commit_chaincode, send_chaincode_request
+from chaincode.service import ChaincodeAction, create_chaincode, get_chaincode, get_metadata, install_chaincode, \
+    approve_chaincode, commit_chaincode, send_chaincode_request, get_status
 from channel.models import Channel
 from channel.serializers import ChannelID
 from common.serializers import ListResponseSerializer
@@ -49,6 +50,11 @@ class ChaincodeResponse(ChaincodeID):
             "created_at",
             "description",
         )
+
+    def to_representation(self, instance):
+        if isinstance(instance, Chaincode):
+            get_status(self.context["organization"], instance)
+        return super().to_representation(instance)
 
 
 class ChaincodeList(ListResponseSerializer):
@@ -179,6 +185,6 @@ class ChaincodeRequestBody(ChaincodeID):
             instance,
             ChaincodeAction[validated_data["action"]],
             validated_data["function"],
-            validated_data["arguments"]
+            *validated_data["arguments"]
         )
         return instance
