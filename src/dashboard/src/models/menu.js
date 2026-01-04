@@ -1,12 +1,11 @@
 import memoizeOne from 'memoize-one';
 import isEqual from 'lodash/isEqual';
-import { formatMessage } from 'umi';
 import Authorized from '@/utils/Authorized';
-import { menu } from '../defaultSettings';
 
 const { check } = Authorized;
 
 // Conversion router to menu.
+// Note: We no longer translate here - translation happens at render time in components
 function formatter(data, parentAuthority, parentName) {
   if (!data) {
     return undefined;
@@ -23,15 +22,11 @@ function formatter(data, parentAuthority, parentName) {
       } else {
         locale = `menu.${item.name}`;
       }
-      // if enableMenuLocale use item.name,
-      // close menu international
-      const name = menu.disableLocal
-        ? item.name
-        : formatMessage({ id: locale, defaultMessage: item.name });
+
       const result = {
         ...item,
-        name,
-        locale,
+        name: item.name, // Keep original name, translation happens at render time
+        locale, // Store locale key for later translation
         authority: item.authority || parentAuthority,
       };
       if (item.routes) {
@@ -85,6 +80,9 @@ const getBreadcrumbNameMap = menuData => {
 
   const flattenMenuData = data => {
     data.forEach(menuItem => {
+      if (menuItem.isExternal) {
+        return;
+      }
       if (menuItem.children) {
         flattenMenuData(menuItem.children);
       }

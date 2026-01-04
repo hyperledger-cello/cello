@@ -1,28 +1,30 @@
 /*
  SPDX-License-Identifier: Apache-2.0
 */
-import React, { PureComponent, Fragment } from 'react';
-import { connect, injectIntl } from 'umi';
-import { Card, Button, Form, Modal, Input, message, Divider } from 'antd';
-import { PlusOutlined, TeamOutlined } from '@ant-design/icons';
+import { useEffect } from 'react';
+import { connect, useIntl } from 'umi';
+import { Card, Form, Modal, Input, message } from 'antd';
+import { TeamOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import StandardTable from '@/components/StandardTable';
+import { useTableManagement, useModalForm } from '@/hooks';
 import styles from '../styles.less';
 
 const FormItem = Form.Item;
 
-const CreateUpdateForm = props => {
-  const {
-    visible,
-    method,
-    handleSubmit,
-    handleModalVisible,
-    confirmLoading,
-    organization,
-    intl,
-  } = props;
+// Separate form component for create/update
+const CreateUpdateForm = ({
+  visible,
+  method,
+  handleSubmit,
+  handleModalVisible,
+  confirmLoading,
+  organization,
+  intl,
+}) => {
   const [form] = Form.useForm();
+
   const onSubmit = () => {
     form.submit();
   };
@@ -82,57 +84,40 @@ const CreateUpdateForm = props => {
   );
 };
 
-@connect(({ organization, loading }) => ({
-  organization,
-  loadingOrganizations: loading.effects['organization/listOrganization'],
-  creatingOrganization: loading.effects['organization/createOrganization'],
-}))
-class Organization extends PureComponent {
-  state = {
-    modalVisible: false,
-    modalMethod: 'create',
-    selectedRows: [],
-    formValues: {},
-    currentOrganization: {},
-  };
+const Organization = ({
+  dispatch,
+  organization = {},
+  loadingOrganizations,
+  creatingOrganization,
+}) => {
+  const intl = useIntl();
+  const { organizations = [], pagination = {} } = organization;
 
-  componentDidMount() {
-    const { dispatch } = this.props;
+  // Use custom hooks
+  const { selectedRows, handleSelectRows, handleTableChange, refreshList } = useTableManagement({
+    dispatch,
+    listAction: 'organization/listOrganization',
+  });
 
-    dispatch({
-      type: 'organization/listOrganization',
-    });
-  }
+  const {
+    modalVisible,
+    modalMethod,
+    currentRecord: currentOrganization,
+    closeModal,
+    handleModalVisible,
+  } = useModalForm();
 
-  componentWillUnmount() {
-    const { dispatch } = this.props;
+  // Load data on mount, clear on unmount
+  useEffect(() => {
+    dispatch({ type: 'organization/listOrganization' });
+    return () => {
+      dispatch({ type: 'organization/clear' });
+    };
+  }, [dispatch]);
 
-    dispatch({
-      type: 'organization/clear',
-    });
-  }
-
-  handleModalVisible = visible => {
-    if (!visible) {
-      this.setState({
-        modalMethod: 'create',
-        currentOrganization: {},
-      });
-    }
-    this.setState({
-      modalVisible: !!visible,
-    });
-  };
-
-  handleSelectRows = rows => {
-    this.setState({
-      selectedRows: rows,
-    });
-  };
-
-  createCallback = data => {
+  // Callbacks for create/update/delete
+  const createCallback = data => {
     const { name } = data.payload;
-    const { intl } = this.props;
     if (data.id) {
       message.success(
         intl.formatMessage(
@@ -140,14 +125,11 @@ class Organization extends PureComponent {
             id: 'app.organization.create.success',
             defaultMessage: 'Create organization {name} success',
           },
-          {
-            name,
-            id: data.id,
-          }
+          { name, id: data.id }
         )
       );
-      this.handleModalVisible();
-      this.handleFormReset();
+      closeModal();
+      refreshList();
     } else {
       message.error(
         intl.formatMessage(
@@ -155,17 +137,14 @@ class Organization extends PureComponent {
             id: 'app.organization.create.fail',
             defaultMessage: 'Create organization {name} failed',
           },
-          {
-            name,
-          }
+          { name }
         )
       );
     }
   };
 
-  updateCallback = data => {
+  const updateCallback = data => {
     const { code, payload } = data;
-    const { intl } = this.props;
     const { name } = payload;
     if (code) {
       message.error(
@@ -174,68 +153,32 @@ class Organization extends PureComponent {
             id: 'app.organization.update.fail',
             defaultMessage: 'Update organization {name} failed',
           },
-          {
-            name,
-          }
-        )
-      );
-    } else {
-      message.error(
-        intl.formatMessage(
-          {
-            id: 'app.organization.update.success',
-            defaultMessage: 'Update organization {name} success',
-          },
-          {
-            name,
-          }
-        )
-      );
-      this.handleModalVisible();
-      this.handleFormReset();
-    }
-  };
-
-  deleteCallback = data => {
-    const { code, payload } = data;
-    const { intl } = this.props;
-    const { name } = payload;
-    if (code) {
-      message.error(
-        intl.formatMessage(
-          {
-            id: 'app.organization.delete.fail',
-            defaultMessage: 'Delete organization {name} failed',
-          },
-          {
-            name,
-          }
+          { name }
         )
       );
     } else {
       message.success(
         intl.formatMessage(
           {
-            id: 'app.organization.delete.success',
-            defaultMessage: 'Delete organization {name} success',
+            id: 'app.organization.update.success',
+            defaultMessage: 'Update organization {name} success',
           },
-          {
-            name,
-          }
+          { name }
         )
       );
-      this.handleFormReset();
+      closeModal();
+      refreshList();
     }
   };
 
-  handleSubmit = (method, values, record) => {
-    const { dispatch } = this.props;
+  // Handle form submit
+  const handleSubmit = (method, values, record) => {
     switch (method) {
       case 'create':
         dispatch({
           type: 'organization/createOrganization',
           payload: values,
-          callback: this.createCallback,
+          callback: createCallback,
         });
         break;
       case 'update':
@@ -245,7 +188,7 @@ class Organization extends PureComponent {
             ...values,
             id: record.id,
           },
-          callback: this.updateCallback,
+          callback: updateCallback,
         });
         break;
       default:
@@ -253,166 +196,72 @@ class Organization extends PureComponent {
     }
   };
 
-  handleFormReset = () => {
-    const { dispatch } = this.props;
-    this.setState({
-      formValues: {},
-    });
-    dispatch({
-      type: 'organization/listOrganization',
-    });
-  };
-
-  handleTableChange = pagination => {
-    const { dispatch } = this.props;
-    const { formValues } = this.state;
-    const { current, pageSize } = pagination;
-    const params = {
-      page: current,
-      per_page: pageSize,
-      ...formValues,
-    };
-    dispatch({
-      type: 'organization/listOrganization',
-      payload: params,
-    });
-  };
-
-  deleteOrganization = (record, callback = this.deleteCallback) => {
-    const { dispatch } = this.props;
-    dispatch({
-      type: 'organization/deleteOrganization',
-      payload: {
-        ...record,
-      },
-      callback,
-    });
-  };
-
-  showUpdate = record => {
-    const { handleModalVisible } = this;
-    this.setState(
-      {
-        currentOrganization: record,
-        modalMethod: 'update',
-      },
-      () => {
-        handleModalVisible(true);
-      }
-    );
-  };
-
-  handleDelete = record => {
-    const { intl } = this.props;
-    Modal.confirm({
+  // Table columns
+  const columns = [
+    {
       title: intl.formatMessage({
-        id: 'app.organization.form.delete.title',
-        defaultMessage: 'Delete Organization',
+        id: 'app.organization.table.header.name',
+        defaultMessage: 'Organization Name',
       }),
-      content: intl.formatMessage(
-        {
-          id: 'app.organization.form.delete.content',
-          defaultMessage: 'Confirm to delete organization {name}',
-        },
-        {
-          name: record.name,
-        }
-      ),
-      okText: intl.formatMessage({ id: 'form.button.confirm', defaultMessage: 'Confirm' }),
-      cancelText: intl.formatMessage({ id: 'form.button.cancel', defaultMessage: 'Cancel' }),
-      onOk: () => this.deleteOrganization(record),
-    });
+      dataIndex: 'name',
+    },
+    {
+      title: intl.formatMessage({
+        id: 'app.organization.table.header.createTime',
+        defaultMessage: 'Create Time',
+      }),
+      dataIndex: 'created_at',
+      render: text => <span>{moment(text).format('YYYY-MM-DD HH:mm:ss')}</span>,
+    },
+    // Operation column is commented out in original, keeping it that way
+  ];
+
+  // Form props
+  const formProps = {
+    visible: modalVisible,
+    method: modalMethod,
+    organization: currentOrganization,
+    handleSubmit,
+    handleModalVisible,
+    confirmLoading: creatingOrganization,
+    intl,
   };
 
-  render() {
-    const { selectedRows, modalVisible, modalMethod, currentOrganization } = this.state;
-    const {
-      organization: { organizations, pagination },
-      loadingOrganizations,
-      creatingOrganization,
-      intl,
-    } = this.props;
-    const columns = [
-      {
-        title: intl.formatMessage({
-          id: 'app.organization.table.header.name',
-          defaultMessage: 'Organization Name',
-        }),
-        dataIndex: 'name',
-      },
-      {
-        title: intl.formatMessage({
-          id: 'app.organization.table.header.createTime',
-          defaultMessage: 'Create Time',
-        }),
-        dataIndex: 'created_at',
-        render: text => <span>{moment(text).format('YYYY-MM-DD HH:mm:ss')}</span>,
-      },
-      {
-        title: intl.formatMessage({
-          id: 'form.table.header.operation',
-          defaultMessage: 'Operation',
-        }),
-        render: (text, record) => (
-          <Fragment>
-            <a onClick={() => this.showUpdate(record)}>
-              {intl.formatMessage({ id: 'form.menu.item.update', defaultMessage: 'Update' })}
-            </a>
-            <Divider type="vertical" />
-            <a className={styles.danger} onClick={() => this.handleDelete(record)}>
-              {intl.formatMessage({ id: 'form.menu.item.delete', defaultMessage: 'Delete' })}
-            </a>
-          </Fragment>
-        ),
-      },
-    ];
-    const formProps = {
-      visible: modalVisible,
-      method: modalMethod,
-      organization: currentOrganization,
-      handleSubmit: this.handleSubmit,
-      handleModalVisible: this.handleModalVisible,
-      confirmLoading: creatingOrganization,
-      intl,
-    };
-    return (
-      <PageHeaderWrapper
-        title={
-          <span>
-            {<TeamOutlined style={{ marginRight: 15 }} />}
-            {intl.formatMessage({
-              id: 'app.organization.title',
-              defaultMessage: 'Organization Management',
-            })}
-          </span>
-        }
-      >
-        <Card bordered={false}>
-          <div className={styles.tableList}>
-            <div className={styles.tableListOperator}>
-              <Button type="primary" onClick={() => this.handleModalVisible(true)}>
-                <PlusOutlined />
-                {intl.formatMessage({ id: 'form.button.new', defaultMessage: 'New' })}
-              </Button>
-            </div>
-            <StandardTable
-              selectedRows={selectedRows}
-              loading={loadingOrganizations}
-              rowKey="id"
-              data={{
-                list: organizations,
-                pagination,
-              }}
-              columns={columns}
-              onSelectRow={this.handleSelectRows}
-              onChange={this.handleTableChange}
-            />
-          </div>
-        </Card>
-        <CreateUpdateForm {...formProps} />
-      </PageHeaderWrapper>
-    );
-  }
-}
+  return (
+    <PageHeaderWrapper
+      title={
+        <span>
+          <TeamOutlined style={{ marginRight: 15 }} />
+          {intl.formatMessage({
+            id: 'app.organization.title',
+            defaultMessage: 'Organization Management',
+          })}
+        </span>
+      }
+    >
+      <Card bordered={false}>
+        <div className={styles.tableList}>
+          <StandardTable
+            selectedRows={selectedRows}
+            loading={loadingOrganizations}
+            rowKey="id"
+            data={{
+              list: organizations,
+              pagination,
+            }}
+            columns={columns}
+            onSelectRow={handleSelectRows}
+            onChange={handleTableChange}
+          />
+        </div>
+      </Card>
+      <CreateUpdateForm {...formProps} />
+    </PageHeaderWrapper>
+  );
+};
 
-export default injectIntl(Organization);
+export default connect(({ organization, loading }) => ({
+  organization,
+  loadingOrganizations: loading.effects['organization/listOrganization'],
+  creatingOrganization: loading.effects['organization/createOrganization'],
+}))(Organization);

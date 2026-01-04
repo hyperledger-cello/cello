@@ -137,7 +137,6 @@ fabric.properties
 bin/
 tmp/
 *.tmp
-*.bak
 *.swp
 *~.nib
 local.properties
@@ -219,7 +218,6 @@ yarn-error.log
 /coverage
 .idea
 package-lock.json
-*bak
 .vscode
 
 # visual studio code
@@ -244,9 +242,9 @@ src/dashboard/lambda/mock/index.js
 .config
 .config.old
 
-# Cello local storage
-/**/opt/*
-/**/cello/*
+# Fabric
+src/api-engine/cello/builders
+src/api-engine/cello/config
 
 # Local Netlify folder
 .netlify
@@ -258,3 +256,8 @@ tests/postman/junitResult.xml
 
 # Postgres
 pgdata/
+
+src/api-engine/cello/*
+!src/api-engine/cello/node
+!src/api-engine/cello/application-gateway
+src/api-engine/api/v1/media

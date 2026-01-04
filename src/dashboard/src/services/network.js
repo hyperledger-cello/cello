@@ -1,19 +1,12 @@
-import { stringify } from 'qs';
-import request from '@/utils/request';
+/*
+ SPDX-License-Identifier: Apache-2.0
+*/
+import { createCrudService } from '@/utils/serviceFactory';
 
-export async function listNetwork(params) {
-  return request(`/api/v1/networks?${stringify(params)}`);
-}
+// Create standard CRUD service for networks
+const networkService = createCrudService('networks');
 
-export async function createNetwork(params) {
-  return request('/api/v1/networks', {
-    method: 'POST',
-    data: params,
-  });
-}
-
-export async function deleteNetwork(id) {
-  return request(`/api/v1/networks/${id}`, {
-    method: 'DELETE',
-  });
-}
+// Export standard CRUD operations
+export const listNetwork = networkService.list;
+export const createNetwork = networkService.create;
+export const deleteNetwork = networkService.delete;

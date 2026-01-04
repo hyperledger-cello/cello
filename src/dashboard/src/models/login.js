@@ -1,6 +1,6 @@
 import { history } from 'umi';
 import { stringify } from 'qs';
-import { fakeAccountLogin, register } from '@/services/api';
+import { login, register } from '@/services/api';
 import { setAuthority } from '@/utils/authority';
 import { getPageQuery } from '@/utils/utils';
 import { reloadAuthorized } from '@/utils/Authorized';
@@ -18,7 +18,7 @@ export default {
 
   effects: {
     *login({ payload }, { call, put }) {
-      const response = yield call(fakeAccountLogin, payload);
+      const response = yield call(login, payload);
       // Login successfully
       if (response.data.token) {
         const { user, token } = response.data;
@@ -52,11 +52,12 @@ export default {
 
     *register({ payload }, { call, put }) {
       const response = yield call(register, payload);
+      const isSuccessful = response.status.toLowerCase() === 'successful';
       yield put({
         type: 'changeRegisterStatus',
         payload: {
-          success: response.status === 'successful',
-          msg: response.status === 'successful' ? 'Register successfully!' : response.msg,
+          success: isSuccessful,
+          msg: isSuccessful ? 'Register successfully!' : response.msg,
         },
       });
     },

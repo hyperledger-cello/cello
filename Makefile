@@ -208,7 +208,7 @@ check-api: ##@Test Run API tests with newman
 	cd tests/postman && docker compose up --abort-on-container-exit || (echo "API tests failed $$?"; exit 1)
 
 start-docker-compose:
-	docker compose -f bootup/docker-compose-files/${COMPOSE_FILE} up -d --force-recreate --remove-orphans
+	docker compose -f docker-compose.dev.yaml up -d --build --force-recreate --remove-orphans
 
 stop-docker-compose:
 	echo "Stop all services with bootup/docker-compose-files/${COMPOSE_FILE}..."
@@ -224,7 +224,7 @@ docker-rest-agent:
 	docker build -t hyperledger/cello-agent-docker:latest -f build_image/docker/agent/docker-rest-agent/Dockerfile.in ./ --build-arg pip=$(PIP) --platform linux/$(ARCH)
 
 fabric:
-	docker build -t hyperledger/fabric:2.5.13 -f build_image/docker/cello-hlf/Dockerfile build_image/docker/cello-hlf/
+	docker build -t hyperledger/fabric:2.5.14 src/nodes/hyperledger-fabric
 
 dashboard:
 	docker build -t hyperledger/cello-dashboard:latest -f build_image/docker/common/dashboard/Dockerfile.in ./
