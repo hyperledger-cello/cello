@@ -261,3 +261,5 @@ src/api-engine/cello/*
 !src/api-engine/cello/node
 !src/api-engine/cello/application-gateway
 src/api-engine/api/v1/media
+src/agents/hyperledger-fabric/cello/*
+!src/agents/hyperledger-fabric/cello/.gitkeep
