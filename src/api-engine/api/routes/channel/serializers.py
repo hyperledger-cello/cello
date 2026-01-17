@@ -3,8 +3,8 @@
 #
 from rest_framework import serializers
 
-from api.models import Channel
 from api.common.serializers import ListResponseSerializer
+from channel.models import Channel
 
 
 class ChannelCreateBody(serializers.Serializer):
@@ -66,7 +66,7 @@ class ChannelResponseSerializer(
 
     class Meta:
         model = Channel
-        fields = ("id", "name", "network", "organizations", "create_ts")
+        fields = ("id", "name", "network", "organizations", "created_at")
 
 
 class ChannelListResponse(ListResponseSerializer):

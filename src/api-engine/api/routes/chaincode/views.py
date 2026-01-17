@@ -12,9 +12,7 @@ import tarfile
 import json
 
 from drf_yasg.utils import swagger_auto_schema
-from api.config import FABRIC_CHAINCODE_STORE
-from api.config import CELLO_HOME
-from api.models import Node, ChainCode, Channel
+from api.models import ChainCode
 from api.utils.common import make_uuid
 from django.core.paginator import Paginator
 
@@ -35,6 +33,9 @@ import threading
 import hashlib
 import logging
 
+from api_engine.settings import CELLO_HOME, FABRIC_CHAINCODE_STORE
+from channel.models import Channel
+from node.models import Node
 
 LOG = logging.getLogger(__name__)
 
