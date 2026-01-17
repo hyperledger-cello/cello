@@ -53,7 +53,6 @@ from api.routes.node.serializers import (
     NodeUserListSerializer,
     NodeConfigFileSerializer,
 )
-from api.tasks import operate_node
 from api.utils.common import with_common_response
 from api.lib.pki import CryptoGen, CryptoConfig
 from api.utils import zip_dir, zip_file
@@ -919,59 +918,6 @@ class NodeViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response(err(e.args), status=status.HTTP_400_BAD_REQUEST)
 
-    def _register_user(self, request, pk=None):
-        serializer = NodeUserCreateSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            name = serializer.validated_data.get("name")
-            secret = serializer.validated_data.get("secret")
-            user_type = serializer.validated_data.get("user_type")
-            attrs = serializer.validated_data.get("attrs", "")
-            try:
-                node = Node.objects.get(
-                    id=pk, organization=request.user.organization
-                )
-                # Name is unique for each node
-                user_count = NodeUser.objects.filter(
-                    node=node, name=name
-                ).count()
-                if user_count > 0:
-                    raise ResourceExists("Users Exist")
-            except ObjectDoesNotExist:
-                raise ResourceNotFound("Users Not Found")
-
-            node_user = NodeUser(
-                name=name,
-                secret=secret,
-                user_type=user_type,
-                attrs=attrs,
-                node=node,
-            )
-            node_user.save()
-
-            agent_config_file = request.build_absolute_uri(
-                node.agent.config_file.url
-            )
-            node_file_url = request.build_absolute_uri(node.file.url)
-            user_patch_url = self.reverse_action(
-                "patch-user", kwargs={"pk": pk, "user_pk": node_user.id}
-            )
-            user_patch_url = request.build_absolute_uri(user_patch_url)
-            operate_node.delay(
-                str(node.id),
-                AgentOperation.FabricCARegister.value,
-                agent_config_file=agent_config_file,
-                node_file_url=node_file_url,
-                user_patch_url=user_patch_url,
-                fabric_ca_user={
-                    "name": name,
-                    "secret": secret,
-                    "type": user_type,
-                    "attrs": attrs,
-                },
-            )
-            response = NodeUserIDSerializer(node_user)
-            return Response(data=response.data, status=status.HTTP_201_CREATED)
-
     def _list_user(self, request, pk=None):
         serializer = NodeUserQuerySerializer(data=request.GET)
         if serializer.is_valid(raise_exception=True):
@@ -998,15 +944,6 @@ class NodeViewSet(viewsets.ViewSet):
             return Response(ok(response.data), status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
-        methods=["post"],
-        operation_description="Register user to node",
-        operation_summary="Register user to node",
-        request_body=NodeUserCreateSerializer,
-        responses=with_common_response(
-            {status.HTTP_201_CREATED: NodeUserIDSerializer}
-        ),
-    )
-    @swagger_auto_schema(
         methods=["get"],
         operation_description="List user of node",
         operation_summary="List user of node",
@@ -1022,10 +959,7 @@ class NodeViewSet(viewsets.ViewSet):
         url_name="users",
     )
     def users(self, request, pk=None):
-        if request.method == "POST":
-            return self._register_user(request, pk)
-        elif request.method == "GET":
-            return self._list_user(request, pk)
+        return self._list_user(request, pk)
 
     @swagger_auto_schema(
         methods=["patch"],
