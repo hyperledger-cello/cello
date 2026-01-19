@@ -15,7 +15,7 @@ COPY . .
 RUN curl -L --retry 5 --retry-delay 3 "https://github.com/hyperledger/fabric/releases/download/v2.5.14/hyperledger-fabric-linux-amd64-2.5.14.tar.gz" | tar xz -C ./cello/
 
 # Install python dependencies
-RUN	pip3 install -r requirements.txt
+RUN pip3 install -r requirements.txt
 
 # Install go
 ENV GO_VERSION=1.25.5
