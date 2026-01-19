@@ -119,6 +119,9 @@ USE_TZ = True
 
 WEBROOT = os.path.join(os.getenv("WEB_PREFIX", ""), "api", os.getenv("API_VERSION", "v1")) + "/"
 STATIC_URL = os.path.join(WEBROOT, 'static/')
+STATIC_ROOT = os.path.join(BASE_DIR, STATIC_URL)
+MEDIA_URL = os.path.join(WEBROOT, "media/")
+MEDIA_ROOT = os.path.join(BASE_DIR, MEDIA_URL)
 
 CELLO_HOME = os.path.join(BASE_DIR, "cello")
 CRYPTO_CONFIG = os.path.join(CELLO_HOME, "crypto-config.yaml")
