@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from urllib.parse import urljoin
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
@@ -22,15 +23,17 @@ from rest_framework.routers import DefaultRouter
 from hyperledger_fabric.settings import WEBROOT
 from hyperledger_fabric.views import HealthCheckViewSet
 from organization.views import OrganizationViewSet
+from node.views import NodeViewSet
 
 router = DefaultRouter(trailing_slash=False)
 router.register("organizations", OrganizationViewSet, basename="organization")
+router.register("nodes", NodeViewSet, basename="node")
 router.register("health", HealthCheckViewSet, basename="health")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path(WEBROOT, include(router.urls)),
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc')
+    path(urljoin(WEBROOT, "schema"), SpectacularAPIView.as_view(), name='schema'),
+    path(urljoin(WEBROOT, "swagger-ui"), SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path(urljoin(WEBROOT, "redoc"), SpectacularRedocView.as_view(url_name='schema'), name='redoc')
 ]

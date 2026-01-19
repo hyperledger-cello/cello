@@ -13,7 +13,10 @@ from node.enums import NodeType
 
 LOG = logging.getLogger(__name__)
 
-def create_node(node_type: NodeType, name: str):
+def create_node(node_type: str, name: str):
+    _create_node(NodeType.PEER if node_type == NodeType.PEER.name else NodeType.ORDERER, name)
+
+def _create_node(node_type: NodeType, name: str):
     # edit CRYPTO_CONFIG
     with open(
             CRYPTO_CONFIG,
@@ -43,13 +46,13 @@ def create_node(node_type: NodeType, name: str):
     with open(
             os.path.join(
                 CELLO_HOME,
-                "node",
-                "core.yaml.bak" if node_type == NodeType.PEER else "orderer.yaml.bak"),
+                "config",
+                "core.yaml" if node_type == NodeType.PEER else "orderer.yaml"),
             "r") as f:
         cfg = yaml.safe_load(f)
 
     domain = name + "." + organization["Domain"]
-    for key, value in {
+    for key, value in ({
             "peer_tls_enabled": True,
             "operations_listenAddress": "0.0.0.0:9444",
             "peer_gossip_externalEndpoint": domain + ":7051",
@@ -80,7 +83,7 @@ def create_node(node_type: NodeType, name: str):
             "General_BootstrapMethod": "none",
             "Metrics_Provider": "prometheus",
             "Operations_ListenAddress": "0.0.0.0:9443",
-        }:
+        }).items():
         sub_keys = key.split("_")
         cfg_iterator = cfg
         for sub_key in sub_keys[:-1]:

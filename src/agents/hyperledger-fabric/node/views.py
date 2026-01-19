@@ -7,7 +7,7 @@ from node.serializers import NodeSerializer
 
 
 # Create your views here.
-class OrganizationViewSet(viewsets.ViewSet):
+class NodeViewSet(viewsets.ViewSet):
     @extend_schema(
         request=NodeSerializer,
         responses={201: NodeSerializer}
