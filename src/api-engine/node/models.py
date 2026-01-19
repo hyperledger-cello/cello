@@ -39,24 +39,6 @@ class Node(models.Model):
     created_at = models.DateTimeField(
         help_text="Node Creation Timestamp", auto_now_add=True
     )
-    status = models.CharField(
-        help_text="Node Status",
-        choices=Status.choices,
-        max_length=64,
-        default=Status.CREATED,
-    )
-    config_file = models.TextField(
-        help_text="Node Config File",
-        null=True,
-    )
-    msp = models.TextField(
-        help_text="Node MSP",
-        null=True,
-    )
-    tls = models.TextField(
-        help_text="Node TLS",
-        null=True,
-    )
 
     class Meta:
         ordering = ("-created_at",)
