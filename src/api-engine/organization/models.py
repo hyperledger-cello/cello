@@ -18,7 +18,8 @@ class Organization(models.Model):
     agent_url = models.CharField(
         help_text="Organization Agent URL",
         unique=True,
-        validators=[validate_url]
+        validators=[validate_url],
+        default=None
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
