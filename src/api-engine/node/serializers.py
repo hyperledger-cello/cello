@@ -18,7 +18,6 @@ class NodeResponse(NodeID, serializers.ModelSerializer):
             "type",
             "name",
             "created_at",
-            "status",
         )
 
 
