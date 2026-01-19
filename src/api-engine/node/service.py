@@ -3,9 +3,11 @@ import logging
 import os
 import sys
 from typing import Optional, Dict, Any
+from urllib.parse import urljoin
 from zipfile import ZipFile
 
 import docker
+import requests
 import yaml
 from docker.errors import DockerException
 
@@ -23,45 +25,15 @@ def get_node(node_id: str) -> Optional[Node]:
 
 
 def create(organization: Organization, node_type: Node.Type, node_name: str) -> Node:
-    CryptoConfig(organization.name).update({"type": node_type, "Specs": [node_name]})
-    CryptoGen(organization.name).extend()
-    node_domain_name = get_domain_name(organization.name, node_type, node_name)
-    _generate_node_config(organization.name, node_type, node_domain_name)
-    msp = _get_msp(organization.name, node_type, node_domain_name)
-    tls = _get_tls(organization.name, node_type, node_domain_name)
-    cfg = _get_cfg(organization.name, node_type, node_domain_name)
+    agent_url = organization.agent_url
+    requests.get(urljoin(agent_url, "health")).raise_for_status()
+    requests.post(urljoin(agent_url, "nodes"), json=dict(name=org_name)).raise_for_status()
 
     node = Node(
         name=node_name,
         type=node_type,
         organization=organization,
-        config_file=cfg,
-        msp=msp,
-        tls=tls,
     )
-
-    try:
-        # same as `docker run -dit yeasy/hyperledge-fabric:2.2.0 -e VARIABLES``
-        docker.DockerClient("unix:///var/run/docker.sock").containers.run(
-            "hyperledger/fabric:" + FABRIC_VERSION,
-            _get_node_cmd(node_type),
-            detach=True,
-            tty=True,
-            stdin_open=True,
-            network="cello-net",
-            name=node_domain_name,
-            volumes=[
-                "/var/run/docker.sock:/host/var/run/docker.sock"
-            ],
-            environment=_get_node_env(node_type, node_domain_name, msp, tls, cfg),
-            # ports=port_map,
-        )
-        node.status = Node.Status.RUNNING
-    except DockerException:
-        node.status = Node.Status.FAILED
-        logging.error(sys.exc_info())
-        raise
-
     node.save()
     return node
 

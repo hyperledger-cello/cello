@@ -76,13 +76,9 @@ WSGI_APPLICATION = 'hyperledger_fabric.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "postgres"),
-        "USER": os.getenv("DB_USER", "postgres"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST", "localhost"),
-        "PORT": os.getenv("DB_PORT", "5432"),
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": "hyperledger_cello_hyperledger_fabric_agent",
     }
 }
 
@@ -125,7 +121,9 @@ WEBROOT = os.path.join(os.getenv("WEB_PREFIX", ""), "api", os.getenv("API_VERSIO
 STATIC_URL = os.path.join(WEBROOT, 'static/')
 
 CELLO_HOME = os.path.join(BASE_DIR, "cello")
+CRYPTO_CONFIG = os.path.join(CELLO_HOME, "crypto-config.yaml")
 FABRIC_TOOL = os.path.join(CELLO_HOME, "bin")
+FABRIC_VERSION = "2.5.14"
 
 LOGGING = {
     "version": 1,

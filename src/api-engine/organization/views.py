@@ -14,7 +14,7 @@ from api.utils.common import with_common_response
 from common.responses import err
 from common.serializers import PageQuerySerializer
 from organization.models import Organization
-from organization.serializeres import OrganizationList, OrganizationResponse
+from organization.serializers import OrganizationList, OrganizationResponse
 
 
 class OrganizationViewSet(viewsets.ViewSet):

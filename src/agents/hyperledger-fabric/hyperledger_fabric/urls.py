@@ -20,10 +20,12 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 from rest_framework.routers import DefaultRouter
 
 from hyperledger_fabric.settings import WEBROOT
+from hyperledger_fabric.views import HealthCheckViewSet
 from organization.views import OrganizationViewSet
 
 router = DefaultRouter(trailing_slash=False)
 router.register("organizations", OrganizationViewSet, basename="organization")
+router.register("health", HealthCheckViewSet, basename="health")
 
 urlpatterns = [
     path('admin/', admin.site.urls),

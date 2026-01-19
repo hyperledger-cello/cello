@@ -26,3 +26,4 @@ swagger-spec-validator==2.5.0
 tomli==2.0.1
 pygraphviz==1.5
 uWSGI==2.0.22
+requests==2.31.0

@@ -96,7 +96,7 @@ WSGI_APPLICATION = "api_engine.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "postgres"),
+        "NAME": os.getenv("DB_NAME", "hyperledger_cello_api_engine"),
         "USER": os.getenv("DB_USER", "postgres"),
         "PASSWORD": os.getenv("DB_PASSWORD"),
         "HOST": os.getenv("DB_HOST", "localhost"),
