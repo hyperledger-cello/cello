@@ -5,8 +5,9 @@ from typing import Dict, Any
 
 from rest_framework import serializers
 from api.common.serializers import ListResponseSerializer
-from organization.serializeres import OrganizationID, OrganizationResponse
+from organization.serializers import OrganizationID, OrganizationResponse
 from user.models import UserProfile
+from user.service import create_user
 
 
 class UserCreateBody(serializers.ModelSerializer):
@@ -20,16 +21,7 @@ class UserCreateBody(serializers.ModelSerializer):
         }
 
     def create(self, validated_data: Dict[str, Any]) -> UserProfile:
-        user = UserProfile(
-            username=validated_data["email"],
-            email=validated_data["email"],
-            role=validated_data["role"],
-            organization=self.context["organization"],
-        )
-
-        user.set_password(validated_data["password"])
-        user.save()
-        return user
+        return create_user(self.context["organization"], validated_data["email"], validated_data["password"], validated_data["role"])
 
 
 class UserID(serializers.ModelSerializer):

@@ -7,5 +7,5 @@ class OrganizationSerializer(serializers.Serializer):
     name = serializers.CharField()
 
     def create(self, validated_data):
-        # organization_service.create(validated_data["name"])
+        organization_service.create(validated_data["name"])
         return self

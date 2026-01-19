@@ -2,17 +2,20 @@ from typing import Dict, Any, Optional
 
 from rest_framework import serializers
 
-from common.validators import validate_host
+from common.validators import validate_host, validate_url
 from api.lib.pki import CryptoConfig, CryptoGen
 from organization.models import Organization
+from organization.service import create_organization
 from user.models import UserProfile
 from user.serializers import UserInfo
+from user.service import create_user
 
 
 class RegisterBody(serializers.Serializer):
     org_name = serializers.CharField(help_text="User Organization Name")
-    email = serializers.EmailField(help_text="User Email")
-    password = serializers.CharField(help_text="User Password")
+    email = serializers.EmailField(help_text="Admin Email")
+    password = serializers.CharField(help_text="Admin Password")
+    agent_url = serializers.CharField(help_text="Agent URL")
 
     class Meta:
         fields = ("org_name", "email", "password")
@@ -29,24 +32,17 @@ class RegisterBody(serializers.Serializer):
         validate_host(org_name)
         return org_name
 
+    @staticmethod
+    def validate_agent_url(agent_url: str) -> str:
+        if Organization.objects.filter(agent_url=agent_url).exists():
+            raise serializers.ValidationError("Agent already exists!")
+        validate_url(agent_url)
+
+        return agent_url
+
     def create(self, validated_data: Dict[str, Any]) -> Optional[Organization]:
-        org_name = validated_data.get("org_name")
-
-        CryptoConfig(org_name).create()
-        CryptoGen(org_name).generate()
-        organization = Organization(name=org_name)
-        organization.save()
-
-        user = UserProfile(
-            email=validated_data["email"],
-            username=validated_data["email"],
-            role=UserProfile.Role.ADMIN,
-            organization=organization,
-        )
-
-        password = validated_data.get("password")
-        user.set_password(password)
-        user.save()
+        organization = create_organization(validated_data.get("org_name"), validated_data.get("agent_url"))
+        create_user(organization, validated_data["email"], validated_data["password"], UserProfile.Role.ADMIN)
         return organization
 
 

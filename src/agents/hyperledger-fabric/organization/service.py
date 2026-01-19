@@ -4,15 +4,14 @@ import subprocess
 
 import yaml
 
-from hyperledger_fabric.settings import CELLO_HOME, FABRIC_TOOL
+from hyperledger_fabric.settings import CELLO_HOME, FABRIC_TOOL, CRYPTO_CONFIG
 
 LOG = logging.getLogger(__name__)
 
 def create(name: str):
-    # create $CELLO_HOME/crypto-config.yaml
-    crypto_config = os.path.join(CELLO_HOME, "crypto-config.yaml")
+    # create CRYPTO_CONFIG
     with open(
-        crypto_config,
+        CRYPTO_CONFIG,
         "w",
         encoding="utf-8",
     ) as f:
@@ -50,7 +49,7 @@ def create(name: str):
             os.path.join(FABRIC_TOOL, "cryptogen"),
             "generate",
             "--output={}".format(CELLO_HOME),
-            "--config={}".format(crypto_config),
+            "--config={}".format(CRYPTO_CONFIG),
         ]
         LOG.info(" ".join(command))
         # After this, there should files like

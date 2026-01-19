@@ -7,7 +7,7 @@ from channel.service import create
 from common.serializers import ListResponseSerializer
 from node.models import Node
 from node.service import get_node
-from organization.serializeres import OrganizationID
+from organization.serializers import OrganizationID
 
 
 class ChannelID(serializers.ModelSerializer):
