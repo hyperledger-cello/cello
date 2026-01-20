@@ -153,6 +153,7 @@ LOGGING = {
             "propagate": False,
         },
         "organization": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        "node": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
     },
 }
 
