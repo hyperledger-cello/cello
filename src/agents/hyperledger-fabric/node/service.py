@@ -92,6 +92,7 @@ def _create_node(node_type: NodeType, name: str):
 
     node_directory = os.path.join(
         CELLO_HOME,
+        "peerOrganizations" if node_type == NodeType.PEER else "ordererOrganizations",
         organization["Domain"],
         "peers" if node_type == NodeType.PEER else "orderers",
         domain
