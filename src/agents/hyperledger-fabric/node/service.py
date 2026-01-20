@@ -111,19 +111,23 @@ def _create_node(node_type: NodeType, name: str):
     msp_buffer = BytesIO()
     with zipfile.ZipFile(msp_buffer, 'w') as z:
         folder_path = os.path.join(node_directory, "msp")
+        LOG.info("Compress MSP in " + folder_path)
         for root, dirs, files in os.walk(folder_path):
             for file in files:
                 full_path = os.path.join(root, file)
-                rel_path = os.path.relpath(full_path, folder_path)
+                rel_path = os.path.relpath(full_path, os.path.dirname(folder_path))
+                LOG.info("Compress " + full_path + " into " + rel_path)
                 z.write(full_path, rel_path)
 
     tls_buffer = BytesIO()
     with zipfile.ZipFile(tls_buffer, 'w') as z:
         folder_path = os.path.join(node_directory, "tls")
+        LOG.info("Compress TLS in " + folder_path)
         for root, dirs, files in os.walk(folder_path):
             for file in files:
                 full_path = os.path.join(root, file)
-                rel_path = os.path.relpath(full_path, folder_path)
+                rel_path = os.path.relpath(full_path, os.path.dirname(folder_path))
+                LOG.info("Compress " + full_path + " into " + rel_path)
                 z.write(full_path, rel_path)
 
     cfg_buffer = BytesIO()
