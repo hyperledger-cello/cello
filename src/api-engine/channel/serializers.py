@@ -54,8 +54,6 @@ class ChannelCreateBody(serializers.Serializer):
             if node.type != Node.Type.PEER:
                 raise serializers.ValidationError(
                     "Node {} is not a peer but {} instead.".format(peer_id, node.type))
-            if node.status != Node.Status.RUNNING:
-                raise serializers.ValidationError("Peer {} is not running.".format(peer_id))
 
         return value
 
@@ -71,8 +69,6 @@ class ChannelCreateBody(serializers.Serializer):
             if node.type != Node.Type.ORDERER:
                 raise serializers.ValidationError(
                     "Node {} is not an orderer but {} instead.".format(orderer_id, node.type))
-            if node.status != Node.Status.RUNNING:
-                raise serializers.ValidationError("Orderer {} is not running.".format(orderer_id))
 
         return value
 
