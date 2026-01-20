@@ -123,7 +123,7 @@ def _create_node(node_type: NodeType, name: str):
     cfg = base64.b64encode(cfg_buffer.getvalue())
     docker.DockerClient("unix:///var/run/docker.sock").containers.run(
         "hyperledger/fabric:" + FABRIC_VERSION,
-        "bash /tmp/init.sh " + '"peer node start"' if node_type == NodeType.PEER else '"orderer"',
+        "bash /tmp/init.sh " + ('"peer node start"' if node_type == NodeType.PEER else '"orderer"'),
         detach=True,
         tty=True,
         stdin_open=True,
