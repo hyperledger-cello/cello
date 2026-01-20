@@ -18,17 +18,27 @@ def create_node(node_type: str, name: str):
 
 def _create_node(node_type: NodeType, name: str):
     # edit CRYPTO_CONFIG
+    edited = False
     with open(
-            CRYPTO_CONFIG,
-            "r+",
-            encoding="utf-8",
+        CRYPTO_CONFIG,
+        "r",
+        encoding="utf-8",
     ) as f:
         crypto_config = yaml.safe_load(f)
         organization = crypto_config["PeerOrgs" if node_type == NodeType.PEER else "OrdererOrgs"][0]
         specs = organization["Specs"]
         if name not in [spec["Hostname"] for spec in specs]:
             specs.append(dict(Hostname=name))
-        yaml.dump(crypto_config, f)
+            edited = True
+
+    if edited:
+        with open(
+            CRYPTO_CONFIG,
+            "w",
+            encoding="utf-8",
+        ) as f:
+            yaml.safe_dump(crypto_config, f)
+
     command = [
         os.path.join(FABRIC_TOOL, "cryptogen"),
         "extend",
