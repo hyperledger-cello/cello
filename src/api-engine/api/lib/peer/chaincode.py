@@ -5,8 +5,9 @@ import os
 import json
 import subprocess
 from api.lib.peer.command import Command
-from api.config import FABRIC_TOOL, FABRIC_CFG, FABRIC_VERSION
 import logging
+
+from api_engine.settings import FABRIC_VERSION, FABRIC_TOOL
 
 LOG = logging.getLogger(__name__)
 

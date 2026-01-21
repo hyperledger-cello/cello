@@ -1,10 +1,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-from api.config import CELLO_HOME, FABRIC_TOOL, FABRIC_VERSION
 
 import subprocess
 import logging
+
+from api_engine.settings import CELLO_HOME, FABRIC_TOOL, FABRIC_VERSION
 
 LOG = logging.getLogger(__name__)
 

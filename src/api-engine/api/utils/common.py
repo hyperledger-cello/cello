@@ -13,7 +13,6 @@ from api.common.serializers import BadResponseSerializer
 import uuid
 from zipfile import ZipFile
 from json import loads
-from api.config import CELLO_HOME
 import json
 import logging
 
@@ -87,18 +86,6 @@ def to_form_paras(self):
                 )
             )
     return custom_paras
-
-
-def any_of(*perm_classes):
-    """Returns permission class that allows access for
-    one of permission classes provided in perm_classes"""
-
-    class Or(BasePermission):
-        def has_permission(*args):
-            allowed = [p.has_permission(*args) for p in perm_classes]
-            return reduce(lambda x, y: x or y, allowed)
-
-    return Or
 
 
 def hash_file(file, block_size=65536):
