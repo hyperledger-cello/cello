@@ -173,15 +173,14 @@ def create_channel(channel_name: str, orderer_names: list[str], peer_names: list
         LOG.info(" ".join(command))
         subprocess.run(command, check=True)
 
+    command = [
+        os.path.join(FABRIC_TOOL, "peer"),
+        "channel",
+        "join",
+        "-b",
+        os.path.join(channel_directory, "genesis.block"),
+    ]
     for peer_name in peer_names:
-        command = [
-            os.path.join(FABRIC_TOOL, "peer"),
-            "channel",
-            "join",
-            "-b",
-            os.path.join(channel_directory, "genesis.block"),
-        ]
-        LOG.info(" ".join(command))
         peer_domain_name = "{}.{}".format(peer_name, crypto_config["PeerOrgs"][0]["Domain"])
         peer_dir = os.path.join(
             peer_organization_directory, 
@@ -202,6 +201,7 @@ def create_channel(channel_name: str, orderer_names: list[str], peer_names: list
             "FABRIC_CFG_PATH": peer_dir,
         }
         LOG.info(peer_env)
+        LOG.info(" ".join(command))
         subprocess.run(
             command,
             env=peer_env,
@@ -369,3 +369,15 @@ def create_channel(channel_name: str, orderer_names: list[str], peer_names: list
         command,
         env=peer_env,
         check=True)
+
+    os.remove(os.path.join(channel_directory, "config_block.pb"))
+    os.remove(os.path.join(channel_directory, "config_block.json"))
+    os.remove(os.path.join(channel_directory, "config.json"))
+    os.remove(os.path.join(channel_directory, "modified_config.json"))
+    os.remove(os.path.join(channel_directory, "config.pb"))
+    os.remove(os.path.join(channel_directory, "modified_config.json"))
+    os.remove(os.path.join(channel_directory, "modified_config.pb"))
+    os.remove(os.path.join(channel_directory, "config_update.pb"))
+    os.remove(os.path.join(channel_directory, "config_update.json"))
+    os.remove(os.path.join(channel_directory, "config_update_in_envelope.json"))
+    os.remove(os.path.join(channel_directory, "config_update_in_envelope.pb"))
