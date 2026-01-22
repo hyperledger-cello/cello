@@ -30,5 +30,5 @@ def create(
 
     res = Channel.objects.create(name=channel_name)
     res.organizations.add(channel_organization)
-    res.orderers.add(list(channel_orderers))
+    res.orderers.add(*channel_orderers)
     return res
