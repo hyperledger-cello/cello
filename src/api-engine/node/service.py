@@ -27,11 +27,13 @@ def get_node(node_id: str) -> Optional[Node]:
 def create(organization: Organization, node_type: Node.Type, node_name: str) -> Node:
     agent_url = organization.agent_url
     requests.get(urljoin(agent_url, "health")).raise_for_status()
-    requests.post(urljoin(agent_url, "nodes"), json=dict(type=node_type, name=node_name)).raise_for_status()
+    response = requests.post(urljoin(agent_url, "nodes"), json=dict(type=node_type, name=node_name))
+    response.raise_for_status()
 
     node = Node(
         name=node_name,
         type=node_type,
+        tls=response.json()["tls"],
         organization=organization,
     )
     node.save()
