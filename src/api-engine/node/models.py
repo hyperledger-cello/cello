@@ -30,6 +30,9 @@ class Node(models.Model):
         choices=Type.choices,
         max_length=64,
     )
+    tls = models.TextField(
+        help_text="Node TLS",
+    )
     organization = models.ForeignKey(
         Organization,
         help_text="Organization Nodes",
