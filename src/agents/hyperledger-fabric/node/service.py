@@ -130,9 +130,19 @@ def _create_node(node_type: NodeType, name: str):
                 LOG.info("Compress " + full_path + " into " + rel_path)
                 z.write(full_path, rel_path)
 
+    cfg_file_name = "core.yaml" if node_type == NodeType.PEER else "orderer.yaml"
+    with open(
+        os.path.join(
+            node_directory, 
+            cfg_file_name),
+        "w",
+        encoding="utf-8",
+    ) as f:
+        yaml.safe_dump(cfg, f)
+
     cfg_buffer = BytesIO()
     with zipfile.ZipFile(cfg_buffer, "w") as z:
-        z.writestr("core.yaml" if node_type == NodeType.PEER else "orderer.yaml", yaml.dump(cfg))
+        z.writestr(cfg_file_name, yaml.safe_dump(cfg))
 
     cfg = base64.b64encode(cfg_buffer.getvalue())
     docker.DockerClient("unix:///var/run/docker.sock").containers.run(
