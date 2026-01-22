@@ -375,7 +375,6 @@ def create_channel(channel_name: str, orderer_names: list[str], peer_names: list
     os.remove(os.path.join(channel_directory, "config.json"))
     os.remove(os.path.join(channel_directory, "modified_config.json"))
     os.remove(os.path.join(channel_directory, "config.pb"))
-    os.remove(os.path.join(channel_directory, "modified_config.json"))
     os.remove(os.path.join(channel_directory, "modified_config.pb"))
     os.remove(os.path.join(channel_directory, "config_update.pb"))
     os.remove(os.path.join(channel_directory, "config_update.json"))
