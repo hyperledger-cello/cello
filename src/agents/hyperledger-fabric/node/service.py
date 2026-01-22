@@ -13,10 +13,10 @@ from node.enums import NodeType
 
 LOG = logging.getLogger(__name__)
 
-def create_node(node_type: str, name: str):
-    _create_node(NodeType.PEER if node_type == NodeType.PEER.name else NodeType.ORDERER, name)
+def create_node(node_type: str, name: str) -> bytes:
+    return _create_node(NodeType.PEER if node_type == NodeType.PEER.name else NodeType.ORDERER, name)
 
-def _create_node(node_type: NodeType, name: str):
+def _create_node(node_type: NodeType, name: str) -> bytes:
     # edit CRYPTO_CONFIG
     edited = False
     with open(
@@ -144,6 +144,7 @@ def _create_node(node_type: NodeType, name: str):
     with zipfile.ZipFile(cfg_buffer, "w") as z:
         z.writestr(cfg_file_name, yaml.safe_dump(cfg))
 
+    tls = base64.b64encode(tls_buffer.getvalue())
     cfg = base64.b64encode(cfg_buffer.getvalue())
     docker.DockerClient("unix:///var/run/docker.sock").containers.run(
         "hyperledger/fabric:" + FABRIC_VERSION,
@@ -158,7 +159,7 @@ def _create_node(node_type: NodeType, name: str):
         ],
         environment={
             "HLF_NODE_MSP": base64.b64encode(msp_buffer.getvalue()),
-            "HLF_NODE_TLS": base64.b64encode(tls_buffer.getvalue()),
+            "HLF_NODE_TLS": tls,
             "HLF_NODE_PEER_CONFIG": cfg,
             "HLF_NODE_ORDERER_CONFIG": cfg,
             "platform": "linux/amd64",
@@ -211,3 +212,4 @@ def _create_node(node_type: NodeType, name: str):
             "ORDERER_METRICS_PROVIDER": "prometheus",
         },
     )
+    return tls
