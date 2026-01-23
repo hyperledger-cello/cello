@@ -6,11 +6,11 @@ from node import service
 from node.models import Node
 
 
-class NodeIDSerializer(serializers.Serializer):
+class NodeID(serializers.Serializer):
     id = serializers.UUIDField(help_text="ID of node")
 
 
-class NodeResponseSerializer(NodeIDSerializer, serializers.ModelSerializer):
+class NodeResponse(NodeID, serializers.ModelSerializer):
     class Meta:
         model = Node
         fields = (
@@ -19,12 +19,11 @@ class NodeResponseSerializer(NodeIDSerializer, serializers.ModelSerializer):
             "name",
             "created_at",
             "status",
-            "cid",
         )
 
 
-class NodeListSerializer(ListResponseSerializer):
-    data = NodeResponseSerializer(many=True, help_text="Node list")
+class NodeList(ListResponseSerializer):
+    data = NodeResponse(many=True, help_text="Node list")
 
 
 class NodeCreateBody(serializers.ModelSerializer):

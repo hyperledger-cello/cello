@@ -5,8 +5,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.common import ok
+from api.common.response import make_response_serializer
 from channel.models import Channel
-from channel.serializers import ChannelList, ChannelID
+from channel.serializers import ChannelList, ChannelID, ChannelResponse, ChannelCreateBody
 from common.responses import with_common_response
 from common.serializers import PageQuerySerializer
 
@@ -19,24 +20,33 @@ class ChannelViewSet(viewsets.ViewSet):
     ]
 
     @swagger_auto_schema(
+        operation_summary="List all channels of the current organization",
         query_serializer=PageQuerySerializer(),
         responses=with_common_response(
-            {status.HTTP_200_OK: ChannelList}
+            {status.HTTP_200_OK: make_response_serializer(ChannelList)}
         ),
     )
     def list(self, request):
         serializer = PageQuerySerializer(data=request.GET)
-        serializer.is_valid(raise_exception=True)
-        page = serializer.validated_data.get("page")
-        per_page = serializer.validated_data.get("per_page")
-        p = Paginator(Channel.objects.filter(organizations=request.user.organization), per_page)
-        response = ChannelList(
-            data={
-                "total": p.count,
-                "data": list(p.page(page).object_list),
-            }
-        )
-        response.is_valid(raise_exception=True)
+        p = serializer.get_paginator(Channel.objects.filter(organizations__id__contains=request.user.organization.id))
         return Response(
-            ok(response.validated_data), status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
+            data=ChannelList({
+                "total": p.count,
+                "data": ChannelResponse(p.page(serializer.data["page"]).object_list, many=True).data,
+            }).data,
         )
+
+    @swagger_auto_schema(
+        operation_summary="Create a channel of the current organization",
+        request_body=ChannelCreateBody(),
+        responses=with_common_response(
+            {status.HTTP_201_CREATED: make_response_serializer(ChannelID)}
+        ),
+    )
+    def create(self, request):
+        serializer = ChannelCreateBody(data=request.data, context={"organization": request.user.organization})
+        serializer.is_valid(raise_exception=True)
+        return Response(
+            status=status.HTTP_201_CREATED,
+            data=serializer.save().data)

@@ -1,4 +1,3 @@
-from django.core.paginator import Paginator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
@@ -9,7 +8,7 @@ from api.common.response import make_response_serializer
 from api.utils.common import with_common_response
 from common.serializers import PageQuerySerializer
 from node.models import Node
-from node.serializers import NodeListSerializer, NodeCreateBody, NodeIDSerializer, NodeResponseSerializer
+from node.serializers import NodeList, NodeCreateBody, NodeID, NodeResponse
 
 
 class NodeViewSet(viewsets.ViewSet):
@@ -21,15 +20,15 @@ class NodeViewSet(viewsets.ViewSet):
         operation_summary="List all nodes of the current organization",
         query_serializer=PageQuerySerializer(),
         responses=with_common_response(
-            with_common_response({status.HTTP_200_OK: make_response_serializer(NodeListSerializer)})
+            {status.HTTP_200_OK: make_response_serializer(NodeList)}
         ),
     )
     def list(self, request):
         serializer = PageQuerySerializer(data=request.GET)
         p = serializer.get_paginator(Node.objects.filter(organization=request.user.organization))
-        response = NodeListSerializer({
+        response = NodeList({
             "total": p.count,
-            "data": NodeResponseSerializer(p.page(serializer.data['page']).object_list, many=True).data
+            "data": NodeResponse(p.page(serializer.data['page']).object_list, many=True).data
         })
         return Response(
             status=status.HTTP_200_OK,
@@ -40,13 +39,13 @@ class NodeViewSet(viewsets.ViewSet):
         operation_summary="Create a new node of the current organization",
         request_body=NodeCreateBody,
         responses=with_common_response(
-            {status.HTTP_201_CREATED: make_response_serializer(NodeIDSerializer)}
+            {status.HTTP_201_CREATED: make_response_serializer(NodeID)}
         ),
     )
     def create(self, request):
         serializer = NodeCreateBody(data=request.data, context={"organization": request.user.organization})
         serializer.is_valid(raise_exception=True)
-        response = NodeIDSerializer(serializer.save().__dict__)
+        response = NodeID(serializer.save().__dict__)
         return Response(
             status=status.HTTP_201_CREATED,
             data=ok(response.data),
