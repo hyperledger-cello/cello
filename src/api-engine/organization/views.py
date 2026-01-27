@@ -22,6 +22,25 @@ class OrganizationViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
+        operation_summary="Get Organization",
+        responses=with_common_response(
+            {status.HTTP_200_OK: make_response_serializer(OrganizationResponse)}
+        ),
+    )
+    def retrieve(self, request, pk=None):
+        try:
+            res = Organization.objects.get(pk=pk)
+        except Organization.DoesNotExist:
+            return Response(
+                status=status.HTTP_404_NOT_FOUND,
+                data=err("Organization not found")
+            )
+        return Response(
+            status=status.HTTP_200_OK,
+            data=ok(OrganizationResponse(res).data)
+        )
+
+    @swagger_auto_schema(
         operation_summary="Get Organizations",
         query_serializer=PageQuerySerializer(),
         responses=with_common_response(
@@ -31,15 +50,15 @@ class OrganizationViewSet(viewsets.ViewSet):
     def list(self, request):
         serializer = PageQuerySerializer(data=request.GET)
         p = serializer.get_paginator(Organization.objects.all())
-        response = OrganizationList(
-            data={
-                "total": p.count,
-                "data": OrganizationResponse(p.page(serializer.data.page).object_list, many=True).data
-            }
-        )
-        response.is_valid(raise_exception=True)
         return Response(
-            ok(response.data), status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
+            data=ok(OrganizationList({
+                "total": p.count,
+                "data": OrganizationResponse(
+                    p.page(serializer.data["page"]).object_list,
+                    many=True
+                ).data
+            }).data)
         )
 
     @swagger_auto_schema(

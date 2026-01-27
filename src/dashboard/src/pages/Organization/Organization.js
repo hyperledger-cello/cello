@@ -355,13 +355,13 @@ class Organization extends PureComponent {
         }),
         render: (text, record) => (
           <Fragment>
-            <a onClick={() => this.showUpdate(record)}>
+            {/* <a onClick={() => this.showUpdate(record)}>
               {intl.formatMessage({ id: 'form.menu.item.update', defaultMessage: 'Update' })}
-            </a>
+            </a> */}
             <Divider type="vertical" />
-            <a className={styles.danger} onClick={() => this.handleDelete(record)}>
+            {/* <a className={styles.danger} onClick={() => this.handleDelete(record)}>
               {intl.formatMessage({ id: 'form.menu.item.delete', defaultMessage: 'Delete' })}
-            </a>
+            </a> */}
           </Fragment>
         ),
       },
@@ -389,12 +389,6 @@ class Organization extends PureComponent {
       >
         <Card bordered={false}>
           <div className={styles.tableList}>
-            <div className={styles.tableListOperator}>
-              <Button type="primary" onClick={() => this.handleModalVisible(true)}>
-                <PlusOutlined />
-                {intl.formatMessage({ id: 'form.button.new', defaultMessage: 'New' })}
-              </Button>
-            </div>
             <StandardTable
               selectedRows={selectedRows}
               loading={loadingOrganizations}
