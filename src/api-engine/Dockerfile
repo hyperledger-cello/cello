@@ -12,7 +12,7 @@ RUN apt-get update\
 COPY . .
 
 # Install compiled code tools from Artifactory and copy it to opt folder.
-RUN curl -L --retry 5 --retry-delay 3 "https://github.com/hyperledger/fabric/releases/download/v2.5.13/hyperledger-fabric-linux-amd64-2.5.10.tar.gz" | tar xz -C ./cello/
+RUN curl -L --retry 5 --retry-delay 3 "https://github.com/hyperledger/fabric/releases/download/v2.5.13/hyperledger-fabric-linux-amd64-2.5.13.tar.gz" | tar xz -C ./cello/
 
 # Install python dependencies
 RUN	pip3 install -r requirements.txt

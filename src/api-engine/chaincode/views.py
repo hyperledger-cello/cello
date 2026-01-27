@@ -42,7 +42,7 @@ class ChaincodeViewSet(viewsets.ViewSet):
                 "total": p.count,
                 "data": ChaincodeResponse(
                     p.get_page(serializer.data["page"])
-                        .object_list,
+                    .object_list,
                     many=True
                 ).data,
             }).data),

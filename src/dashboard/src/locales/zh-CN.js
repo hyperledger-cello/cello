@@ -16,6 +16,7 @@ import fabricCa from './zh-CN/fabric/ca';
 import Network from './zh-CN/Network';
 import Channel from './zh-CN/Channel';
 import ChainCode from './zh-CN/Chaincode';
+import Overview from './zh-CN/Overview';
 
 export default {
   'navBar.lang': '语言',
@@ -64,4 +65,5 @@ export default {
   ...Network,
   ...Channel,
   ...ChainCode,
+  ...Overview,
 };

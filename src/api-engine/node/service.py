@@ -7,17 +7,20 @@ from zipfile import ZipFile
 
 import docker
 import yaml
+from docker.errors import DockerException
 
 from api.lib.pki import CryptoConfig, CryptoGen
 from api_engine.settings import CELLO_HOME, FABRIC_PEER_CFG, FABRIC_ORDERER_CFG, FABRIC_VERSION
 from node.models import Node
 from organization.models import Organization
 
+
 def get_node(node_id: str) -> Optional[Node]:
     try:
         return Node.objects.get(id=node_id)
     except Node.DoesNotExist:
         return None
+
 
 def create(organization: Organization, node_type: Node.Type, node_name: str) -> Node:
     CryptoConfig(organization.name).update({"type": node_type, "Specs": [node_name]})
@@ -54,7 +57,7 @@ def create(organization: Organization, node_type: Node.Type, node_name: str) -> 
             # ports=port_map,
         )
         node.status = Node.Status.RUNNING
-    except:
+    except DockerException:
         node.status = Node.Status.FAILED
         logging.error(sys.exc_info())
         raise
@@ -62,12 +65,14 @@ def create(organization: Organization, node_type: Node.Type, node_name: str) -> 
     node.save()
     return node
 
+
 def get_domain_name(organization_name: str, node_type: Node.Type, node_name: str) -> str:
     return "{}.{}".format(
         node_name,
         organization_name
-            if node_type == Node.Type.PEER
-            else organization_name.split(".", 1)[1])
+        if node_type == Node.Type.PEER
+        else organization_name.split(".", 1)[1])
+
 
 def _generate_node_config(organization_name: str, node_type: Node.Type, node_domain_name: str) -> None:
     if node_type == Node.Type.PEER:
@@ -76,6 +81,7 @@ def _generate_node_config(organization_name: str, node_type: Node.Type, node_dom
         _generate_orderer_config(organization_name, node_domain_name)
     # throw exception here
     return None
+
 
 def _generate_peer_config(organization_name: str, peer_domain_name: str) -> None:
     _generate_config(
@@ -99,6 +105,7 @@ def _generate_peer_config(organization_name: str, peer_domain_name: str) -> None
             "vm_endpoint": "unix:///host/var/run/docker.sock"
         }
     )
+
 
 def _generate_orderer_config(organization_name: str, orderer_domain_name: str) -> None:
     _generate_config(
@@ -128,6 +135,7 @@ def _generate_orderer_config(organization_name: str, orderer_domain_name: str) -
         }
     )
 
+
 def _generate_config(src: str, dst: str, **kwargs) -> None:
     with open(src, "r+") as f:
         cfg = yaml.load(f, Loader=yaml.FullLoader)
@@ -143,6 +151,7 @@ def _generate_config(src: str, dst: str, **kwargs) -> None:
     with open(dst, "w+") as f:
         yaml.dump(cfg, f)
 
+
 def _get_msp(organization_name: str, node_type: Node.Type, node_domain_name: str) -> bytes:
     directory_path = _get_node_directory(organization_name, node_type, node_domain_name)
     msp_zip_path = os.path.join(directory_path, "msp.zip")
@@ -152,6 +161,7 @@ def _get_msp(organization_name: str, node_type: Node.Type, node_domain_name: str
     )
     with open(msp_zip_path, "rb") as msp_input_stream:
         return base64.b64encode(msp_input_stream.read())
+
 
 def _get_tls(organization_name: str, node_type: Node.Type, node_domain_name: str) -> bytes:
     directory_path = _get_node_directory(organization_name, node_type, node_domain_name)
@@ -163,6 +173,7 @@ def _get_tls(organization_name: str, node_type: Node.Type, node_domain_name: str
     with open(tls_zip_path, "rb") as tls_input_stream:
         return base64.b64encode(tls_input_stream.read())
 
+
 def _get_cfg(organization_name: str, node_type: Node.Type, node_domain_name: str) -> Optional[bytes]:
     if node_type == Node.Type.PEER:
         return _get_peer_cfg(organization_name, node_domain_name)
@@ -170,6 +181,7 @@ def _get_cfg(organization_name: str, node_type: Node.Type, node_domain_name: str
         return _get_orderer_cfg(organization_name, node_domain_name)
     # throw exception here
     return None
+
 
 def _get_peer_cfg(organization_name: str, peer_domain_name: str):
     directory_path = get_peer_directory(organization_name, peer_domain_name)
@@ -181,6 +193,7 @@ def _get_peer_cfg(organization_name: str, peer_domain_name: str):
     with open(cfg_zip_path, "rb") as cfg_zip_input_stream:
         return base64.b64encode(cfg_zip_input_stream.read())
 
+
 def _get_orderer_cfg(organization_name: str, orderer_domain_name: str):
     directory_path = get_orderer_directory(organization_name, orderer_domain_name)
     cfg_zip_path = os.path.join(directory_path, "orderer_config.zip")
@@ -191,11 +204,12 @@ def _get_orderer_cfg(organization_name: str, orderer_domain_name: str):
     with open(cfg_zip_path, "rb") as cfg_zip_input_stream:
         return base64.b64encode(cfg_zip_input_stream.read())
 
-def _zip_directory(directory_path:str, output_file_path: str) -> None:
+
+def _zip_directory(directory_path: str, output_file_path: str) -> None:
     root_path_inside_zip = "/{}".format(directory_path.rsplit("/", 1)[1])
     with ZipFile(output_file_path, "w") as zip_output_stream:
         for path, sub_directories, files in os.walk(directory_path):
-            path_inside_zip = root_path_inside_zip +  path.replace(directory_path, "")
+            path_inside_zip = root_path_inside_zip + path.replace(directory_path, "")
             for filename in files:
                 zip_output_stream.write(
                     str(os.path.join(path, filename)),
@@ -207,11 +221,14 @@ def _zip_directory(directory_path:str, output_file_path: str) -> None:
                     str(os.path.join(path_inside_zip, sud_directory))
                 )
 
+
 def get_peer_directory(organization_name: str, peer_domain_name: str):
     return _get_node_directory(organization_name, Node.Type.PEER, peer_domain_name)
 
+
 def get_orderer_directory(organization_name: str, orderer_domain_name: str):
     return _get_node_directory(organization_name, Node.Type.ORDERER, orderer_domain_name)
+
 
 def _get_node_directory(organization_name: str, node_type: Node.Type, node_domain_name: str) -> str:
     return "{}/{}s/{}".format(
@@ -220,15 +237,17 @@ def _get_node_directory(organization_name: str, node_type: Node.Type, node_domai
         node_domain_name,
     )
 
+
 def get_org_directory(organization_name: str, node_type: Node.Type) -> str:
     return "{}/{}/crypto-config/{}Organizations/{}".format(
         CELLO_HOME,
         organization_name,
         node_type.lower(),
         organization_name.split(".", 1)[1]
-            if node_type == Node.Type.ORDERER
-            else organization_name,
+        if node_type == Node.Type.ORDERER
+        else organization_name,
     )
+
 
 def _get_node_env(node_type: Node.Type, node_domain_name: str, msp, tls, cfg) -> Optional[Dict[str, Any]]:
     if node_type == Node.Type.PEER:
@@ -237,6 +256,7 @@ def _get_node_env(node_type: Node.Type, node_domain_name: str, msp, tls, cfg) ->
         return _get_orderer_env(node_domain_name, msp, tls, cfg)
     # throw exception here
     return None
+
 
 def _get_peer_env(peer_domain_name: str, msp, tls, cfg) -> Dict[str, Any]:
     return {
@@ -265,6 +285,7 @@ def _get_peer_env(peer_domain_name: str, msp, tls, cfg) -> Dict[str, Any]:
         "CORE_OPERATIONS_LISTENADDRESS": peer_domain_name + ":9444",
         "CORE_METRICS_PROVIDER": "prometheus",
     }
+
 
 def _get_orderer_env(orderer_domain_name: str, msp, tls, cfg) -> Dict[str, Any]:
     return {
@@ -296,6 +317,7 @@ def _get_orderer_env(orderer_domain_name: str, msp, tls, cfg) -> Dict[str, Any]:
         "ORDERER_OPERATIONS_LISTENADDRESS": orderer_domain_name + ":9443",
         "ORDERER_METRICS_PROVIDER": "prometheus",
     }
+
 
 def _get_node_cmd(node_type: Node.Type) -> Optional[str]:
     if node_type == Node.Type.PEER:
