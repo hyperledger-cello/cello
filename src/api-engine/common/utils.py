@@ -4,6 +4,7 @@ import uuid
 def make_uuid():
     return str(uuid.uuid4())
 
+
 def separate_upper_class(class_name):
     x = ""
     i = 0

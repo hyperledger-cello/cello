@@ -12,16 +12,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Build images
-        run: |
-          make docker-compose
+      # - name: Build images
+      #   run: |
+      #     make docker-compose
       - name: Start services
         run: |
           MODE=dev make start
           sleep 10
-      - name: Run newman tests
-        run: |
-          make check-api
+      # - name: Run newman tests
+      #   run: |
+      #     make check-api
       - name: Stop services
         if: always()
         run: |

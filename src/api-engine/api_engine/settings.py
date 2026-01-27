@@ -137,7 +137,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 WEBROOT = os.path.join(os.getenv("WEB_PREFIX", ""), "api", os.getenv("API_VERSION", "v1")) + "/"
-STATIC_URL = "static/"
+STATIC_URL = os.path.join(WEBROOT, "static/")
 STATIC_ROOT = os.path.join(BASE_DIR, STATIC_URL)
 
 REST_FRAMEWORK = {
@@ -220,7 +220,7 @@ LOGGING = {
 
 MAX_AGENT_CAPACITY = 100
 
-MEDIA_URL = "media/"
+MEDIA_URL = os.path.join(WEBROOT, "media/")
 MEDIA_ROOT = os.path.join(BASE_DIR, MEDIA_URL)
 
 SIMPLE_JWT = {
@@ -258,6 +258,4 @@ FABRIC_CFG = os.path.join(CELLO_HOME, "node")
 FABRIC_PEER_CFG = os.path.join(FABRIC_CFG, "core.yaml.bak")
 FABRIC_ORDERER_CFG = os.path.join(FABRIC_CFG, "orderer.yaml.bak")
 
-FABRIC_CHAINCODE_STORE = os.path.join(CELLO_HOME, "chaincode")
-
-FABRIC_VERSION = "2.5.10"
+FABRIC_VERSION = "2.5.13"
