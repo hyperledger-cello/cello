@@ -1,15 +1,14 @@
 import tarfile
-from typing import List
+from typing import List, Dict, Any
 
 from django.core.validators import MinValueValidator
 from rest_framework import serializers
 from chaincode.models import Chaincode
-from chaincode.service import create_chaincode, get_metadata
+from chaincode.service import ChaincodeAction, create_chaincode, get_chaincode, get_metadata, install_chaincode, approve_chaincode, commit_chaincode, send_chaincode_request
 from channel.models import Channel
 from channel.serializers import ChannelID
 from common.serializers import ListResponseSerializer
 from node.models import Node
-from node.serializers import NodeID
 from user.serializers import UserID
 
 
@@ -17,6 +16,10 @@ class ChaincodeID(serializers.ModelSerializer):
     class Meta:
         model = Chaincode
         fields = ("id",)
+
+    def create(self, validated_data: Dict[str, Any]) -> Chaincode:
+        return get_chaincode(validated_data["id"])
+
 
 class ChaincodeResponse(ChaincodeID):
     channel = ChannelID()
@@ -36,8 +39,10 @@ class ChaincodeResponse(ChaincodeID):
             "description",
         )
 
+
 class ChaincodeList(ListResponseSerializer):
     data = ChaincodeResponse(many=True, help_text="Chaincode data")
+
 
 class ChaincodeCreateBody(serializers.ModelSerializer):
     peers = serializers.PrimaryKeyRelatedField(
@@ -45,7 +50,6 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
         queryset=Node.objects.filter(type=Node.Type.PEER),
         help_text="Chaincode Peers"
     )
-
 
     class Meta:
         model = Chaincode
@@ -76,7 +80,7 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
         if value.content_type != "application/gzip":
             raise serializers.ValidationError(
                 "Chaincode Package is not a 'application/gzip' file but {} instead."
-                    .format(value.content_type)
+                .format(value.content_type)
             )
 
         try:
@@ -105,7 +109,49 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
                 )
         return value
 
-    def create(self, validated_data) -> ChaincodeID:
+    def create(self, validated_data: Dict[str, Any]) -> ChaincodeID:
         validated_data["user"] = self.context["user"]
         validated_data["organization"] = self.context["organization"]
         return ChaincodeID({"id": create_chaincode(**validated_data).id})
+
+
+class ChaincodeInstallBody(ChaincodeID):
+    def create(self, validated_data: Dict[str, Any]):
+        install_chaincode(
+            self.context["organization"],
+            super().create(validated_data)
+        )
+
+
+class ChaincodeApproveBody(ChaincodeID):
+    def create(self, validated_data: Dict[str, Any]):
+        approve_chaincode(
+            self.context["organization"],
+            super().create(validated_data)
+        )
+
+
+class ChaincodeCommitBody(ChaincodeID):
+    def create(self, validated_data: Dict[str, Any]):
+        commit_chaincode(
+            self.context["organization"],
+            super().create(validated_data)
+        )
+
+
+class ChaincodeRequestBody(ChaincodeID):
+    action = serializers.ChoiceField(choices=[(tag.name, tag.name) for tag in ChaincodeAction])
+    function = serializers.CharField()
+    args = serializers.ListField(
+        child=serializers.CharField(),
+        allow_empty=True
+    )
+
+    def create(self, validated_data: Dict[str, Any]):
+        send_chaincode_request(
+            self.context["organization"],
+            super().create(validated_data),
+            validated_data["action"],
+            validated_data["function"],
+            validated_data["args"]
+        )

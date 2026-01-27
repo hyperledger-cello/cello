@@ -1,5 +1,5 @@
 import React, { PureComponent } from 'react';
-import { injectIntl, setLocale, getLocale } from 'umi';
+import { injectIntl, setLocale } from 'umi';
 import { GlobalOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import HeaderDropdown from '../HeaderDropdown';
@@ -29,13 +29,10 @@ class SelectLang extends PureComponent {
           {languageIcons[locale]} {languageLabels[locale]}
         </span>
       ),
-      onClick: this.changeLang
+      onClick: this.changeLang,
     }));
     return (
-      <HeaderDropdown 
-        menu={{ items: langMenuItems }} 
-        placement="bottomRight"
-      >
+      <HeaderDropdown menu={{ items: langMenuItems }} placement="bottomRight">
         <span className={classNames(styles.dropDown, className)}>
           <GlobalOutlined />
           <span>{intl.formatMessage({ id: 'navBar.lang' })}</span>

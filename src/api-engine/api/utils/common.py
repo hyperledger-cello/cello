@@ -19,7 +19,6 @@ import logging
 LOG = logging.getLogger(__name__)
 
 
-
 def with_common_response(responses=None):
     if responses is None:
         responses = {}

@@ -17,6 +17,7 @@ from organization.models import Organization
 
 LOG = logging.getLogger(__name__)
 
+
 def create(
         channel_organization: Organization,
         channel_name: str,
@@ -264,7 +265,10 @@ def create(
             "mod_policy": "Admins",
             "value": {
                 "anchor_peers": [
-                    {"host": "{}:7051".format(anchor_peer_domain_name)}
+                    {
+                        "host": anchor_peer_domain_name,
+                        "port": 7051
+                    }
                 ]
             },
             "version": 0,
@@ -329,8 +333,8 @@ def create(
                 }
             },
             f,
-            sort_keys = False,
-            indent = 4
+            sort_keys=False,
+            indent=4
         )
 
     command = [
@@ -384,6 +388,7 @@ def create(
     res.organizations.add(channel_organization)
     res.orderers.add(channel_orderers[0])
     return res
+
 
 def validate_nodes(nodes: List[Node]):
     for node in nodes:

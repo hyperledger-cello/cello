@@ -1,32 +1,27 @@
-import { stringify } from 'qs';
-import request from '@/utils/request';
+/*
+ SPDX-License-Identifier: Apache-2.0
+*/
+import { createCrudService, customRequest } from '@/utils/serviceFactory';
 
-export async function listChannel(params) {
-  return request(`/api/v1/channels?${stringify(params)}`);
-}
+// Create standard CRUD service for channels
+const channelService = createCrudService('channels');
 
-export async function createChannel(params) {
-  return request('/api/v1/channels', {
-    method: 'POST',
+// Export standard CRUD operations
+export const listChannel = channelService.list;
+export const createChannel = channelService.create;
+export const getChannel = channelService.get;
+
+// Update channel config with form data
+export const updateChannelConfig = (id, params) =>
+  customRequest(`/api/v1/channels/${id}`, {
+    method: 'PUT',
     data: params,
   });
-}
 
-export async function getChannel(id) {
-  return request(`/api/v1/channels/${id}`);
-}
-
-export async function getNodeConfig(params) {
-  return request(`/api/v1/channels/${params.id}/configs`, {
+// Get node configuration for a channel (returns JSON)
+export const getNodeConfig = params =>
+  customRequest(`/api/v1/channels/${params.id}/configs`, {
     method: 'GET',
     responseType: 'json',
     getResponse: true,
   });
-}
-
-export async function updateChannelConfig(id, params) {
-  return request(`/api/v1/channels/${id}`, {
-    method: 'PUT',
-    data: params,
-  });
-}

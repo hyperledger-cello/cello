@@ -85,6 +85,9 @@ const getBreadcrumbNameMap = menuData => {
 
   const flattenMenuData = data => {
     data.forEach(menuItem => {
+      if (menuItem.isExternal) {
+        return;
+      }
       if (menuItem.children) {
         flattenMenuData(menuItem.children);
       }
