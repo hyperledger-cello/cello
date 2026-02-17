@@ -13,6 +13,22 @@ from node.enums import NodeType
 
 LOG = logging.getLogger(__name__)
 
+
+docker_client = docker.DockerClient("unix:///var/run/docker.sock")
+
+def get_node_status(node_type: str, name: str) -> str:
+    with open(
+        CRYPTO_CONFIG,
+        "r",
+        encoding="utf-8",
+    ) as f:
+        crypto_config = yaml.safe_load(f)
+    return docker_client.containers.get(
+        "{}.{}".format(
+            name,
+            crypto_config["PeerOrgs" if node_type == NodeType.PEER.name else "OrdererOrgs"][0]["Domain"])).status
+
+
 def create_node(node_type: str, name: str) -> bytes:
     return _create_node(NodeType.PEER if node_type == NodeType.PEER.name else NodeType.ORDERER, name)
 
@@ -146,7 +162,7 @@ def _create_node(node_type: NodeType, name: str) -> bytes:
 
     tls = base64.b64encode(tls_buffer.getvalue())
     cfg = base64.b64encode(cfg_buffer.getvalue())
-    docker.DockerClient("unix:///var/run/docker.sock").containers.run(
+    docker_client.containers.run(
         "hyperledger/fabric:" + FABRIC_VERSION,
         "bash /tmp/init.sh " + ('"peer node start"' if node_type == NodeType.PEER else '"orderer"'),
         detach=True,

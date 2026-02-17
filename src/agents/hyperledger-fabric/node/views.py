@@ -1,12 +1,28 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from node.serializers import NodeRequestSerializer, NodeResponseSerializer
+from node.serializers import NodeRequestSerializer, NodeResponseSerializer, NodeStatusRequestSerializer, \
+    NodeStatusSerializer
 
 
 # Create your views here.
 class NodeViewSet(viewsets.ViewSet):
+    @extend_schema(
+        parameters=[NodeStatusRequestSerializer],
+        responses={200: NodeStatusSerializer}
+    )
+    @action(detail=False, methods=['get'])
+    def status(self, request):
+        serializer = NodeStatusRequestSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+
+        return Response(
+            data=serializer.save().data,
+            status=status.HTTP_200_OK)
+
+
     @extend_schema(
         request=NodeRequestSerializer,
         responses={201: NodeResponseSerializer}

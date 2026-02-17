@@ -24,6 +24,14 @@ def get_node(node_id: str) -> Optional[Node]:
         return None
 
 
+def get_node_status(organization: Organization, node: Node) -> str:
+    agent_url = organization.agent_url
+    requests.get(urljoin(agent_url, "health")).raise_for_status()
+    return requests.get(
+        urljoin(agent_url, "nodes/status"),
+        params=dict(type=node.type, name=node.name)).json()["status"]
+
+
 def create(organization: Organization, node_type: Node.Type, node_name: str) -> Node:
     agent_url = organization.agent_url
     requests.get(urljoin(agent_url, "health")).raise_for_status()

@@ -28,10 +28,15 @@ class NodeViewSet(viewsets.ViewSet):
         p = serializer.get_paginator(Node.objects.filter(organization=request.user.organization))
         return Response(
             status=status.HTTP_200_OK,
-            data=ok(NodeList({
-                "total": p.count,
-                "data": NodeResponse(p.page(serializer.data['page']).object_list, many=True).data
-            }).data),
+            data=ok(NodeList(
+                {
+                    "total": p.count,
+                    "data": NodeResponse(
+                        p.page(serializer.data['page']).object_list,
+                        context={"organization": request.user.organization},
+                        many=True).data
+                },
+            ).data),
         )
 
     @swagger_auto_schema(

@@ -1,9 +1,11 @@
 from typing import Dict, Any
+
 from rest_framework import serializers
+
 from api.common.serializers import ListResponseSerializer
-from api.lib.pki import CryptoConfig, CryptoGen
 from node import service
 from node.models import Node
+from node.service import get_node_status
 
 
 class NodeID(serializers.Serializer):
@@ -11,14 +13,21 @@ class NodeID(serializers.Serializer):
 
 
 class NodeResponse(NodeID, serializers.ModelSerializer):
+    status = serializers.SerializerMethodField()
+
     class Meta:
         model = Node
         fields = (
             "id",
             "type",
             "name",
+            "status",
             "created_at",
         )
+
+    def get_status(self, node):
+        organization = self.context.get("organization")
+        return get_node_status(organization, node) if organization else node.get("status")
 
 
 class NodeList(ListResponseSerializer):
