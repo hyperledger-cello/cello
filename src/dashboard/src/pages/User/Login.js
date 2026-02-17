@@ -7,7 +7,7 @@ import { Checkbox, Alert, Tabs, Tooltip } from 'antd';
 import Login from '@/components/Login';
 import styles from './Login.less';
 
-const { Email, Password, Submit, OrgName } = Login;
+const { Email, Password, Submit, OrgName, AgentUrl } = Login;
 
 @connect(({ login, loading }) => ({
   login,
@@ -191,6 +191,22 @@ class LoginPage extends Component {
                     return Promise.resolve();
                   },
                 }),
+              ]}
+            />
+            <AgentUrl
+              name="agent_url"
+              placeholder={
+                intl.formatMessage({ id: 'app.register.agentUrl' }) || 'http://example.com'
+              }
+              rules={[
+                {
+                  required: true,
+                  message: intl.formatMessage({ id: 'validation.agentUrl.required' }),
+                },
+                {
+                  pattern: /^https?:\/\/.+/,
+                  message: intl.formatMessage({ id: 'validation.agentUrl.format' }),
+                },
               ]}
             />
             <Submit loading={registering}>
