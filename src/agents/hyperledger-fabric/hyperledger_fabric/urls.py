@@ -20,6 +20,7 @@ from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from rest_framework.routers import DefaultRouter
 
+from chaincode.views import ChaincodeViewSet
 from channel.views import ChannelViewSet
 from hyperledger_fabric.settings import WEBROOT
 from hyperledger_fabric.views import HealthCheckViewSet
@@ -30,6 +31,7 @@ router = DefaultRouter(trailing_slash=False)
 router.register("organizations", OrganizationViewSet, basename="organization")
 router.register("nodes", NodeViewSet, basename="node")
 router.register("channels", ChannelViewSet, basename="channel")
+router.register("chaincodes", ChaincodeViewSet, basename="chaincode")
 router.register("health", HealthCheckViewSet, basename="health")
 
 urlpatterns = [

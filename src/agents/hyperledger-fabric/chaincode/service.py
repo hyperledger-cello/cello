@@ -8,17 +8,27 @@ from hyperledger_fabric.settings import CELLO_HOME, CRYPTO_CONFIG, FABRIC_TOOL
 
 LOG = logging.getLogger(__name__)
 
-def install_chaincode(
+
+def create_chaincode(
         name: str,
         version: str,
         sequence: int,
         channel_name: str,
-        file):
-    channel_directory = os.path.join(CELLO_HOME, channel_name)
-    fs = FileSystemStorage(location=channel_directory)
-    filename = "{}_{}_{}.tar.gz".format(name, version, sequence)
-    fs.save(filename, file)
+        file_path: str,
+        init_required: bool = False,
+        signature_policy: str = None):
+    install_chaincode(file_path)
+    approve_chaincode(
+        name,
+        channel_name,
+        version,
+        get_chaincode_package_id(file_path),
+        sequence,
+        init_required,
+        signature_policy)
 
+
+def install_chaincode(file_path: str):
     with open(
         CRYPTO_CONFIG,
         "r",
@@ -36,7 +46,7 @@ def install_chaincode(
         "lifecycle",
         "chaincode",
         "install",
-        os.path.join(channel_directory, filename),
+        file_path,
     ]
     for peer in crypto_config["PeerOrgs"][0]["Specs"]:
         peer_domain_name = "{}.{}".format(peer["Hostname"], crypto_config["PeerOrgs"][0]["Domain"])
@@ -66,10 +76,63 @@ def install_chaincode(
             check=True)
 
 
+def get_chaincode_package_id(file_path: str):
+    with open(
+        CRYPTO_CONFIG,
+        "r",
+        encoding="utf-8",
+    ) as f:
+        crypto_config = yaml.safe_load(f)
+
+    peer_organization_directory = os.path.join(
+        CELLO_HOME,
+        "peerOrganizations",
+        crypto_config["PeerOrgs"][0]["Domain"]
+    )
+    peer_name = crypto_config["PeerOrgs"][0]["Specs"][0]["Hostname"]
+    peer_cmd = os.path.join(FABRIC_TOOL, "peer")
+    peer_domain_name = "{}.{}".format(peer_name, crypto_config["PeerOrgs"][0]["Domain"])
+    peer_dir = os.path.join(
+        peer_organization_directory,
+        "peers",
+        peer_domain_name
+    )
+    peer_env = {
+        "CORE_PEER_TLS_ENABLED": "true",
+        "CORE_PEER_LOCALMSPID": crypto_config["PeerOrgs"][0]["Name"] + "MSP",
+        "CORE_PEER_TLS_ROOTCERT_FILE": os.path.join(peer_dir, "tls", "ca.crt"),
+        "CORE_PEER_MSPCONFIGPATH": os.path.join(
+            peer_organization_directory,
+            "users",
+            "Admin@" + crypto_config["PeerOrgs"][0]["Domain"],
+            "msp"
+        ),
+        "CORE_PEER_ADDRESS": peer_domain_name + ":7051",
+        "FABRIC_CFG_PATH": peer_dir,
+    }
+    command: List[str] = [
+        peer_cmd,
+        "lifecycle",
+        "chaincode",
+        "calculatepackageid",
+        file_path
+    ]
+    LOG.info(peer_env)
+    LOG.info(" ".join(command))
+    return subprocess.run(
+        command,
+        env=peer_env,
+        check=True,
+        capture_output=True,
+        text=True
+    ).stdout.rstrip("\n")
+
+
 def approve_chaincode(
         name: str,
         channel_name: str,
         version: str,
+        package_id: str,
         sequence: int,
         init_required: bool = False,
         signature_policy: str = None):
@@ -106,22 +169,6 @@ def approve_chaincode(
         "CORE_PEER_ADDRESS": peer_domain_name + ":7051",
         "FABRIC_CFG_PATH": peer_dir,
     }
-    command: List[str] = [
-        peer_cmd,
-        "lifecycle",
-        "chaincode",
-        "calculatepackageid",
-        "{}_{}_{}.tar.gz".format(name, version, sequence)
-    ]
-    LOG.info(peer_env)
-    LOG.info(" ".join(command))
-    package_id = subprocess.run(
-        command,
-        env=peer_env,
-        check=True,
-        capture_output=True,
-        text=True
-    ).stdout.rstrip("\n")
 
     orderer_domain_name = "{}.{}".format(
         crypto_config["OrdererOrgs"][0]["Specs"][0]["Hostname"], 
@@ -170,82 +217,80 @@ def approve_chaincode(
     )
 
 
-# THIS IS NOT DONE YET. DON'T UNCOMMENT THIS.
-# def commit_chaincode(
-#         name: str,
-#         channel_name: str,
-#         version: str,
-#         sequence: int,
-#         other_org_peer_address: List[str]):
-#     with open(
-#         CRYPTO_CONFIG,
-#         "r",
-#         encoding="utf-8",
-#     ) as f:
-#         crypto_config = yaml.safe_load(f)
+def commit_chaincode(
+        name: str,
+        channel_name: str,
+        version: str,
+        sequence: int):
+    with open(
+        CRYPTO_CONFIG,
+        "r",
+        encoding="utf-8",
+    ) as f:
+        crypto_config = yaml.safe_load(f)
 
-#     peer_organization_directory = os.path.join(
-#         CELLO_HOME,
-#         "peerOrganizations",
-#         crypto_config["PeerOrgs"][0]["Domain"]
-#     )
-#     peer_name = crypto_config["PeerOrgs"][0]["Specs"][0]["Hostname"]
-#     peer_cmd = os.path.join(FABRIC_TOOL, "peer")
-#     peer_domain_name = "{}.{}".format(peer_name, crypto_config["PeerOrgs"][0]["Domain"])
-#     peer_dir = os.path.join(
-#         peer_organization_directory, 
-#         "peers", 
-#         peer_domain_name
-#     )
-#     peer_env = {
-#         "CORE_PEER_TLS_ENABLED": "true",
-#         "CORE_PEER_LOCALMSPID": crypto_config["PeerOrgs"][0]["Name"] + "MSP",
-#         "CORE_PEER_TLS_ROOTCERT_FILE": os.path.join(peer_dir, "tls", "ca.crt"),
-#         "CORE_PEER_MSPCONFIGPATH": os.path.join(
-#             peer_organization_directory, 
-#             "users", 
-#             "Admin@" + crypto_config["PeerOrgs"][0]["Domain"], 
-#             "msp"
-#         ),
-#         "CORE_PEER_ADDRESS": peer_domain_name + ":7051",
-#         "FABRIC_CFG_PATH": peer_dir,
-#     }
+    peer_organization_directory = os.path.join(
+        CELLO_HOME,
+        "peerOrganizations",
+        crypto_config["PeerOrgs"][0]["Domain"]
+    )
+    peer_name = crypto_config["PeerOrgs"][0]["Specs"][0]["Hostname"]
+    peer_cmd = os.path.join(FABRIC_TOOL, "peer")
+    peer_domain_name = "{}.{}".format(peer_name, crypto_config["PeerOrgs"][0]["Domain"])
+    peer_dir = os.path.join(
+        peer_organization_directory,
+        "peers",
+        peer_domain_name
+    )
+    peer_env = {
+        "CORE_PEER_TLS_ENABLED": "true",
+        "CORE_PEER_LOCALMSPID": crypto_config["PeerOrgs"][0]["Name"] + "MSP",
+        "CORE_PEER_TLS_ROOTCERT_FILE": os.path.join(peer_dir, "tls", "ca.crt"),
+        "CORE_PEER_MSPCONFIGPATH": os.path.join(
+            peer_organization_directory,
+            "users",
+            "Admin@" + crypto_config["PeerOrgs"][0]["Domain"],
+            "msp"
+        ),
+        "CORE_PEER_ADDRESS": peer_domain_name + ":7051",
+        "FABRIC_CFG_PATH": peer_dir,
+    }
 
-#     orderer_domain_name = "{}.{}".format(
-#         crypto_config["OrdererOrgs"][0]["Specs"][0]["Hostname"], 
-#         crypto_config["OrdererOrgs"][0]["Domain"])
-#     command = [
-#         peer_cmd,
-#         "lifecycle",
-#         "chaincode",
-#         "commit",
-#         "-o",
-#         orderer_domain_name + ":7050",
-#         "--channelID",
-#         channel_name,
-#         "--name",
-#         name,
-#         "--version",
-#         version,
-#         "--sequence",
-#         str(sequence),
-#         "--tls",
-#         "--cafile",
-#         os.path.join(
-#             CELLO_HOME,
-#             "ordererOrganizations",
-#             crypto_config["OrdererOrgs"][0]["Domain"],
-#             "orderers",
-#             orderer_domain_name,
-#             "msp",
-#             "tlscacerts",
-#             "tlsca.{}-cert.pem".format(crypto_config["OrdererOrgs"][0]["Domain"])
-#         )
-#     ]
-#     LOG.info(peer_env)
-#     LOG.info(" ".join(command))
-#     subprocess.run(
-#         command,
-#         env=peer_env,
-#         check=True,
-#     )
+    orderer_domain_name = "{}.{}".format(
+        crypto_config["OrdererOrgs"][0]["Specs"][0]["Hostname"],
+        crypto_config["OrdererOrgs"][0]["Domain"])
+    command = [
+        peer_cmd,
+        "lifecycle",
+        "chaincode",
+        "commit",
+        "-o",
+        orderer_domain_name + ":7050",
+        "--channelID",
+        channel_name,
+        "--name",
+        name,
+        "--version",
+        version,
+        "--sequence",
+        str(sequence),
+        "--tls",
+        "--cafile",
+        os.path.join(
+            CELLO_HOME,
+            "ordererOrganizations",
+            crypto_config["OrdererOrgs"][0]["Domain"],
+            "orderers",
+            orderer_domain_name,
+            "msp",
+            "tlscacerts",
+            "tlsca.{}-cert.pem".format(crypto_config["OrdererOrgs"][0]["Domain"])
+        )
+    ]
+    LOG.info(peer_env)
+    LOG.info(" ".join(command))
+    subprocess.run(
+        command,
+        env=peer_env,
+        check=True,
+    )

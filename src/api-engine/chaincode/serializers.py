@@ -46,7 +46,6 @@ class ChaincodeResponse(ChaincodeID):
             "creator",
             "channel",
             "language",
-            "status",
             "created_at",
             "description",
         )
@@ -62,12 +61,6 @@ class ChaincodeList(ListResponseSerializer):
 
 
 class ChaincodeCreateBody(serializers.ModelSerializer):
-    peers = serializers.PrimaryKeyRelatedField(
-        many=True,
-        queryset=Node.objects.filter(type=Node.Type.PEER),
-        help_text="Chaincode Peers"
-    )
-
     class Meta:
         model = Chaincode
         fields = (
@@ -78,7 +71,6 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
             "signature_policy",
             "package",
             "channel",
-            "peers",
             "description",
         )
         extra_kwargs = {
@@ -113,18 +105,6 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
     def validate_channel(self, value: Channel) -> Channel:
         if not value.organizations.contains(self.context["organization"]):
             raise serializers.ValidationError("You can only install chaincodes on your organization.")
-        return value
-
-    def validate_peers(self, value: List[Node]) -> List[Node]:
-        for node in value:
-            if Node.Type.PEER != node.type:
-                raise serializers.ValidationError(
-                    "Node {} is not a peer but a/an {} instead.".format(node.id, node.type)
-                )
-            if node.organization != self.context["organization"]:
-                raise serializers.ValidationError(
-                    "Node {} does not belong to your organization.".format(node.id)
-                )
         return value
 
     def create(self, validated_data: Dict[str, Any]) -> ChaincodeID:

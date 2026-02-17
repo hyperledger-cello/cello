@@ -6,7 +6,9 @@ import subprocess
 import tarfile
 import threading
 from typing import Optional, List, Any, Dict, Tuple
+from urllib.parse import urljoin
 
+import requests
 from django.db import transaction
 
 from api_engine.settings import CELLO_HOME, FABRIC_TOOL
@@ -97,18 +99,30 @@ def create_chaincode(
         channel: Channel,
         user: UserProfile,
         organization: Organization,
-        peers: List[Node],
         description: str = None,
         init_required: bool = False,
         signature_policy: str = None) -> Chaincode:
-    metadata = get_metadata(package)
+    agent_url = organization.agent_url
+    requests.get(urljoin(agent_url, "health")).raise_for_status()
+    requests.post(
+        urljoin(agent_url, "chaincodes"),
+        data=dict(
+            name=name,
+            version=version,
+            sequence=sequence,
+            channel_name=channel.name,
+            init_required=init_required,
+            signature_policy=signature_policy
+        ),
+        files=dict(
+            file=package
+        )
+    ).raise_for_status()
 
     chaincode = Chaincode(
         name=name,
         version=version,
         sequence=sequence,
-        label=metadata["label"],
-        language=metadata["type"],
         package=package,
         init_required=init_required,
         signature_policy=signature_policy,
@@ -117,18 +131,6 @@ def create_chaincode(
         description=description,
     )
     chaincode.save()
-    chaincode.peers.add(*peers)
-
-    peer_envs = get_peers_root_certs_and_addresses_and_envs(
-        organization.name,
-        peers
-    )[2]
-
-    _set_chaincode_package_id(peer_envs[0], chaincode)
-    threading.Thread(
-        target=_install_and_approve_chaincode_with_envs, 
-        args=(peer_envs, organization, chaincode), 
-        daemon=True).start()
     return chaincode
 
 
@@ -149,15 +151,20 @@ def get_metadata(file) -> Optional[Dict[str, Any]]:
 
 
 def install_chaincode(organization: Organization, chaincode: Chaincode) -> None:
-    peer_envs: List[Dict[str, str]] = get_peers_root_certs_and_addresses_and_envs(
-        organization.name,
-        chaincode.peers.all()
-    )[2]
-
-    threading.Thread(
-        target=_install_and_approve_chaincode_with_envs, 
-        args=(peer_envs, organization, chaincode), 
-        daemon=True).start()
+    agent_url = organization.agent_url
+    requests.get(urljoin(agent_url, "health")).raise_for_status()
+    requests.put(
+        urljoin(agent_url, "chaincodes/install"),
+        data=dict(
+            name=chaincode.name,
+            version=chaincode.version,
+            sequence=chaincode.sequence,
+            channel_name=chaincode.channel.name
+        ),
+        files=dict(
+            file=chaincode.package
+        )
+    ).raise_for_status()
 
 
 def _set_chaincode_package_id(peer_env: Dict[str, str], chaincode: Chaincode) -> None:
@@ -180,136 +187,38 @@ def _set_chaincode_package_id(peer_env: Dict[str, str], chaincode: Chaincode) ->
         chaincode.save()
 
 
-def _install_and_approve_chaincode_with_envs(
-        peer_envs: List[Dict[str, str]], 
-        organization: Organization, 
-        chaincode: Chaincode) -> None:
-    _install_chaincode_with_envs(peer_envs, chaincode)
-    _approve_chaincode_with_envs(peer_envs[0], organization, chaincode)
-
-
-def _install_chaincode_with_envs(peer_envs: List[Dict[str, str]], chaincode: Chaincode) -> None:
-    command = [
-        peer_command,
-        "lifecycle",
-        "chaincode",
-        "install",
-        chaincode.package.path,
-    ]
-    LOG.info(" ".join(command))
-    for peer_env in peer_envs:
-        subprocess.run(
-            command,
-            env=peer_env,
-            check=True)
-
-
 def approve_chaincode(
         organization: Organization,
         chaincode: Chaincode) -> None:
-    _approve_chaincode_with_envs(
-        get_peers_root_certs_and_addresses_and_envs(
-            organization.name,
-            [chaincode.peers.first()]
-        )[2][0],
-        organization,
-        chaincode
-    )
-
-
-def _approve_chaincode_with_envs(
-        peer_env: Dict[str, str],
-        organization: Organization,
-        chaincode: Chaincode) -> None:
-    # Chaincode is approved at the organization level,
-    # so the command only needs to target one peer.
-    orderer_domain_name = get_domain_name(
-        organization.name,
-        Node.Type.ORDERER,
-        Node.objects.filter(type=Node.Type.ORDERER, organization=organization).first().name
-    )
-    command = [
-        peer_command,
-        "lifecycle",
-        "chaincode",
-        "approveformyorg",
-        "-o",
-        "{}:7050".format(orderer_domain_name),
-        "--ordererTLSHostnameOverride",
-        orderer_domain_name,
-        "--channelID",
-        chaincode.channel.name,
-        "--name",
-        chaincode.name,
-        "--version",
-        chaincode.version,
-        "--package-id",
-        chaincode.package_id,
-        "--sequence",
-        str(chaincode.sequence),
-        "--tls",
-        "--cafile",
-        "{}/msp/tlscacerts/tlsca.{}-cert.pem".format(
-            get_orderer_directory(organization.name, orderer_domain_name),
-            organization.name.split(".", 1)[1],
+    agent_url = organization.agent_url
+    requests.get(urljoin(agent_url, "health")).raise_for_status()
+    requests.put(
+        urljoin(agent_url, "chaincodes/approve"),
+        json=dict(
+            name=chaincode.name,
+            version=chaincode.version,
+            sequence=chaincode.sequence,
+            channel_name=chaincode.channel.name,
+            init_required=chaincode.init_required,
+            signature_policy=chaincode.signature_policy
         )
-    ]
-    if chaincode.init_required:
-        command.append("--init-required")
-    if chaincode.signature_policy and chaincode.signature_policy.strip():
-        command.extend(["--signature-policy", chaincode.signature_policy])
-
-    LOG.info(" ".join(command))
-    subprocess.run(
-        command,
-        env=peer_env,
-        check=True)
+    ).raise_for_status()
 
 
 def commit_chaincode(
         organization: Organization,
         chaincode: Chaincode) -> None:
-    peer_root_certs, peer_addresses, peer_envs = get_peers_root_certs_and_addresses_and_envs(
-        organization.name,
-        chaincode.peers.all()
-    )
-    orderer_domain_name = get_domain_name(
-        organization.name,
-        Node.Type.ORDERER,
-        Node.objects.filter(type=Node.Type.ORDERER, organization=organization).first().name
-    )
-    command = [
-        peer_command,
-        "lifecycle",
-        "chaincode",
-        "commit",
-        "-o",
-        "{}:7050".format(orderer_domain_name),
-        "--ordererTLSHostnameOverride",
-        orderer_domain_name,
-        "--channelID",
-        chaincode.channel.name,
-        "--name",
-        chaincode.name,
-        "--version",
-        chaincode.version,
-        "--sequence",
-        str(chaincode.sequence),
-        "--tls",
-        "--cafile",
-        "{}/msp/tlscacerts/tlsca.{}-cert.pem".format(
-            get_orderer_directory(organization.name, orderer_domain_name),
-            organization.name.split(".", 1)[1],
+    agent_url = organization.agent_url
+    requests.get(urljoin(agent_url, "health")).raise_for_status()
+    requests.put(
+        urljoin(agent_url, "chaincodes/commit"),
+        json=dict(
+            name=chaincode.name,
+            version=chaincode.version,
+            sequence=chaincode.sequence,
+            channel_name=chaincode.channel.name
         )
-    ]
-    for i in range(len(chaincode.peers.all())):
-        command.extend(["--peerAddresses", peer_addresses[i], "--tlsRootCertFiles", peer_root_certs[i]])
-
-    LOG.info(" ".join(command))
-    subprocess.run(
-        command,
-        env=peer_envs[0],
-        check=True)
+    ).raise_for_status()
 
 
 class ChaincodeAction(Enum):

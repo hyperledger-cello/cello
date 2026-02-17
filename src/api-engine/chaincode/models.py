@@ -32,7 +32,6 @@ class Chaincode(models.Model):
         help_text="Chaincode Package ID",
         max_length=128,
         editable=False,
-        unique=True,
     )
     package = models.FileField(
         help_text="Chaincode Package",
@@ -78,16 +77,6 @@ class Chaincode(models.Model):
         help_text="Chaincode Signature Policy",
         null=True,
         blank=True,
-    )
-    status = models.CharField(
-        help_text="Chaincode Status",
-        choices=Status.choices,
-        default=Status.CREATED,
-        max_length=16,
-    )
-    peers = models.ManyToManyField(
-        to=Node,
-        help_text="Chaincode Installed Peers",
     )
     description = models.CharField(
         help_text="Chaincode Description",

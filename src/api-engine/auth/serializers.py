@@ -52,7 +52,7 @@ class RegisterResponse(serializers.Serializer):
 
 
 class LoginBody(serializers.Serializer):
-    email = serializers.CharField(help_text="User Email")
+    email = serializers.EmailField(help_text="User Email")
     password = serializers.CharField(help_text="User Password")
 
 
