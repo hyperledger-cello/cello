@@ -315,7 +315,7 @@ const Index = ({ dispatch, node = {}, loadingNodes, registeringUser, creating })
         ...extra,
       });
     },
-    [pagination.current, pagination.pageSize, refreshList]
+    [pagination, refreshList]
   );
 
   useEffect(() => {
@@ -504,12 +504,11 @@ const Index = ({ dispatch, node = {}, loadingNodes, registeringUser, creating })
       case 'running':
         statusOfBadge = 'success';
         break;
-      case 'deploying':
-      case 'deleting':
-        statusOfBadge = 'processing';
-        break;
-      case 'stopped':
+      case 'paused':
         statusOfBadge = 'warning';
+        break;
+      case 'restarting':
+        statusOfBadge = 'error';
         break;
       default:
         break;

@@ -14,19 +14,20 @@ export const createChainCode = params => formDataRequest(BASE_URL, params);
 // Upload chaincode to repository (form data)
 export const uploadChainCode = params => formDataRequest(`${BASE_URL}/chaincodeRepo`, params);
 
-// Install chaincode (form data)
-export const installChainCode = params => formDataRequest(`${BASE_URL}/install`, params);
-
-// Approve chaincode for organization (JSON data)
-export const approveChainCode = params =>
-  customRequest(`${BASE_URL}/approve_for_my_org`, {
-    method: 'POST',
-    data: params,
+// Install chaincode (PUT request with id)
+export const installChainCode = params =>
+  customRequest(`${BASE_URL}/${params.id}/install`, {
+    method: 'PUT',
   });
 
-// Commit chaincode (JSON data)
+// Approve chaincode (PUT request with id)
+export const approveChainCode = params =>
+  customRequest(`${BASE_URL}/${params.id}/approve`, {
+    method: 'PUT',
+  });
+
+// Commit chaincode (PUT request with id)
 export const commitChainCode = params =>
-  customRequest(`${BASE_URL}/commit`, {
-    method: 'POST',
-    data: params,
+  customRequest(`${BASE_URL}/${params.id}/commit`, {
+    method: 'PUT',
   });

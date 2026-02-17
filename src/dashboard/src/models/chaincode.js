@@ -37,14 +37,17 @@ export default createModel({
 
     installChainCode: createSimpleEffect(installChainCode, {
       includePayloadInCallback: false,
+      getServiceParams: payload => ({ id: payload.id }),
     }),
 
     approveChainCode: createSimpleEffect(approveChainCode, {
       includePayloadInCallback: false,
+      getServiceParams: payload => ({ id: payload.id }),
     }),
 
     commitChainCode: createSimpleEffect(commitChainCode, {
       includePayloadInCallback: false,
+      getServiceParams: payload => ({ id: payload.id }),
     }),
   },
 });

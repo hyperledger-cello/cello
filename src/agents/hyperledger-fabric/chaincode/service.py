@@ -1,12 +1,28 @@
+import json
 import logging
 import os
 import subprocess
-from typing import List
+import tarfile
+from typing import List, Optional, Dict, Any
 import yaml
 from django.core.files.storage import FileSystemStorage
 from hyperledger_fabric.settings import CELLO_HOME, CRYPTO_CONFIG, FABRIC_TOOL
 
 LOG = logging.getLogger(__name__)
+
+
+def get_metadata(file_path) -> Optional[Dict[str, Any]]:
+    res = None
+    with tarfile.open(file_path, mode='r:gz') as tar:
+        for member in tar.getmembers():
+            if member.name.endswith("metadata.json"):
+                res = json.loads(
+                    tar.extractfile(member)
+                    .read()
+                    .decode("utf-8")
+                )
+                break
+    return res
 
 
 def create_chaincode(
@@ -15,6 +31,7 @@ def create_chaincode(
         sequence: int,
         channel_name: str,
         file_path: str,
+        package_id: str,
         init_required: bool = False,
         signature_policy: str = None):
     install_chaincode(file_path)
@@ -22,7 +39,7 @@ def create_chaincode(
         name,
         channel_name,
         version,
-        get_chaincode_package_id(file_path),
+        package_id,
         sequence,
         init_required,
         signature_policy)

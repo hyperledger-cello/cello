@@ -6,7 +6,7 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.response import Response
 
 from chaincode.serializers import ChaincodeCreationSerializer, ChaincodeInstallationSerializer, \
-    ChaincodeApprovementSerializer, ChaincodeCommitSerializer
+    ChaincodeApprovementSerializer, ChaincodeCommitSerializer, ChaincodeResponseSerializer
 
 
 # Create your views here.
@@ -22,13 +22,15 @@ class ChaincodeViewSet(viewsets.ViewSet):
 
     @extend_schema(
         request=ChaincodeCreationSerializer,
-        responses={201: None}
+        responses={201: ChaincodeResponseSerializer}
     )
     def create(self, request):
         serializer = ChaincodeCreationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(status=status.HTTP_201_CREATED)
+
+        return Response(
+            data=serializer.save().data,
+            status=status.HTTP_201_CREATED)
 
     @extend_schema(
         request=ChaincodeInstallationSerializer,

@@ -28,69 +28,6 @@ def get_chaincode(pk: str) -> Optional[Chaincode]:
     return Chaincode.objects.get(id=pk)
 
 
-def get_status(organization: Organization, chaincode: Chaincode) -> Chaincode.Status:
-    peer_env = get_peers_root_certs_and_addresses_and_envs(
-        organization.name,
-        [chaincode.peers.first()]
-    )[2][0]
-    try:
-        LOG.info(subprocess.run(
-            [
-                peer_command,
-                "lifecycle",
-                "chaincode",
-                "queryinstalled",
-                "--output",
-                "json"
-            ],
-            env=peer_env,
-            check=True,
-            capture_output = True,
-            text = True
-        ).stdout)
-        LOG.info(subprocess.run(
-            [
-                peer_command,
-                "lifecycle",
-                "chaincode",
-                "queryapproved",
-                "-C",
-                chaincode.channel.name,
-                "-n",
-                chaincode.name,
-                "--sequence",
-                str(chaincode.sequence),
-                "--output",
-                "json"
-            ],
-            env=peer_env,
-            check=True,
-            capture_output=True,
-            text=True
-        ).stdout)
-        LOG.info(subprocess.run(
-            [
-                peer_command,
-                "lifecycle",
-                "chaincode",
-                "querycommitted",
-                "-C",
-                chaincode.channel.name,
-                "-n",
-                chaincode.name,
-                "--output",
-                "json"
-            ],
-            env=peer_env,
-            check=True,
-            capture_output=True,
-            text=True
-        ).stdout)
-    except subprocess.CalledProcessError as e:
-        LOG.error(e.stderr)
-    return Chaincode.Status.INSTALLED
-
-
 def create_chaincode(
         name: str,
         version: str,
@@ -104,7 +41,7 @@ def create_chaincode(
         signature_policy: str = None) -> Chaincode:
     agent_url = organization.agent_url
     requests.get(urljoin(agent_url, "health")).raise_for_status()
-    requests.post(
+    response = requests.post(
         urljoin(agent_url, "chaincodes"),
         data=dict(
             name=name,
@@ -117,12 +54,16 @@ def create_chaincode(
         files=dict(
             file=package
         )
-    ).raise_for_status()
+    )
+    response.raise_for_status()
 
     chaincode = Chaincode(
+        package_id=response.json()["package_id"],
         name=name,
         version=version,
         sequence=sequence,
+        label=response.json()["label"],
+        language=response.json()["language"],
         package=package,
         init_required=init_required,
         signature_policy=signature_policy,
@@ -167,26 +108,6 @@ def install_chaincode(organization: Organization, chaincode: Chaincode) -> None:
     ).raise_for_status()
 
 
-def _set_chaincode_package_id(peer_env: Dict[str, str], chaincode: Chaincode) -> None:
-    command: List[str] = [
-        peer_command,
-        "lifecycle",
-        "chaincode",
-        "calculatepackageid",
-        chaincode.package.path
-    ]
-    LOG.info(" ".join(command))
-    with transaction.atomic():
-        chaincode.package_id = subprocess.run(
-            command,
-            env=peer_env,
-            check=True,
-            capture_output=True,
-            text=True
-        ).stdout.rstrip("\n")
-        chaincode.save()
-
-
 def approve_chaincode(
         organization: Organization,
         chaincode: Chaincode) -> None:
@@ -198,6 +119,7 @@ def approve_chaincode(
             name=chaincode.name,
             version=chaincode.version,
             sequence=chaincode.sequence,
+            package_id=chaincode.package_id,
             channel_name=chaincode.channel.name,
             init_required=chaincode.init_required,
             signature_policy=chaincode.signature_policy

@@ -2,7 +2,7 @@ import base64
 import logging
 import os
 import sys
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from urllib.parse import urljoin
 from zipfile import ZipFile
 
@@ -30,6 +30,13 @@ def get_node_status(organization: Organization, node: Node) -> str:
     return requests.get(
         urljoin(agent_url, "nodes/status"),
         params=dict(type=node.type, name=node.name)).json()["status"]
+
+
+def organization_peer_exists(organization: Organization) -> bool:
+    return Node.objects.filter(organization=organization, type=Node.Type.PEER).exists()
+
+def organization_orderer_exists(organization: Organization) -> bool:
+    return Node.objects.filter(organization=organization, type=Node.Type.ORDERER).exists()
 
 
 def create(organization: Organization, node_type: Node.Type, node_name: str) -> Node:

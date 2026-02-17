@@ -23,10 +23,6 @@ class Channel(models.Model):
     created_at = models.DateTimeField(
         help_text="Channel Creation Timestamp", auto_now_add=True
     )
-    orderers = models.ManyToManyField(
-        to=Node,
-        help_text="Channel Orderers",
-    )
 
     class Meta:
         ordering = ("-created_at",)

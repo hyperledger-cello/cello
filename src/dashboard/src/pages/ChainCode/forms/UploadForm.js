@@ -3,7 +3,6 @@ import { injectIntl, useIntl } from 'umi';
 import { Button, Modal, Input, Upload, message, Switch, Select, InputNumber, Tag } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { Form } from 'antd/lib/index';
-import { listNode } from '@/services/node';
 import { listChannel } from '@/services/channel';
 import styles from '../styles.less';
 
@@ -31,7 +30,6 @@ const tagRender = props => {
 const UploadForm = props => {
   const [form] = Form.useForm();
   const intl = useIntl();
-  const [nodes, setNodes] = useState();
   const [channels, setChannels] = useState();
   const {
     modalVisible,
@@ -45,19 +43,11 @@ const UploadForm = props => {
 
   useEffect(() => {
     async function fecthData() {
-      const responseNodes = await listNode();
       const responseChannels = await listChannel();
-      const nodeOptions = responseNodes.data.data
-        .filter(node => node.type.toLowerCase() === 'peer')
-        .map(node => ({
-          label: node.name,
-          value: node.id,
-        }));
       const channelOptions = responseChannels.data.data.map(channel => ({
         label: channel.name,
         value: channel.id,
       }));
-      setNodes(nodeOptions);
       setChannels(channelOptions);
     }
     fecthData();
@@ -244,25 +234,6 @@ const UploadForm = props => {
             popupClassName={styles.dropdownClassName}
             style={{ width: '100%' }}
           />
-        </FormItem>
-        <FormItem
-          {...formItemLayout}
-          label={intl.formatMessage({
-            id: 'app.chainCode.form.install.peers',
-            defaultMessage: 'Peers',
-          })}
-          name="peers"
-          rules={[
-            {
-              required: true,
-              message: intl.formatMessage({
-                id: 'app.chainCode.form.install.checkPeers',
-                defaultMessage: 'Please select peers',
-              }),
-            },
-          ]}
-        >
-          <Select mode="multiple" options={nodes} tagRender={tagRender} style={{ width: '100%' }} />
         </FormItem>
         <FormItem
           {...formItemLayout}

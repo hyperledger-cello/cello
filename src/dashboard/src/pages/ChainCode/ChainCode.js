@@ -8,23 +8,12 @@ import { PlusOutlined, FunctionOutlined, DownOutlined } from '@ant-design/icons'
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import StandardTable from '@/components/StandardTable';
 import UploadForm from '@/pages/ChainCode/forms/UploadForm';
-import InstallForm from '@/pages/ChainCode/forms/InstallForm';
-import ApproveForm from '@/pages/ChainCode/forms/ApproveForm';
-import CommitForm from './forms/CommitForm';
 import { useDeleteConfirm, useTableManagement } from '@/hooks';
 import styles from './styles.less';
 
-const ChainCode = ({
-  dispatch,
-  chainCode = {},
-  loadingChainCodes,
-  uploading,
-  installing,
-  approving,
-  committing,
-}) => {
+const ChainCode = ({ dispatch, chainCode = {}, loadingChainCodes, uploading }) => {
   const intl = useIntl();
-  const { chainCodes = [], paginations = {}, nodes = {} } = chainCode;
+  const { chainCodes = [], paginations = {} } = chainCode;
 
   const { selectedRows, handleSelectRows, handleTableChange, refreshList } = useTableManagement({
     dispatch,
@@ -33,10 +22,6 @@ const ChainCode = ({
   const { showDeleteConfirm } = useDeleteConfirm({ dispatch, intl });
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [installModalVisible, setInstallModalVisible] = useState(false);
-  const [approveModalVisible, setApproveModalVisible] = useState(false);
-  const [commitModalVisible, setCommitModalVisible] = useState(false);
-  const [chainCodeName, setChainCodeName] = useState('');
   const [newFile, setFile] = useState(null);
 
   useEffect(() => {
@@ -50,44 +35,15 @@ const ChainCode = ({
     refreshList();
   }, [refreshList]);
 
-  const fetchNodes = useCallback(() => {
-    dispatch({ type: 'node/listNode' });
-  }, [dispatch]);
-
   const handleModalVisible = useCallback(visible => {
     setModalVisible(!!visible);
   }, []);
 
-  const handleInstallModalVisible = useCallback(
-    (visible, record = {}) => {
-      if (visible) {
-        fetchNodes();
-        setChainCodeName(record.package_id);
-      }
-      setInstallModalVisible(!!visible);
-    },
-    [fetchNodes]
-  );
-
-  const handleApproveModalVisible = useCallback(visible => {
-    setApproveModalVisible(!!visible);
-  }, []);
-
-  const handleCommitModalVisible = useCallback(visible => {
-    setCommitModalVisible(!!visible);
-  }, []);
-
   const handleInstall = useCallback(
     (values, callback) => {
-      const formData = new FormData();
-      Object.keys(values)
-        .filter(key => !(key === 'description' && !values[key]))
-        .forEach(key => {
-          formData.append(key, values[key]);
-        });
       dispatch({
         type: 'chainCode/installChainCode',
-        payload: formData,
+        payload: { id: values.id },
         callback,
       });
     },
@@ -96,17 +52,9 @@ const ChainCode = ({
 
   const handleApprove = useCallback(
     (values, callback) => {
-      const payload = {
-        channel_name: values.channel,
-        chaincode_name: values.name,
-        chaincode_version: values.version,
-        sequence: parseInt(values.sequence, 10),
-        policy: values.policy,
-        init_flag: !!values.initFlag,
-      };
       dispatch({
         type: 'chainCode/approveChainCode',
-        payload,
+        payload: { id: values.id },
         callback,
       });
     },
@@ -115,17 +63,9 @@ const ChainCode = ({
 
   const handleCommit = useCallback(
     (values, callback) => {
-      const payload = {
-        channel_name: values.channel,
-        chaincode_name: values.name,
-        chaincode_version: values.version,
-        sequence: parseInt(values.sequence, 10),
-        policy: values.policy,
-        init_flag: !!values.initFlag,
-      };
       dispatch({
         type: 'chainCode/commitChainCode',
-        payload,
+        payload: { id: values.id },
         callback,
       });
     },
@@ -179,66 +119,6 @@ const ChainCode = ({
       intl,
     }),
     [modalVisible, handleUpload, handleModalVisible, fetchChainCodes, uploading, newFile, intl]
-  );
-
-  const installFormProps = useMemo(
-    () => ({
-      installModalVisible,
-      handleInstallModalVisible,
-      fetchChainCodes,
-      handleInstall,
-      installing,
-      chainCodeName,
-      nodes,
-      intl,
-    }),
-    [
-      installModalVisible,
-      handleInstallModalVisible,
-      fetchChainCodes,
-      handleInstall,
-      installing,
-      chainCodeName,
-      nodes,
-      intl,
-    ]
-  );
-
-  const approveFormProps = useMemo(
-    () => ({
-      approveModalVisible,
-      handleApproveModalVisible,
-      fetchChainCodes,
-      handleApprove,
-      approving,
-      selectedRows: [],
-      initFlagChange: e => {
-        // 保留原本示範行為
-        // eslint-disable-next-line no-console
-        console.log('initFlag changed:', e.target.checked);
-      },
-      intl,
-    }),
-    [
-      approveModalVisible,
-      handleApproveModalVisible,
-      fetchChainCodes,
-      handleApprove,
-      approving,
-      intl,
-    ]
-  );
-
-  const commitFormProps = useMemo(
-    () => ({
-      commitModalVisible,
-      handleCommitModalVisible,
-      handleCommit,
-      fetchChainCodes,
-      committing,
-      intl,
-    }),
-    [commitModalVisible, handleCommitModalVisible, handleCommit, fetchChainCodes, committing, intl]
   );
 
   const menu = record => (
@@ -307,21 +187,21 @@ const ChainCode = ({
       }),
       render: (text, record) => (
         <Fragment>
-          <a onClick={() => handleInstallModalVisible(true, record)}>
+          <a onClick={() => handleInstall({ id: record.id }, () => fetchChainCodes())}>
             {intl.formatMessage({
               id: 'app.chainCode.table.operate.install',
               defaultMessage: 'Install',
             })}
           </a>
           <Divider type="vertical" />
-          <a onClick={() => handleApproveModalVisible(true)}>
+          <a onClick={() => handleApprove({ id: record.id }, () => fetchChainCodes())}>
             {intl.formatMessage({
               id: 'app.chainCode.table.operate.approve',
               defaultMessage: 'Approve',
             })}
           </a>
           <Divider type="vertical" />
-          <a onClick={() => handleCommitModalVisible(true)}>
+          <a onClick={() => handleCommit({ id: record.id }, () => fetchChainCodes())}>
             {intl.formatMessage({
               id: 'app.chainCode.table.operate.commit',
               defaultMessage: 'Commit',
@@ -375,9 +255,6 @@ const ChainCode = ({
         </div>
       </Card>
       <UploadForm {...uploadFormProps} />
-      <InstallForm {...installFormProps} />
-      <ApproveForm {...approveFormProps} />
-      <CommitForm {...commitFormProps} />
     </PageHeaderWrapper>
   );
 };
@@ -386,7 +263,4 @@ export default connect(({ chainCode, loading }) => ({
   chainCode,
   loadingChainCodes: loading.effects['chainCode/listChainCode'],
   uploading: loading.effects['chainCode/uploadChainCode'],
-  installing: loading.effects['chainCode/installChainCode'],
-  approving: loading.effects['chainCode/approveChainCode'],
-  committing: loading.effects['chainCode/commitChainCode'],
 }))(ChainCode);

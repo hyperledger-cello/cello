@@ -11,7 +11,7 @@ from hyperledger_fabric.settings import CELLO_HOME, CRYPTO_CONFIG, FABRIC_TOOL
 
 LOG = logging.getLogger(__name__)
 
-def create_channel(channel_name: str, orderer_names: list[str], peer_names: list[str]):
+def create_channel(channel_name: str):
     with open(
         CRYPTO_CONFIG,
         "r",
@@ -19,7 +19,8 @@ def create_channel(channel_name: str, orderer_names: list[str], peer_names: list
     ) as f:
         crypto_config = yaml.safe_load(f)
 
-    orderer_hosts = ["{}.{}".format(orderer_name, crypto_config["OrdererOrgs"][0]["Domain"]) for orderer_name in orderer_names]
+    order_org = crypto_config["OrdererOrgs"][0]
+    orderer_hosts = ["{}.{}".format(spec["Hostname"], order_org["Domain"]) for spec in order_org["Specs"]]
     orderer_addresses = [orderer_host + ":7050" for orderer_host in orderer_hosts]
     orderer_organization_directory = os.path.join(
         CELLO_HOME,
@@ -173,6 +174,7 @@ def create_channel(channel_name: str, orderer_names: list[str], peer_names: list
         LOG.info(" ".join(command))
         subprocess.run(command, check=True)
 
+    peer_org = crypto_config["PeerOrgs"][0]
     command = [
         os.path.join(FABRIC_TOOL, "peer"),
         "channel",
@@ -180,8 +182,8 @@ def create_channel(channel_name: str, orderer_names: list[str], peer_names: list
         "-b",
         os.path.join(channel_directory, "genesis.block"),
     ]
-    for peer_name in peer_names:
-        peer_domain_name = "{}.{}".format(peer_name, crypto_config["PeerOrgs"][0]["Domain"])
+    for spec in peer_org["Specs"]:
+        peer_domain_name = "{}.{}".format(spec["Hostname"], peer_org["Domain"])
         peer_dir = os.path.join(
             peer_organization_directory, 
             "peers", 

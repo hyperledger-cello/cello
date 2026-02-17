@@ -3,7 +3,7 @@
 */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { connect, useIntl } from 'umi';
-import { Card, Button, Modal, message, Input, Select, Form, Tag, Upload } from 'antd';
+import { Card, Button, Modal, message, Input, Select, Form, Upload } from 'antd';
 import { PlusOutlined, UploadOutlined, DeploymentUnitOutlined } from '@ant-design/icons';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import StandardTable from '@/components/StandardTable';
@@ -16,7 +16,7 @@ const { Option } = Select;
 const CreateChannel = props => {
   const [form] = Form.useForm();
   const intl = useIntl();
-  const { modalVisible, handleCreate, handleModalVisible, nodes, creating, fetchChannels } = props;
+  const { modalVisible, handleCreate, handleModalVisible, creating, fetchChannels } = props;
 
   const createCallback = response => {
     if (response.status.toLowerCase() !== 'successful') {
@@ -59,37 +59,6 @@ const CreateChannel = props => {
     },
   };
 
-  const peers = [];
-  const orderers = [];
-
-  Object.keys(nodes).forEach(item => {
-    if (nodes[item].type.toLowerCase() === 'peer') {
-      peers.push({ label: nodes[item].name, value: nodes[item].id });
-    } else {
-      orderers.push({ label: nodes[item].name, value: nodes[item].id });
-    }
-  });
-
-  // eslint-disable-next-line no-shadow
-  const tagRender = props => {
-    const { label, closable, onClose } = props;
-    const onPreventMouseDown = event => {
-      event.preventDefault();
-      event.stopPropagation();
-    };
-    return (
-      <Tag
-        color="cyan"
-        onMouseDown={onPreventMouseDown}
-        closable={closable}
-        onClose={onClose}
-        style={{ marginRight: 3 }}
-      >
-        {label}
-      </Tag>
-    );
-  };
-
   return (
     <Modal
       destroyOnClose
@@ -126,54 +95,6 @@ const CreateChannel = props => {
               id: 'app.channel.form.create.name',
               defaultMessage: 'Name',
             })}
-          />
-        </FormItem>
-        <FormItem
-          {...formItemLayout}
-          label={intl.formatMessage({
-            id: 'app.channel.form.create.orderer',
-            defaultMessage: 'Please select orderer',
-          })}
-          name="orderer_ids"
-          rules={[
-            {
-              required: true,
-              message: intl.formatMessage({
-                id: 'app.channel.form.create.checkOrderer',
-                defaultMessage: 'Please select orderer',
-              }),
-            },
-          ]}
-        >
-          <Select
-            mode="multiple"
-            options={orderers}
-            tagRender={tagRender}
-            dropdownClassName={styles.dropdownClassName}
-          />
-        </FormItem>
-        <FormItem
-          {...formItemLayout}
-          label={intl.formatMessage({
-            id: 'app.channel.form.create.peer',
-            defaultMessage: 'Peer',
-          })}
-          name="peer_ids"
-          rules={[
-            {
-              required: true,
-              message: intl.formatMessage({
-                id: 'app.channel.form.create.checkPeer',
-                defaultMessage: 'Please select peer',
-              }),
-            },
-          ]}
-        >
-          <Select
-            mode="multiple"
-            options={peers}
-            tagRender={tagRender}
-            dropdownClassName={styles.dropdownClassName}
           />
         </FormItem>
       </Form>
