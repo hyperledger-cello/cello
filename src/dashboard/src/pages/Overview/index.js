@@ -17,7 +17,8 @@ class Index extends PureComponent {
             defaultMessage: 'Welcome!',
           })}
         </h1>
-      </PageHeaderWrapper>);
+      </PageHeaderWrapper>
+    );
   }
 }
 
