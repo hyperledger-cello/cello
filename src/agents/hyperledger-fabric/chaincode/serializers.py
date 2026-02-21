@@ -1,15 +1,52 @@
 import os
 import threading
 
-from django.contrib.sessions.backends import file
 from django.core.files.storage import FileSystemStorage
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from chaincode.service import create_chaincode, install_chaincode, approve_chaincode, get_chaincode_package_id, \
-    commit_chaincode, get_metadata
+    commit_chaincode, get_metadata, get_chaincode_status, get_chaincode_commit_readiness
 from hyperledger_fabric.settings import CELLO_HOME
+
+
+class ChaincodeCommitReadinessResponse(serializers.Serializer):
+    approvals = serializers.DictField(help_text="Chaincode Commit Readiness")
+
+
+class ChaincodeCommitReadinessRequest(serializers.Serializer):
+    channel = serializers.CharField(help_text="Chaincode Channel Name")
+    name = serializers.CharField(help_text="Chaincode Name")
+    version = serializers.CharField(help_text="Chaincode Version")
+    sequence = serializers.IntegerField(help_text="Chaincode Sequence")
+    init_required = serializers.BooleanField(help_text="Chaincode Required Initialization")
+
+    def create(self, validated_data):
+        return ChaincodeCommitReadinessResponse(dict(
+            approvals=get_chaincode_commit_readiness(
+                validated_data["channel"],
+                validated_data["name"],
+                validated_data["version"],
+                validated_data["sequence"],
+                validated_data["init_required"])))
+
+
+class ChaincodeStatusResponse(serializers.Serializer):
+    status = serializers.CharField(help_text="Chaincode Status")
+
+
+class ChaincodeStatusRequest(serializers.Serializer):
+    package_id = serializers.CharField(help_text="Chaincode Package ID")
+    channel = serializers.CharField(help_text="Chaincode Channel Name")
+    name = serializers.CharField(help_text="Chaincode Name")
+    sequence = serializers.IntegerField(help_text="Chaincode Sequence")
+
+    def create(self, validated_data):
+        return ChaincodeStatusResponse(dict(
+            status=get_chaincode_status(
+                validated_data["package_id"],
+                validated_data["channel"],
+                validated_data["name"],
+                validated_data["sequence"]).name))
 
 
 class ChaincodeResponseSerializer(serializers.Serializer):

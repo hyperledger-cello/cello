@@ -1,28 +1,15 @@
 /*
  SPDX-License-Identifier: Apache-2.0
 */
-import React, { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { connect, useIntl } from 'umi';
-import {
-  Card,
-  Button,
-  Modal,
-  message,
-  Divider,
-  Menu,
-  Dropdown,
-  Form,
-  Input,
-  Select,
-  Badge,
-  Upload,
-} from 'antd';
-import { DownOutlined, PlusOutlined, NodeIndexOutlined } from '@ant-design/icons';
+import { Card, Button, Modal, message, Form, Input, Select, Badge } from 'antd';
+import { PlusOutlined, NodeIndexOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import StandardTable from '@/components/StandardTable';
 import { getAuthority } from '@/utils/authority';
-import { useDeleteConfirm, useTableManagement } from '@/hooks';
+import { useTableManagement } from '@/hooks';
 import styles from '../styles.less';
 
 const FormItem = Form.Item;
@@ -301,10 +288,8 @@ const Index = ({ dispatch, node = {}, loadingNodes, registeringUser, creating })
     dispatch,
     listAction: 'node/listNode',
   });
-  const { showDeleteConfirm } = useDeleteConfirm({ dispatch, intl });
 
   const [registerUserFormVisible, setRegisterUserFormVisible] = useState(false);
-  const [targetNodeId, setTargetNodeId] = useState('');
   const [createModalVisible, setCreateModalVisible] = useState(false);
 
   const queryNodeList = useCallback(
@@ -323,7 +308,8 @@ const Index = ({ dispatch, node = {}, loadingNodes, registeringUser, creating })
     return () => {
       dispatch({ type: 'node/clear' });
     };
-  }, [dispatch, queryNodeList]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const registerUserCallback = useCallback(() => {
     message.success(
@@ -335,18 +321,6 @@ const Index = ({ dispatch, node = {}, loadingNodes, registeringUser, creating })
     setRegisterUserFormVisible(false);
   }, [intl]);
 
-  const handleModalVisible = useCallback(visible => {
-    setRegisterUserFormVisible(!!visible);
-  }, []);
-
-  const handleRegisterUser = useCallback(
-    row => {
-      setTargetNodeId(row.id);
-      handleModalVisible(true);
-    },
-    [handleModalVisible]
-  );
-
   const handleSubmit = useCallback(
     values => {
       dispatch({
@@ -356,45 +330,6 @@ const Index = ({ dispatch, node = {}, loadingNodes, registeringUser, creating })
       });
     },
     [dispatch, registerUserCallback]
-  );
-
-  const handleDeleteNode = useCallback(
-    record => {
-      showDeleteConfirm({
-        record,
-        deleteAction: 'node/deleteNode',
-        titleId: 'app.node.delete.title',
-        contentId: 'app.node.delete.confirm',
-        successId: 'app.node.delete.success',
-        failId: 'app.node.delete.fail',
-        getPayload: r => r.id,
-        onSuccess: () => queryNodeList(),
-      });
-    },
-    [queryNodeList, showDeleteConfirm]
-  );
-
-  const operationForNode = useCallback(
-    (action, row) => {
-      dispatch({
-        type: 'node/operateNode',
-        payload: {
-          id: row.id,
-          message: action,
-        },
-        callback: data => {
-          message.success(
-            intl.formatMessage({
-              id: `app.node.operation.${data.payload.message}.success`,
-              defaultMessage: `${data.payload.message.substring(0, 1).toUpperCase() +
-                data.payload.message.substring(1)} Node Successful.`,
-            })
-          );
-          queryNodeList();
-        },
-      });
-    },
-    [dispatch, intl, queryNodeList]
   );
 
   const handleCreateModalVisible = useCallback(visible => {
@@ -412,78 +347,16 @@ const Index = ({ dispatch, node = {}, loadingNodes, registeringUser, creating })
     [dispatch]
   );
 
-  const handleDownloadConfig = useCallback(
-    row => {
-      dispatch({
-        type: 'node/downloadNodeConfig',
-        payload: { id: row.id },
-        callback: response => {
-          message.success(
-            intl.formatMessage({
-              id: 'app.node.download.success',
-              defaultMessage: 'Download Node Config File Successful.',
-            })
-          );
-          const dispositionHeader = response.response.headers.get('Content-Disposition');
-          const blob = response.data;
-          const link = document.createElement('a');
-          link.href = URL.createObjectURL(new Blob([blob], { type: 'application/zip' }));
-          link.download = dispositionHeader.split('filename=')[1];
-          document.body.appendChild(link);
-          link.click();
-          URL.revokeObjectURL(link.href);
-        },
-      });
-    },
-    [dispatch, intl]
-  );
-
-  const handleUploadConfig = useCallback(
-    (row, formData) => {
-      dispatch({
-        type: 'node/uploadNodeConfig',
-        payload: { id: row.id, form: formData },
-        callback: () => {
-          message.success(
-            intl.formatMessage({
-              id: 'app.node.upload.success',
-              defaultMessage: 'Upload config file succeed',
-            })
-          );
-        },
-      });
-    },
-    [dispatch, intl]
-  );
-
-  const handleJoinChannel = useCallback(
-    (row, formData) => {
-      dispatch({
-        type: 'node/nodeJoinChannel',
-        payload: { id: row.id, form: formData },
-        callback: () => {
-          message.success(
-            intl.formatMessage({
-              id: 'app.node.joinChannel.success',
-              defaultMessage: 'Join Channel succeed',
-            })
-          );
-        },
-      });
-    },
-    [dispatch, intl]
-  );
-
   const formProps = useMemo(
     () => ({
       registerUserFormVisible,
       handleSubmit,
-      handleModalVisible,
+      handleModalVisible: () => setRegisterUserFormVisible(false),
       registeringUser,
-      targetNodeId,
+      targetNodeId: '',
       intl,
     }),
-    [registerUserFormVisible, handleSubmit, handleModalVisible, registeringUser, targetNodeId, intl]
+    [registerUserFormVisible, handleSubmit, registeringUser, intl]
   );
 
   const createFormProps = useMemo(
@@ -515,100 +388,6 @@ const Index = ({ dispatch, node = {}, loadingNodes, registeringUser, creating })
     }
     return statusOfBadge;
   };
-
-  const dummyRequest = ({ onSuccess }) => {
-    setTimeout(() => {
-      onSuccess('ok');
-    }, 0);
-  };
-
-  const menu = record => (
-    <Menu>
-      {record.type.toLowerCase() === 'ca' && (
-        <Menu.Item>
-          <a onClick={() => handleRegisterUser(record)}>
-            {intl.formatMessage({
-              id: 'app.node.table.operation.registerUser',
-              defaultMessage: 'Register User',
-            })}
-          </a>
-        </Menu.Item>
-      )}
-      {(record.type.toLowerCase() === 'peer' || record.type.toLowerCase() === 'orderer') && (
-        <Menu.Item>
-          <a onClick={() => handleDownloadConfig(record)}>
-            {intl.formatMessage({ id: 'form.menu.item.download', defaultMessage: 'Download' })}
-          </a>
-        </Menu.Item>
-      )}
-      {(record.type.toLowerCase() === 'peer' || record.type.toLowerCase() === 'orderer') && (
-        <Menu.Item>
-          <Upload
-            showUploadList={false}
-            customRequest={dummyRequest}
-            onChange={info => {
-              if (info.file.name.split('.').pop() !== 'yaml') {
-                message.error('Only accept yaml file.');
-                return;
-              }
-              if (info.file.status === 'done') {
-                const formData = new FormData();
-                formData.append('file', info.fileList[0].originFileObj);
-                handleUploadConfig(record, formData);
-              }
-            }}
-          >
-            <a style={{ color: 'inherit' }}>
-              {intl.formatMessage({ id: 'form.menu.item.upload', defaultMessage: 'Upload' })}
-            </a>
-          </Upload>
-        </Menu.Item>
-      )}
-      {record.type.toLowerCase() === 'peer' && (
-        <Menu.Item>
-          <Upload
-            showUploadList={false}
-            customRequest={dummyRequest}
-            onChange={info => {
-              if (info.file.name.split('.').pop() !== 'block') {
-                message.error('Only accept block file.');
-                return;
-              }
-              if (info.file.status === 'done') {
-                const formData = new FormData();
-                formData.append('file', info.fileList[0].originFileObj);
-                handleJoinChannel(record, formData);
-              }
-            }}
-          >
-            <a style={{ color: 'inherit' }}>
-              {intl.formatMessage({
-                id: 'form.menu.item.joinChannel',
-                defaultMessage: 'Join Channel',
-              })}
-            </a>
-          </Upload>
-        </Menu.Item>
-      )}
-      <Menu.Item>
-        <a onClick={() => handleDeleteNode(record)}>
-          {intl.formatMessage({ id: 'form.menu.item.delete', defaultMessage: 'Delete' })}
-        </a>
-      </Menu.Item>
-    </Menu>
-  );
-
-  const MoreBtn = record => (
-    <Dropdown overlay={menu(record)}>
-      <a>
-        {intl.formatMessage({
-          id: 'app.node.table.operation.more',
-          defaultMessage: 'More',
-        })}{' '}
-        <DownOutlined />
-      </a>
-    </Dropdown>
-  );
 
   const columns = [
     {
@@ -647,30 +426,7 @@ const Index = ({ dispatch, node = {}, loadingNodes, registeringUser, creating })
         id: 'form.table.header.operation',
         defaultMessage: 'Operation',
       }),
-      render: (text, record) => (
-        <Fragment>
-          {record.status.toLowerCase() === 'running' && (
-            <a onClick={() => operationForNode('stop', record)}>
-              {intl.formatMessage({
-                id: 'app.node.table.operation.stop',
-                defaultMessage: 'Stop',
-              })}
-            </a>
-          )}
-          {record.status.toLowerCase() === 'stopped' && (
-            <Menu.Item>
-              <a onClick={() => operationForNode('start', record)}>
-                {intl.formatMessage({
-                  id: 'app.node.table.operation.start',
-                  defaultMessage: 'Start',
-                })}
-              </a>
-            </Menu.Item>
-          )}
-          <Divider type="vertical" />
-          <MoreBtn {...record} />
-        </Fragment>
-      ),
+      render: () => null,
     },
   ];
 

@@ -28,6 +28,39 @@ def get_chaincode(pk: str) -> Optional[Chaincode]:
     return Chaincode.objects.get(id=pk)
 
 
+def get_chaincode_status(organization: Organization, chaincode: Chaincode) -> str:
+    agent_url = organization.agent_url
+    requests.get(urljoin(agent_url, "health")).raise_for_status()
+    response = requests.get(
+        urljoin(agent_url, "chaincodes/status"),
+        params=dict(
+            name=chaincode.name,
+            package_id=chaincode.package_id,
+            sequence=chaincode.sequence,
+            channel=chaincode.channel.name
+        )
+    )
+    response.raise_for_status()
+    return response.json()["status"]
+
+
+def get_chaincode_commit_readiness(organization: Organization, chaincode: Chaincode) -> str:
+    agent_url = organization.agent_url
+    requests.get(urljoin(agent_url, "health")).raise_for_status()
+    response = requests.get(
+        urljoin(agent_url, "chaincodes/commit/readiness"),
+        params=dict(
+            name=chaincode.name,
+            version=chaincode.version,
+            sequence=chaincode.sequence,
+            channel=chaincode.channel.name,
+            init_required=(chaincode.init_required is not None and chaincode.init_required),
+        )
+    )
+    response.raise_for_status()
+    return response.json()["approvals"]
+
+
 def create_chaincode(
         name: str,
         version: str,
@@ -56,14 +89,15 @@ def create_chaincode(
         )
     )
     response.raise_for_status()
+    response_json = response.json()
 
     chaincode = Chaincode(
-        package_id=response.json()["package_id"],
+        package_id=response_json["package_id"],
         name=name,
         version=version,
         sequence=sequence,
-        label=response.json()["label"],
-        language=response.json()["language"],
+        label=response_json["label"],
+        language=response_json["language"],
         package=package,
         init_required=init_required,
         signature_policy=signature_policy,
@@ -75,17 +109,13 @@ def create_chaincode(
     return chaincode
 
 
-def get_metadata(file) -> Optional[Dict[str, Any]]:
+def metadata_exists(file) -> bool:
     file.seek(0)
-    res = None
+    res = False
     with tarfile.open(fileobj=file, mode='r:gz') as tar:
         for member in tar.getmembers():
             if member.name.endswith("metadata.json"):
-                res = json.loads(
-                    tar.extractfile(member)
-                    .read()
-                    .decode("utf-8")
-                )
+                res = True
                 break
     file.seek(0)
     return res

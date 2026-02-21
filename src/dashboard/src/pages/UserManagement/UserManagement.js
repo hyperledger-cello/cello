@@ -15,13 +15,13 @@ import {
   Menu,
   AutoComplete,
 } from 'antd';
-import { DownOutlined, PlusOutlined, UserOutlined } from '@ant-design/icons';
+import { DownOutlined, UserOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import isEmail from 'validator/lib/isEmail';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import StandardTable from '@/components/StandardTable';
 import { getAuthority } from '@/utils/authority';
-import { useDeleteConfirm, useModalForm, useTableManagement } from '@/hooks';
+import { useModalForm, useTableManagement } from '@/hooks';
 import styles from '../styles.less';
 
 const FormItem = Form.Item;
@@ -285,14 +285,7 @@ const UserManagement = ({ dispatch, user = {}, organization = {}, loadingUsers, 
     dispatch,
     listAction: 'user/fetch',
   });
-  const { showDeleteConfirm } = useDeleteConfirm({ dispatch, intl });
-  const {
-    modalVisible,
-    modalMethod,
-    openCreateModal,
-    closeModal,
-    handleModalVisible,
-  } = useModalForm();
+  const { modalVisible, modalMethod, closeModal, handleModalVisible } = useModalForm();
 
   useEffect(() => {
     refreshList();
@@ -367,22 +360,6 @@ const UserManagement = ({ dispatch, user = {}, organization = {}, loadingUsers, 
       }
     },
     [handleFormReset, intl]
-  );
-
-  const handleDelete = useCallback(
-    record => {
-      showDeleteConfirm({
-        record,
-        deleteAction: 'user/deleteUser',
-        titleId: 'app.user.form.delete.title',
-        contentId: 'app.user.form.delete.content',
-        successId: 'app.user.delete.success',
-        failId: 'app.user.delete.fail',
-        getPayload: r => ({ ...r }),
-        onSuccess: deleteCallback,
-      });
-    },
-    [deleteCallback, showDeleteConfirm]
   );
 
   const handleSubmit = useCallback(
@@ -487,16 +464,7 @@ const UserManagement = ({ dispatch, user = {}, organization = {}, loadingUsers, 
         id: 'form.table.header.operation',
         defaultMessage: 'Operation',
       }),
-      render: (text, record) => (
-        <Fragment>
-          <a className={styles.danger} onClick={() => handleDelete(record)}>
-            {intl.formatMessage({
-              id: 'form.menu.item.delete',
-              defaultMessage: 'Delete',
-            })}
-          </a>
-        </Fragment>
-      ),
+      render: () => <Fragment />,
     },
   ];
 
@@ -544,13 +512,6 @@ const UserManagement = ({ dispatch, user = {}, organization = {}, loadingUsers, 
       <Card bordered={false}>
         <div className={styles.tableList}>
           <div className={styles.tableListOperator}>
-            <Button type="primary" onClick={openCreateModal}>
-              <PlusOutlined />
-              {intl.formatMessage({
-                id: 'form.button.new',
-                defaultMessage: 'New',
-              })}
-            </Button>
             {selectedRows.length > 0 && (
               <span>
                 <Dropdown overlay={menu}>

@@ -10,6 +10,8 @@ RUN apt-get update\
 # Copy source code to the working dir
 COPY . .
 
+RUN mkdir cello
+
 # Install compiled code tools from Artifactory and copy it to opt folder.
 RUN curl -L --retry 5 --retry-delay 3 "https://github.com/hyperledger/fabric/releases/download/v2.5.14/hyperledger-fabric-linux-amd64-2.5.14.tar.gz" | tar xz -C ./cello/
 

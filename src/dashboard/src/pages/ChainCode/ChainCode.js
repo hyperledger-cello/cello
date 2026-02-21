@@ -1,14 +1,14 @@
 /*
  SPDX-License-Identifier: Apache-2.0
 */
-import React, { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { connect, useIntl } from 'umi';
-import { Card, Button, Divider, Dropdown, Menu } from 'antd';
-import { PlusOutlined, FunctionOutlined, DownOutlined } from '@ant-design/icons';
+import { Card, Button, Badge } from 'antd';
+import { PlusOutlined, FunctionOutlined } from '@ant-design/icons';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import StandardTable from '@/components/StandardTable';
 import UploadForm from '@/pages/ChainCode/forms/UploadForm';
-import { useDeleteConfirm, useTableManagement } from '@/hooks';
+import { useTableManagement } from '@/hooks';
 import styles from './styles.less';
 
 const ChainCode = ({ dispatch, chainCode = {}, loadingChainCodes, uploading }) => {
@@ -19,10 +19,11 @@ const ChainCode = ({ dispatch, chainCode = {}, loadingChainCodes, uploading }) =
     dispatch,
     listAction: 'chainCode/listChainCode',
   });
-  const { showDeleteConfirm } = useDeleteConfirm({ dispatch, intl });
 
   const [modalVisible, setModalVisible] = useState(false);
   const [newFile, setFile] = useState(null);
+  const [operatingId, setOperatingId] = useState(null);
+  const [operationType, setOperationType] = useState(null);
 
   useEffect(() => {
     dispatch({ type: 'chainCode/listChainCode' });
@@ -41,10 +42,16 @@ const ChainCode = ({ dispatch, chainCode = {}, loadingChainCodes, uploading }) =
 
   const handleInstall = useCallback(
     (values, callback) => {
+      setOperatingId(values.id);
+      setOperationType('install');
       dispatch({
         type: 'chainCode/installChainCode',
         payload: { id: values.id },
-        callback,
+        callback: () => {
+          setOperatingId(null);
+          setOperationType(null);
+          if (callback) callback();
+        },
       });
     },
     [dispatch]
@@ -52,10 +59,16 @@ const ChainCode = ({ dispatch, chainCode = {}, loadingChainCodes, uploading }) =
 
   const handleApprove = useCallback(
     (values, callback) => {
+      setOperatingId(values.id);
+      setOperationType('approve');
       dispatch({
         type: 'chainCode/approveChainCode',
         payload: { id: values.id },
-        callback,
+        callback: () => {
+          setOperatingId(null);
+          setOperationType(null);
+          if (callback) callback();
+        },
       });
     },
     [dispatch]
@@ -63,10 +76,16 @@ const ChainCode = ({ dispatch, chainCode = {}, loadingChainCodes, uploading }) =
 
   const handleCommit = useCallback(
     (values, callback) => {
+      setOperatingId(values.id);
+      setOperationType('commit');
       dispatch({
         type: 'chainCode/commitChainCode',
         payload: { id: values.id },
-        callback,
+        callback: () => {
+          setOperatingId(null);
+          setOperationType(null);
+          if (callback) callback();
+        },
       });
     },
     [dispatch]
@@ -91,22 +110,6 @@ const ChainCode = ({ dispatch, chainCode = {}, loadingChainCodes, uploading }) =
     handleModalVisible(true);
   }, [handleModalVisible]);
 
-  const handleDeleteChaincode = useCallback(
-    record => {
-      showDeleteConfirm({
-        record,
-        deleteAction: 'chainCode/deleteChainCode',
-        titleId: 'app.chainCode.table.operate.delete',
-        contentId: 'app.chainCode.table.operate.delete',
-        successId: 'app.chainCode.delete.success',
-        failId: 'app.chainCode.delete.fail',
-        getPayload: r => r.id,
-        onSuccess: () => refreshList(),
-      });
-    },
-    [refreshList, showDeleteConfirm]
-  );
-
   const uploadFormProps = useMemo(
     () => ({
       modalVisible,
@@ -121,34 +124,15 @@ const ChainCode = ({ dispatch, chainCode = {}, loadingChainCodes, uploading }) =
     [modalVisible, handleUpload, handleModalVisible, fetchChainCodes, uploading, newFile, intl]
   );
 
-  const menu = record => (
-    <Menu>
-      <Menu.Item>
-        <a
-          onClick={() => {
-            handleDeleteChaincode(record);
-          }}
-        >
-          {intl.formatMessage({
-            id: 'app.chainCode.table.operate.delete',
-            defaultMessage: 'Delete',
-          })}
-        </a>
-      </Menu.Item>
-    </Menu>
-  );
-
-  const MoreBtn = record => (
-    <Dropdown overlay={menu(record)}>
-      <a>
-        {intl.formatMessage({
-          id: 'app.node.table.operation.more',
-          defaultMessage: 'More',
-        })}{' '}
-        <DownOutlined />
-      </a>
-    </Dropdown>
-  );
+  const getStatusBadge = status => {
+    const statusMap = {
+      CREATED: 'default',
+      INSTALLED: 'success',
+      APPROVED: 'success',
+      COMMITTED: 'success',
+    };
+    return statusMap[status] || 'default';
+  };
 
   const columns = [
     {
@@ -182,35 +166,133 @@ const ChainCode = ({ dispatch, chainCode = {}, loadingChainCodes, uploading }) =
     },
     {
       title: intl.formatMessage({
+        id: 'app.chainCode.table.header.status',
+        defaultMessage: 'Status',
+      }),
+      dataIndex: 'status',
+      render: status => {
+        const statusIdMap = {
+          CREATED: 'app.chainCode.status.created',
+          INSTALLED: 'app.chainCode.status.installed',
+          APPROVED: 'app.chainCode.status.approved',
+          COMMITTED: 'app.chainCode.status.committed',
+        };
+        const statusDefaultMap = {
+          CREATED: 'Created',
+          INSTALLED: 'Installed',
+          APPROVED: 'Approved',
+          COMMITTED: 'Committed',
+        };
+        return (
+          <Badge
+            status={getStatusBadge(status)}
+            text={intl.formatMessage({
+              id: statusIdMap[status] || 'app.chainCode.status.unknown',
+              defaultMessage: statusDefaultMap[status] || status,
+            })}
+          />
+        );
+      },
+    },
+    {
+      title: intl.formatMessage({
+        id: 'app.chainCode.table.header.approvals',
+        defaultMessage: 'Approvals',
+      }),
+      dataIndex: 'approvals',
+      render: approvals => {
+        if (!approvals || typeof approvals !== 'object') {
+          return '0/0';
+        }
+        const keys = Object.keys(approvals);
+        const total = keys.length;
+        const approved = keys.filter(key => approvals[key] === true).length;
+        return `${approved}/${total}`;
+      },
+    },
+    {
+      title: intl.formatMessage({
         id: 'form.table.header.operation',
         defaultMessage: 'Operation',
       }),
-      render: (text, record) => (
-        <Fragment>
-          <a onClick={() => handleInstall({ id: record.id }, () => fetchChainCodes())}>
-            {intl.formatMessage({
-              id: 'app.chainCode.table.operate.install',
-              defaultMessage: 'Install',
-            })}
-          </a>
-          <Divider type="vertical" />
-          <a onClick={() => handleApprove({ id: record.id }, () => fetchChainCodes())}>
-            {intl.formatMessage({
-              id: 'app.chainCode.table.operate.approve',
-              defaultMessage: 'Approve',
-            })}
-          </a>
-          <Divider type="vertical" />
-          <a onClick={() => handleCommit({ id: record.id }, () => fetchChainCodes())}>
-            {intl.formatMessage({
-              id: 'app.chainCode.table.operate.commit',
-              defaultMessage: 'Commit',
-            })}
-          </a>
-          <Divider type="vertical" />
-          <MoreBtn {...record} />
-        </Fragment>
-      ),
+      render: (text, record) => {
+        const isInstallingThis = operatingId === record.id && operationType === 'install';
+        const isApprovingThis = operatingId === record.id && operationType === 'approve';
+        const isCommittingThis = operatingId === record.id && operationType === 'commit';
+
+        // 根据状态决定显示哪个按钮
+        if (record.status === 'CREATED') {
+          return (
+            <a
+              onClick={() =>
+                !isInstallingThis && handleInstall({ id: record.id }, () => fetchChainCodes())
+              }
+              style={
+                isInstallingThis ? { opacity: 0.6, cursor: 'not-allowed' } : { cursor: 'pointer' }
+              }
+            >
+              {isInstallingThis
+                ? intl.formatMessage({
+                    id: 'app.chainCode.table.operate.installing',
+                    defaultMessage: 'Installing...',
+                  })
+                : intl.formatMessage({
+                    id: 'app.chainCode.table.operate.install',
+                    defaultMessage: 'Install',
+                  })}
+            </a>
+          );
+        }
+
+        if (record.status === 'INSTALLED') {
+          return (
+            <a
+              onClick={() =>
+                !isApprovingThis && handleApprove({ id: record.id }, () => fetchChainCodes())
+              }
+              style={
+                isApprovingThis ? { opacity: 0.6, cursor: 'not-allowed' } : { cursor: 'pointer' }
+              }
+            >
+              {isApprovingThis
+                ? intl.formatMessage({
+                    id: 'app.chainCode.table.operate.approving',
+                    defaultMessage: 'Approving...',
+                  })
+                : intl.formatMessage({
+                    id: 'app.chainCode.table.operate.approve',
+                    defaultMessage: 'Approve',
+                  })}
+            </a>
+          );
+        }
+
+        if (record.status === 'APPROVED') {
+          return (
+            <a
+              onClick={() =>
+                !isCommittingThis && handleCommit({ id: record.id }, () => fetchChainCodes())
+              }
+              style={
+                isCommittingThis ? { opacity: 0.6, cursor: 'not-allowed' } : { cursor: 'pointer' }
+              }
+            >
+              {isCommittingThis
+                ? intl.formatMessage({
+                    id: 'app.chainCode.table.operate.committing',
+                    defaultMessage: 'Committing...',
+                  })
+                : intl.formatMessage({
+                    id: 'app.chainCode.table.operate.commit',
+                    defaultMessage: 'Commit',
+                  })}
+            </a>
+          );
+        }
+
+        // COMMITTED 或其他状态不显示按钮
+        return null;
+      },
     },
   ];
 

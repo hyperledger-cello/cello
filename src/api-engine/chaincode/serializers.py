@@ -5,8 +5,9 @@ from django.core.validators import MinValueValidator
 from rest_framework import serializers
 
 from chaincode.models import Chaincode
-from chaincode.service import ChaincodeAction, create_chaincode, get_chaincode, get_metadata, install_chaincode, \
-    approve_chaincode, commit_chaincode, send_chaincode_request
+from chaincode.service import ChaincodeAction, create_chaincode, get_chaincode, install_chaincode, \
+    approve_chaincode, commit_chaincode, send_chaincode_request, metadata_exists, get_chaincode_status, \
+    get_chaincode_commit_readiness
 from channel.models import Channel
 from channel.serializers import ChannelID
 from common.serializers import ListResponseSerializer
@@ -36,6 +37,8 @@ class ChaincodeID(serializers.ModelSerializer):
 class ChaincodeResponse(ChaincodeID):
     channel = ChannelID()
     creator = UserID()
+    status = serializers.SerializerMethodField()
+    approvals = serializers.SerializerMethodField()
 
     class Meta:
         model = Chaincode
@@ -53,7 +56,19 @@ class ChaincodeResponse(ChaincodeID):
             "language",
             "created_at",
             "description",
+            "status",
+            "approvals"
         )
+
+
+    def get_status(self, chaincode) -> str:
+        organization = self.context.get("organization")
+        return get_chaincode_status(organization, chaincode) if organization else chaincode.get("status")
+
+
+    def get_approvals(self, chaincode) -> str:
+        organization = self.context.get("organization")
+        return get_chaincode_commit_readiness(organization, chaincode) if organization else chaincode.get("approvals")
 
 
 class ChaincodeList(ListResponseSerializer):
@@ -94,8 +109,7 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
             )
 
         try:
-            metadata = get_metadata(value)
-            if metadata is None:
+            if not metadata_exists(value):
                 raise serializers.ValidationError("Metadata not found.")
         except tarfile.TarError:
             raise serializers.ValidationError("Failed to open the chaincode tar package.")
