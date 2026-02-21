@@ -35,6 +35,7 @@ def get_node_status(organization: Organization, node: Node) -> str:
 def organization_peer_exists(organization: Organization) -> bool:
     return Node.objects.filter(organization=organization, type=Node.Type.PEER).exists()
 
+
 def organization_orderer_exists(organization: Organization) -> bool:
     return Node.objects.filter(organization=organization, type=Node.Type.ORDERER).exists()
 

@@ -60,11 +60,9 @@ class ChaincodeResponse(ChaincodeID):
             "approvals"
         )
 
-
     def get_status(self, chaincode) -> str:
         organization = self.context.get("organization")
         return get_chaincode_status(organization, chaincode) if organization else chaincode.get("status")
-
 
     def get_approvals(self, chaincode) -> str:
         organization = self.context.get("organization")

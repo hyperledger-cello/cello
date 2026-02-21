@@ -45,8 +45,7 @@ class ChaincodeViewSet(viewsets.ViewSet):
             data=ok(ChaincodeList({
                 "total": p.count,
                 "data": ChaincodeResponse(
-                    p.get_page(serializer.data["page"])
-                        .object_list,
+                    p.get_page(serializer.data["page"]).object_list,
                     many=True,
                     context={
                         "organization": request.user.organization,

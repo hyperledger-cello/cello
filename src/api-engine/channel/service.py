@@ -15,7 +15,7 @@ def create(
     agent_url = channel_organization.agent_url
     requests.get(urljoin(agent_url, "health")).raise_for_status()
     requests.post(
-        urljoin(agent_url, "channels"), 
+        urljoin(agent_url, "channels"),
         json=dict(name=channel_name)
     ).raise_for_status()
 

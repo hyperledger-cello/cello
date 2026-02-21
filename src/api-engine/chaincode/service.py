@@ -216,7 +216,7 @@ def send_chaincode_request(
                     capture_output=True,
                     text=True).stdout.rstrip('\n'),
                 "GOCACHE": subprocess.run(
-                [go, "env", "GOCACHE"],
+                    [go, "env", "GOCACHE"],
                     check=True,
                     capture_output=True,
                     text=True).stdout.rstrip('\n')
