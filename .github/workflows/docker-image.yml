@@ -20,7 +20,7 @@ jobs:
         working-directory: src/agents/hyperledger-fabric
         run: |
           docker build -t cello-hyperledger-fabric-agent .
-          docker run -d --name cello-hyperledger-fabric-agent cello-hyperledger-fabric-agent
+          docker run -d --network cello-net -v /var/run/docker.sock:/var/run/docker.sock --name cello-hyperledger-fabric-agent cello-hyperledger-fabric-agent
 
       - name: Build Hyperledger Fabric Node
         working-directory: src/nodes/hyperledger-fabric
