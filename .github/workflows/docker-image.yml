@@ -12,22 +12,26 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Build images
+
+      - name: Start Dashboard, DB, and API Engine
+        run: docker compose -f docker-compose.dev.yaml up -d --build
+
+      - name: Start Hyperledger Fabric Agent
+        working-directory: src/agents/hyperledger-fabric
         run: |
-          make docker-compose
-      - name: Start services
-        run: |
-          MODE=dev make start
-          sleep 10
-      - name: Run newman tests
-        run: |
-          make check-api
-      - name: Stop services
-        if: always()
-        run: |
-          MODE=dev make stop
+          docker build -t cello-hyperledger-fabric-agent .
+          docker run -d --network cello-net -v /var/run/docker.sock:/var/run/docker.sock --name cello-hyperledger-fabric-agent cello-hyperledger-fabric-agent
+
+      - name: Build Hyperledger Fabric Node
+        working-directory: src/nodes/hyperledger-fabric
+        run: docker build -t hyperledger/fabric:2.5.14 .
+
+      - name: Stop Hyperledger Fabric Agent
+        run: docker stop cello-hyperledger-fabric-agent
+
+      - name: Stop Dashboard, DB, and API Engine
+        run: docker compose -f docker-compose.dev.yaml down -v
+
       - name: Clean up
         if: always()
-        run: |
-          make clean
-          docker system prune -f
+        run: docker system prune -a -f

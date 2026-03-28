@@ -1,6 +1,6 @@
-import React, { PureComponent, Fragment } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Table, Alert } from 'antd';
-import { injectIntl } from 'umi';
+import { useIntl } from 'umi';
 import styles from './index.less';
 
 function initTotalList(columns) {
@@ -13,61 +13,62 @@ function initTotalList(columns) {
   return totalList;
 }
 
-class StandardTable extends PureComponent {
-  constructor(props) {
-    super(props);
-    const { columns } = props;
-    const needTotalList = initTotalList(columns);
+const StandardTable = ({
+  data = {},
+  columns = [],
+  selectedRows = [],
+  disableSelect = false,
+  rowKey = 'key',
+  onSelectRow,
+  onChange,
+  ...rest
+}) => {
+  const intl = useIntl();
+  const { list = [], pagination } = data;
 
-    this.state = {
-      selectedRowKeys: [],
-      needTotalList,
-    };
-  }
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [needTotalList, setNeedTotalList] = useState(() => initTotalList(columns));
 
-  static getDerivedStateFromProps(nextProps) {
-    // clean state
-    if (nextProps.selectedRows.length === 0) {
-      const needTotalList = initTotalList(nextProps.columns);
-      return {
-        selectedRowKeys: [],
-        needTotalList,
-      };
+  // Handle selectedRows changes from parent (equivalent to getDerivedStateFromProps)
+  useEffect(() => {
+    if (selectedRows.length === 0) {
+      setSelectedRowKeys([]);
+      setNeedTotalList(initTotalList(columns));
     }
-    return null;
-  }
+  }, [selectedRows.length, columns]);
 
-  handleRowSelectChange = (selectedRowKeys, selectedRows) => {
-    let { needTotalList } = this.state;
-    needTotalList = needTotalList.map(item => ({
-      ...item,
-      total: selectedRows.reduce((sum, val) => sum + parseFloat(val[item.dataIndex], 10), 0),
-    }));
-    const { onSelectRow } = this.props;
-    if (onSelectRow) {
-      onSelectRow(selectedRows);
-    }
+  const handleRowSelectChange = useCallback(
+    (keys, rows) => {
+      const updatedTotalList = needTotalList.map(item => ({
+        ...item,
+        total: rows.reduce((sum, val) => sum + parseFloat(val[item.dataIndex], 10), 0),
+      }));
 
-    this.setState({ selectedRowKeys, needTotalList });
-  };
+      setSelectedRowKeys(keys);
+      setNeedTotalList(updatedTotalList);
 
-  handleTableChange = (pagination, filters, sorter) => {
-    const { onChange } = this.props;
-    if (onChange) {
-      onChange(pagination, filters, sorter);
-    }
-  };
+      if (onSelectRow) {
+        onSelectRow(rows);
+      }
+    },
+    [needTotalList, onSelectRow]
+  );
 
-  cleanSelectedKeys = () => {
-    this.handleRowSelectChange([], []);
-  };
+  const handleTableChange = useCallback(
+    (paginationConfig, filters, sorter) => {
+      if (onChange) {
+        onChange(paginationConfig, filters, sorter);
+      }
+    },
+    [onChange]
+  );
 
-  render() {
-    const { selectedRowKeys, needTotalList } = this.state;
-    const { data = {}, disableSelect = false, rowKey, intl, ...rest } = this.props;
-    const { list = [], pagination } = data;
+  const cleanSelectedKeys = useCallback(() => {
+    handleRowSelectChange([], []);
+  }, [handleRowSelectChange]);
 
-    const paginationProps = {
+  const paginationProps = useMemo(
+    () => ({
       showSizeChanger: true,
       showQuickJumper: true,
       showTotal: (total, range) =>
@@ -83,70 +84,75 @@ class StandardTable extends PureComponent {
           }
         ),
       ...pagination,
-    };
+    }),
+    [intl, pagination]
+  );
 
-    const rowSelection = {
+  const rowSelection = useMemo(
+    () => ({
       selectedRowKeys,
-      onChange: this.handleRowSelectChange,
+      onChange: handleRowSelectChange,
       getCheckboxProps: record => ({
         disabled: record.disabled,
       }),
-    };
+    }),
+    [selectedRowKeys, handleRowSelectChange]
+  );
 
-    return (
-      <div className={styles.standardTable}>
-        {!disableSelect && (
-          <div className={styles.tableAlert}>
-            <Alert
-              message={
-                <Fragment>
-                  {intl.formatMessage({
-                    id: 'component.standardTable.selected',
-                    defaultMessage: 'Selected',
-                  })}{' '}
-                  <a style={{ fontWeight: 600 }}>{selectedRowKeys.length}</a>{' '}
-                  {intl.formatMessage({
-                    id: 'component.standardTable.item',
-                    defaultMessage: 'Item',
-                  })}
-                  &nbsp;&nbsp;
-                  {needTotalList.map(item => (
-                    <span style={{ marginLeft: 8 }} key={item.dataIndex}>
-                      {item.title}
-                      {intl.formatMessage({
-                        id: 'component.standardTable.total',
-                        defaultMessage: 'Total',
-                      })}{' '}
-                      &nbsp;
-                      <span style={{ fontWeight: 600 }}>
-                        {item.render ? item.render(item.total) : item.total}
-                      </span>
-                    </span>
-                  ))}
-                  <a onClick={this.cleanSelectedKeys} style={{ marginLeft: 24 }}>
+  return (
+    <div className={styles.standardTable}>
+      {!disableSelect && (
+        <div className={styles.tableAlert}>
+          <Alert
+            message={
+              <>
+                {intl.formatMessage({
+                  id: 'component.standardTable.selected',
+                  defaultMessage: 'Selected',
+                })}{' '}
+                <a style={{ fontWeight: 600 }}>{selectedRowKeys.length}</a>{' '}
+                {intl.formatMessage({
+                  id: 'component.standardTable.item',
+                  defaultMessage: 'Item',
+                })}
+                &nbsp;&nbsp;
+                {needTotalList.map(item => (
+                  <span style={{ marginLeft: 8 }} key={item.dataIndex}>
+                    {item.title}
                     {intl.formatMessage({
-                      id: 'component.standardTable.clean',
-                      defaultMessage: 'Clean',
-                    })}
-                  </a>
-                </Fragment>
-              }
-              type="info"
-              showIcon
-            />
-          </div>
-        )}
-        <Table
-          rowKey={rowKey || 'key'}
-          rowSelection={!disableSelect && rowSelection}
-          dataSource={list}
-          pagination={paginationProps}
-          onChange={this.handleTableChange}
-          {...rest}
-        />
-      </div>
-    );
-  }
-}
+                      id: 'component.standardTable.total',
+                      defaultMessage: 'Total',
+                    })}{' '}
+                    &nbsp;
+                    <span style={{ fontWeight: 600 }}>
+                      {item.render ? item.render(item.total) : item.total}
+                    </span>
+                  </span>
+                ))}
+                <a onClick={cleanSelectedKeys} style={{ marginLeft: 24 }}>
+                  {intl.formatMessage({
+                    id: 'component.standardTable.clean',
+                    defaultMessage: 'Clean',
+                  })}
+                </a>
+              </>
+            }
+            type="info"
+            showIcon
+          />
+        </div>
+      )}
+      <Table
+        rowKey={rowKey}
+        rowSelection={!disableSelect ? rowSelection : undefined}
+        dataSource={list}
+        pagination={paginationProps}
+        onChange={handleTableChange}
+        columns={columns}
+        {...rest}
+      />
+    </div>
+  );
+};
 
-export default injectIntl(StandardTable);
+export default StandardTable;

@@ -1,35 +1,33 @@
-// import { stringify } from 'qs';
-import request from '@/utils/request';
+/*
+ SPDX-License-Identifier: Apache-2.0
+*/
+import { customRequest, formDataRequest } from '@/utils/serviceFactory';
 
-// eslint-disable-next-line no-unused-vars
-export async function listChainCode(params) {
-  return request('/api/v1/chaincodes');
-}
+const BASE_URL = '/api/v1/chaincodes';
 
-export async function uploadChainCode(params) {
-  return request('/api/v1/chaincodes/chaincodeRepo', {
-    method: 'POST',
-    body: params,
+// List all chaincodes (no params needed for this endpoint)
+export const listChainCode = () => customRequest(BASE_URL);
+
+// Create/upload chaincode package (form data)
+export const createChainCode = params => formDataRequest(BASE_URL, params);
+
+// Upload chaincode to repository (form data)
+export const uploadChainCode = params => formDataRequest(`${BASE_URL}/chaincodeRepo`, params);
+
+// Install chaincode (PUT request with id)
+export const installChainCode = params =>
+  customRequest(`${BASE_URL}/${params.id}/install`, {
+    method: 'PUT',
   });
-}
 
-export async function installChainCode(params) {
-  return request('/api/v1/chaincodes/install', {
-    method: 'POST',
-    body: params,
+// Approve chaincode (PUT request with id)
+export const approveChainCode = params =>
+  customRequest(`${BASE_URL}/${params.id}/approve`, {
+    method: 'PUT',
   });
-}
 
-export async function approveChainCode(params) {
-  return request('/api/v1/chaincodes/approve_for_my_org', {
-    method: 'POST',
-    data: params,
+// Commit chaincode (PUT request with id)
+export const commitChainCode = params =>
+  customRequest(`${BASE_URL}/${params.id}/commit`, {
+    method: 'PUT',
   });
-}
-
-export async function commitChainCode(params) {
-  return request('/api/v1/chaincodes/commit', {
-    method: 'POST',
-    data: params,
-  });
-}

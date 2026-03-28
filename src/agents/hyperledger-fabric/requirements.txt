@@ -1,0 +1,6 @@
+django==6.0
+psycopg==3.3.2
+djangorestframework==3.16.1
+drf-spectacular==0.29.0
+PyYAML==6.0.3
+docker==7.1.0

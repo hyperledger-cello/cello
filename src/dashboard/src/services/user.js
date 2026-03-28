@@ -1,33 +1,24 @@
 /*
  SPDX-License-Identifier: Apache-2.0
 */
-import request from '@/utils/request';
+import { createCrudService, customRequest } from '@/utils/serviceFactory';
 
-export async function query() {
-  return request('/api/v1/users');
-}
+// Create standard CRUD service for users
+const userService = createCrudService('users');
 
+// Export standard CRUD operations
+export const query = () => customRequest('/api/v1/users');
+export const createUser = userService.create;
+export const deleteUser = userService.delete;
+
+// Verify current user token
 // eslint-disable-next-line consistent-return
-export async function queryCurrent() {
+export const queryCurrent = () => {
   const token = localStorage.getItem('cello-token');
-  if (token && token !== '')
-    return request('/api/v1/token-verify', {
+  if (token && token !== '') {
+    return customRequest('/api/v1/token-verify', {
       method: 'POST',
-      data: {
-        token,
-      },
+      data: { token },
     });
-}
-
-export async function createUser(params) {
-  return request('/api/v1/users', {
-    method: 'POST',
-    data: params,
-  });
-}
-
-export async function deleteUser(id) {
-  return request(`/api/v1/users/${id}`, {
-    method: 'DELETE',
-  });
-}
+  }
+};

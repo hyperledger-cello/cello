@@ -1,89 +1,40 @@
+/*
+ SPDX-License-Identifier: Apache-2.0
+*/
 import {
+  getOrganization,
   listOrganization,
   createOrganization,
   updateOrganization,
   deleteOrganization,
 } from '@/services/organization';
+import { createModel, createListEffect, createSimpleEffect } from '@/utils/modelFactory';
 
-export default {
+export default createModel({
   namespace: 'organization',
 
   state: {
     organizations: [],
-    pagination: {
-      total: 0,
-      current: 1,
-      pageSize: 10,
-    },
     currentOrganization: {},
   },
 
   effects: {
-    *listOrganization({ payload, callback }, { call, put, select }) {
-      const response = yield call(listOrganization, payload);
-      const pagination = yield select(state => state.organization.pagination);
-      const pageSize = payload ? payload.per_page || pagination.pageSize : pagination.pageSize;
-      const current = payload ? payload.page || pagination.current : pagination.current;
+    listOrganization: createListEffect({
+      service: listOrganization,
+      namespace: 'organization',
+      dataKey: 'organizations',
+    }),
 
-      pagination.total = response.total;
-      pagination.pageSize = pageSize;
-      pagination.current = current;
-      yield put({
-        type: 'save',
-        payload: {
-          pagination,
-          organizations: response.data.data,
-        },
-      });
-      if (callback) {
-        callback();
-      }
-    },
-    *createOrganization({ payload, callback }, { call }) {
-      const response = yield call(createOrganization, payload);
-      if (callback) {
-        callback({
-          payload,
-          ...response,
-        });
-      }
-    },
-    *updateOrganization({ payload, callback }, { call }) {
-      const response = yield call(updateOrganization, payload);
-      if (callback) {
-        callback({
-          payload,
-          ...response,
-        });
-      }
-    },
-    *deleteOrganization({ payload, callback }, { call }) {
-      const response = yield call(deleteOrganization, payload.id);
-      if (callback) {
-        callback({
-          payload,
-          ...response,
-        });
-      }
-    },
+    getOrganization: createSimpleEffect(getOrganization, {
+      includePayloadInCallback: false,
+    }),
+
+    createOrganization: createSimpleEffect(createOrganization),
+
+    updateOrganization: createSimpleEffect(updateOrganization),
+
+    deleteOrganization: createSimpleEffect(deleteOrganization, {
+      getServiceParams: payload => payload.id,
+    }),
   },
-  reducers: {
-    save(state, { payload }) {
-      return {
-        ...state,
-        ...payload,
-      };
-    },
-    clear() {
-      return {
-        organizations: [],
-        pagination: {
-          total: 0,
-          current: 1,
-          pageSize: 10,
-        },
-        currentOrganization: {},
-      };
-    },
-  },
-};
+});

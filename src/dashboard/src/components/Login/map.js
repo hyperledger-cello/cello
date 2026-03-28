@@ -5,6 +5,7 @@ import {
   MobileOutlined,
   MailOutlined,
   TeamOutlined,
+  LinkOutlined,
 } from '@ant-design/icons';
 import styles from './index.less';
 
@@ -93,6 +94,24 @@ export default {
       {
         required: true,
         message: 'Please enter username!',
+      },
+    ],
+  },
+  AgentUrl: {
+    props: {
+      size: 'large',
+      id: 'agentUrl',
+      prefix: <LinkOutlined className={styles.prefixIcon} />,
+      placeholder: 'http://example.com',
+    },
+    rules: [
+      {
+        required: true,
+        message: 'Please enter agent URL!',
+      },
+      {
+        pattern: /^https?:\/\/.+/,
+        message: 'Please enter a valid URL (http:// or https://)',
       },
     ],
   },
