@@ -1,7 +1,7 @@
 async-timeout==5.0.1
 chardet==3.0.4
 coreapi==2.3.3
-cryptography==45.0.6
+cryptography==46.0.6
 Django==4.2.16
 django-allauth==0.55.0
 django-cors-headers==3.5.0
@@ -26,4 +26,4 @@ swagger-spec-validator==2.5.0
 tomli==2.0.1
 pygraphviz==1.5
 uWSGI==2.0.22
-requests==2.31.0
+requests==2.33.0
