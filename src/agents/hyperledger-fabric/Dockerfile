@@ -13,7 +13,12 @@ COPY . .
 RUN mkdir cello
 
 # Install compiled code tools from Artifactory and copy it to opt folder.
-RUN curl -L --retry 5 --retry-delay 3 "https://github.com/hyperledger/fabric/releases/download/v2.5.14/hyperledger-fabric-linux-amd64-2.5.14.tar.gz" | tar xz -C ./cello/
+RUN ARCH=$(dpkg --print-architecture) && \
+    case "$ARCH" in \
+        amd64|arm64) FABRIC_ARCH="$ARCH" ;; \
+        *) echo "Unsupported architecture: $ARCH" >&2; exit 1 ;; \
+    esac && \
+    curl -fsSL --retry 5 --retry-delay 3 "https://github.com/hyperledger/fabric/releases/download/v2.5.14/hyperledger-fabric-linux-${FABRIC_ARCH}-2.5.14.tar.gz" | tar xz -C ./cello/
 
 # Install python dependencies
 RUN pip3 install -r requirements.txt
