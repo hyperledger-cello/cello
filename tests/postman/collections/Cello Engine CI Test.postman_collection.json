@@ -1,10 +1,7 @@
 {
 	"info": {
-		"_postman_id": "04314160-39b9-401c-b74f-6ea9f1cd89fd",
 		"name": "Cello Engine CI Test",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "43793131",
-		"_collection_link": "https://www.postman.com/haiboyang-3238546/workspace/hyperledger-cello/collection/43793131-04314160-39b9-401c-b74f-6ea9f1cd89fd?action=share&source=collection_link&creator=43793131"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
