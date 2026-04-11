@@ -97,6 +97,58 @@
 				},
 				"description": "Login with email and password to get access token"
 			}
+		},
+		{
+			"name": "Create A Peer",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"if (pm.response.code === 201) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"peer_id\", jsonData.data.id);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "JWT {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"name\": \"peer0\",\n\t\"type\": \"PEER\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/nodes",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"nodes"
+					]
+				},
+				"description": "Create a new peer"
+			}
 		}
 	],
 	"variable": [
@@ -112,6 +164,11 @@
 		},
 		{
 			"key": "org_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "peer_id",
 			"value": "",
 			"type": "string"
 		}
