@@ -1,4 +1,4 @@
-name: Cello CI
+name: Integration Tests
 
 on:
   push:
