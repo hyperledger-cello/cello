@@ -26,6 +26,10 @@ jobs:
         working-directory: src/nodes/hyperledger-fabric
         run: docker build -t hyperledger/fabric:2.5.14 .
 
+      - name: Run newman tests
+        working-directory: tests/postman
+        run: docker compose up --abort-on-container-exit
+
       - name: Stop Hyperledger Fabric Agent
         run: docker stop cello-hyperledger-fabric-agent
 
