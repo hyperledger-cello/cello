@@ -1,4 +1,4 @@
-name: Code Check CI
+name: Lint Check
 
 on:
   push:
