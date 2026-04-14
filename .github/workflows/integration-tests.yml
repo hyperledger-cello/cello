@@ -30,6 +30,9 @@ jobs:
         working-directory: tests/postman
         run: docker compose up --abort-on-container-exit
 
+      - name: Stop Hyperledger Fabric Nodes
+        run: docker stop orderer0.foo.com peer0.org1.foo.com
+
       - name: Stop Hyperledger Fabric Agent
         run: docker stop cello-hyperledger-fabric-agent
 
