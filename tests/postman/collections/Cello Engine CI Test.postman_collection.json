@@ -201,6 +201,58 @@
 				},
 				"description": "Create a new orderer"
 			}
+		},
+		{
+			"name": "Create A Channel",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"if (pm.response.code === 201) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"channel_id\", jsonData.id);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "JWT {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"name\": \"channel0\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/channels",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"channels"
+					]
+				},
+				"description": "Create a new channel"
+			}
 		}
 	],
 	"variable": [
@@ -226,6 +278,11 @@
 		},
 		{
 			"key": "orderer_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "channel_id",
 			"value": "",
 			"type": "string"
 		}
