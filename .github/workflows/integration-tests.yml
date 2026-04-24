@@ -24,7 +24,7 @@ jobs:
 
       - name: Build Hyperledger Fabric Node
         working-directory: src/nodes/hyperledger-fabric
-        run: docker build -t hyperledger/fabric:2.5.14 .
+        run: docker build -t hyperledger/fabric:2.5.15 .
 
       - name: Run newman tests
         working-directory: tests/postman

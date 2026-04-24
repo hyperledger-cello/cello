@@ -131,7 +131,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, MEDIA_URL)
 CELLO_HOME = os.path.join(BASE_DIR, "cello")
 CRYPTO_CONFIG = os.path.join(CELLO_HOME, "crypto-config.yaml")
 FABRIC_TOOL = os.path.join(CELLO_HOME, "bin")
-FABRIC_VERSION = "2.5.14"
+FABRIC_VERSION = "2.5.15"
 
 LOGGING = {
     "version": 1,
