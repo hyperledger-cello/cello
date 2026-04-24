@@ -215,7 +215,7 @@
 							"",
 							"if (pm.response.code === 201) {",
 							"    var jsonData = pm.response.json();",
-							"    pm.environment.set(\"channel_id\", jsonData.id);",
+							"    pm.environment.set(\"channel_id\", jsonData.data.id);",
 							"}"
 						],
 						"type": "text/javascript"
@@ -252,6 +252,74 @@
 					]
 				},
 				"description": "Create a new channel"
+			}
+		},
+		{
+			"name": "Upload a Chaincode",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "JWT {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "name",
+							"value": "basic",
+							"type": "text"
+						},
+						{
+							"key": "version",
+							"value": "1.0",
+							"type": "text"
+						},
+						{
+							"key": "sequence",
+							"value": "1",
+							"type": "text"
+						},
+						{
+							"key": "package",
+							"type": "file",
+							"src": ["basic.tar.gz"]
+						},
+						{
+							"key": "channel",
+							"value": "{{channel_id}}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/chaincodes",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"chaincodes"
+					]
+				},
+				"description": "Create a new chaincode"
 			}
 		}
 	],
