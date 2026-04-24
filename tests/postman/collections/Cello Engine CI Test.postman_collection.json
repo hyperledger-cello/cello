@@ -263,7 +263,12 @@
 						"exec": [
 							"pm.test(\"Status code is 201\", function () {",
 							"    pm.response.to.have.status(201);",
-							"});"
+							"});",
+							"",
+							"if (pm.response.code === 201) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"chaincode_id\", jsonData.data.id);",
+							"}"
 						],
 						"type": "text/javascript"
 					}
@@ -321,6 +326,94 @@
 				},
 				"description": "Create a new chaincode"
 			}
+		},
+		{
+			"name": "Wait for the chaincode to be approved",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "https://postman-echo.com/delay/60",
+					"host": [
+						"postman-echo.com"
+					],
+					"path": [
+						"delay",
+						"60"
+					],
+					"query": []
+				},
+				"description": "Wait a minute"
+			}
+		},
+		{
+			"name": "Check if the chaincode is approved",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let json = pm.response.json();",
+							"let chaincode = json.data.data[0];",
+							"let status = chaincode.status;",
+							"",
+							"let retries = pm.environment.get(\"retries\");",
+							"if (status !== \"APPROVED\" && retries < 5) {",
+							"    console.log(`Not ready (status=${status}), retry #${retries}`);",
+							"    pm.environment.set(\"retries\", retries + 1);",
+							"    pm.execution.setNextRequest(\"Wait for the chaincode to be approved\");",
+							"} else if (retries === 5) {",
+							"    pm.expect.fail(`Max retries reached. Last status: ${status}`);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "JWT {{token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/chaincodes?page=1&per_page=10",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"chaincodes"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "per_page",
+							"value": "10"
+						}
+					]
+				},
+				"description": "List chaincodes to check if it's been approved"
+			}
 		}
 	],
 	"variable": [
@@ -351,6 +444,16 @@
 		},
 		{
 			"key": "channel_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "retries",
+			"value": 0,
+			"type": "number"
+		},
+		{
+			"key": "chaincode_id",
 			"value": "",
 			"type": "string"
 		}
