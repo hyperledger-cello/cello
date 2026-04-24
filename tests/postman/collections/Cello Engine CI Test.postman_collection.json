@@ -414,6 +414,52 @@
 				},
 				"description": "List chaincodes to check if it's been approved"
 			}
+		},
+		{
+			"name": "Commit the chaincode",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 204\", function () {",
+							"    pm.response.to.have.status(204);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "JWT {{token}}",
+						"type": "text"
+					}
+				],
+				"body": {},
+				"url": {
+					"raw": "{{base_url}}/api/v1/chaincodes/{{chaincode_id}}/commit",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"chaincodes",
+						"{{chaincode_id}}",
+						"commit"
+					]
+				},
+				"description": "Commit the chaincode"
+			}
 		}
 	],
 	"variable": [
