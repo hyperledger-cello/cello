@@ -1,5 +1,7 @@
 FROM python:3.13
 
+ENV FABRIC_VERSION=2.5.15
+
 # Install software
 RUN apt-get update\
 	&& apt-get autoclean\
@@ -18,7 +20,7 @@ RUN ARCH=$(dpkg --print-architecture) && \
         amd64|arm64) FABRIC_ARCH="$ARCH" ;; \
         *) echo "Unsupported architecture: $ARCH" >&2; exit 1 ;; \
     esac && \
-    curl -fsSL --retry 5 --retry-delay 3 "https://github.com/hyperledger/fabric/releases/download/v2.5.14/hyperledger-fabric-linux-${FABRIC_ARCH}-2.5.14.tar.gz" | tar xz -C ./cello/
+    curl -fsSL --retry 5 --retry-delay 3 "https://github.com/hyperledger/fabric/releases/download/v${FABRIC_VERSION}/hyperledger-fabric-linux-${FABRIC_ARCH}-${FABRIC_VERSION}.tar.gz" | tar xz -C ./cello/
 
 # Install python dependencies
 RUN pip3 install -r requirements.txt

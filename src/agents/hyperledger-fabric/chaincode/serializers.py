@@ -117,7 +117,7 @@ class ChaincodeInstallationSerializer(serializers.Serializer):
 
         threading.Thread(
             target=install_chaincode,
-            args=(fs.path(filename)),
+            args=(fs.path(filename),),
             daemon=True).start()
         return self
 
