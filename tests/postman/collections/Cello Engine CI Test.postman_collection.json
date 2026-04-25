@@ -345,13 +345,13 @@
 			"request": {
 				"method": "GET",
 				"url": {
-					"raw": "https://postman-echo.com/delay/60",
+					"raw": "https://postman-echo.com/delay/10",
 					"host": [
 						"postman-echo.com"
 					],
 					"path": [
 						"delay",
-						"60"
+						"10"
 					],
 					"query": []
 				},
@@ -371,7 +371,7 @@
 							"",
 							"let retries = pm.collectionVariables.get(\"retries\");",
 							"if (status !== \"APPROVED\") {",
-							"    if (retries < 5) {",
+							"    if (retries < 30) {",
 							"        console.log(`Not ready (status=${status}), retry #${retries}`);",
 							"        pm.collectionVariables.set(\"retries\", retries + 1);",
 							"        pm.execution.setNextRequest(\"Wait for the chaincode to be approved\");",
