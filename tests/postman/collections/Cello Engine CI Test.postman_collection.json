@@ -13,12 +13,7 @@
 						"exec": [
 							"pm.test(\"Status code is 201\", function () {",
 							"    pm.response.to.have.status(201);",
-							"});",
-							"",
-							"if (pm.response.code === 201) {",
-							"    var jsonData = pm.response.json();",
-							"    pm.environment.set(\"org_id\", jsonData.data.id);",
-							"}"
+							"});"
 						],
 						"type": "text/javascript"
 					}
@@ -107,12 +102,7 @@
 						"exec": [
 							"pm.test(\"Status code is 201\", function () {",
 							"    pm.response.to.have.status(201);",
-							"});",
-							"",
-							"if (pm.response.code === 201) {",
-							"    var jsonData = pm.response.json();",
-							"    pm.environment.set(\"peer_id\", jsonData.data.id);",
-							"}"
+							"});"
 						],
 						"type": "text/javascript"
 					}
@@ -159,12 +149,7 @@
 						"exec": [
 							"pm.test(\"Status code is 201\", function () {",
 							"    pm.response.to.have.status(201);",
-							"});",
-							"",
-							"if (pm.response.code === 201) {",
-							"    var jsonData = pm.response.json();",
-							"    pm.environment.set(\"orderer_id\", jsonData.data.id);",
-							"}"
+							"});"
 						],
 						"type": "text/javascript"
 					}
@@ -472,21 +457,6 @@
 		},
 		{
 			"key": "token",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "org_id",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "peer_id",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "orderer_id",
 			"value": "",
 			"type": "string"
 		},
