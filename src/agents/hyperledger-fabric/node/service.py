@@ -12,8 +12,6 @@ from hyperledger_fabric.settings import CRYPTO_CONFIG, FABRIC_TOOL, CELLO_HOME, 
 from node.enums import NodeType
 
 LOG = logging.getLogger(__name__)
-
-
 docker_client = docker.DockerClient("unix:///var/run/docker.sock")
 
 def get_node_status(node_type: str, name: str) -> str:
