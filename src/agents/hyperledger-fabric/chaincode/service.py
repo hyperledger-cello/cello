@@ -3,14 +3,15 @@ import logging
 import os
 import subprocess
 import tarfile
+import docker
 import yaml
 from typing import List, Optional, Dict, Any
 
 from chaincode.enums import ChaincodeStatus
-from hyperledger_fabric.settings import CELLO_HOME, CRYPTO_CONFIG, FABRIC_TOOL
+from hyperledger_fabric.settings import CELLO_HOME, CRYPTO_CONFIG, FABRIC_TOOL, FABRIC_VERSION
 
 LOG = logging.getLogger(__name__)
-
+docker_client = docker.DockerClient("unix:///var/run/docker.sock")
 
 def get_chaincode_status(
         package_id: str,
@@ -279,6 +280,8 @@ def install_chaincode(file_path: str):
         encoding="utf-8",
     ) as f:
         crypto_config = yaml.safe_load(f)
+
+    docker_client.images.pull("hyperledger/fabric-ccenv", tag=FABRIC_VERSION.rsplit(".", 1)[0])
 
     peer_organization_directory = os.path.join(
         CELLO_HOME,
