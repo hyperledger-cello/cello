@@ -15,7 +15,7 @@ export const rootContainer = (container: React.ReactNode) => {
       theme={{
         token: {
           colorBgLayout: '#20343e',
-          colorText: '#ffffff',
+
           colorTextSecondary: '#dfe6eb',
         },
       }}

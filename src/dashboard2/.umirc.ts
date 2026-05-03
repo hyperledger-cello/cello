@@ -6,6 +6,11 @@ export default defineConfig({
   model: {},
   initialState: {},
   request: {},
+  locale: {
+    default: 'en-US',
+    antd: true,
+    baseNavigator: true,
+  },
   layout: {
     title: 'Hyperledger Cello',
   },
