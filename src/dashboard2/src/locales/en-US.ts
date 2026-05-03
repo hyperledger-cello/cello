@@ -8,10 +8,19 @@ export default {
   'app.login.password': 'Password',
 
   // register form
-  'app.register.register': 'Register',
+  'app.register.register': 'Register a Organization',
   'app.register.orgName': 'Organization Name',
   'app.register.email': 'Admin Email',
   'app.register.password': 'Admin Password',
   'app.register.confirmPassword': 'Confirm Admin Password',
   'app.register.agentUrl': 'Agent URL',
+
+  // validation
+  'validation.email.required': 'Please enter your email!',
+  'validation.password.required': 'Please enter your password!',
+  'validation.orgName.required': 'Please enter your organization name!',
+  'validation.password.confirmed': 'Please confirm your password!',
+  'validation.password.different': 'The passwords entered twice do not match!',
+  'validation.agentUrl.required': 'Please enter your agent URL!',
+  'validation.agentUrl.format': 'Agent URL format error, must start with http:// or https://!',
 };

@@ -25,7 +25,7 @@ const AccessPage: React.FC = () => {
         rules={[
           {
             required: true,
-            message: '请输入邮箱地址!',
+            message: intl.formatMessage({id: 'validation.email.required',}),
           },
         ]}
       />
@@ -39,7 +39,7 @@ const AccessPage: React.FC = () => {
         rules={[
           {
             required: true,
-            message: '请输入密码!',
+            message: intl.formatMessage({id: 'validation.password.required',}),
           },
         ]}
       />
@@ -57,7 +57,7 @@ const AccessPage: React.FC = () => {
         rules={[
           {
             required: true,
-            message: '请输入组织名称!',
+            message: intl.formatMessage({id: 'validation.orgName.required',}),
           },
         ]}
       />
@@ -71,7 +71,7 @@ const AccessPage: React.FC = () => {
         rules={[
           {
             required: true,
-            message: '请输入邮箱地址!',
+            message: intl.formatMessage({id: 'validation.email.required',}),
           },
         ]}
       />
@@ -85,7 +85,7 @@ const AccessPage: React.FC = () => {
         rules={[
           {
             required: true,
-            message: '请输入密码!',
+            message: intl.formatMessage({id: 'validation.password.required',}),
           },
         ]}
       />
@@ -99,12 +99,12 @@ const AccessPage: React.FC = () => {
         rules={[
           {
             required: true,
-            message: '请再次输入密码!',
+            message: intl.formatMessage({id: 'validation.password.confirmed',}),
           },
           ({ getFieldValue }) => ({
             validator(role, value) {
               if (value !== getFieldValue('password')) {
-                return Promise.reject('两次密码必须相同!');
+                return Promise.reject(intl.formatMessage({id: 'validation.password.different',}));
               }
               return Promise.resolve();
             },
@@ -121,11 +121,11 @@ const AccessPage: React.FC = () => {
         rules={[
           {
             required: true,
-            message: '请输入代理地址!',
+            message: intl.formatMessage({id: 'validation.agentUrl.required'}),
           },
           {
             pattern: /^https?:\/\/.+/,
-            message: '代理地址格式错误，必须以 http:// 或 https:// 开头!',
+            message: intl.formatMessage({id: 'validation.agentUrl.format'}),
           },
         ]}
       />
