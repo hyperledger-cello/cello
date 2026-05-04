@@ -3,6 +3,7 @@ from typing import Dict, Any, Optional
 from rest_framework import serializers
 
 from common.validators import validate_host, validate_url
+from common.utils import normalize_agent_url
 from api.lib.pki import CryptoConfig, CryptoGen
 from organization.models import Organization
 from organization.service import create_organization
@@ -34,9 +35,10 @@ class RegisterBody(serializers.Serializer):
 
     @staticmethod
     def validate_agent_url(agent_url: str) -> str:
-        if not agent_url.endswith("/"):
-            agent_url += "/"
-        if Organization.objects.filter(agent_url=agent_url).exists():
+        agent_url = normalize_agent_url(agent_url)
+        if Organization.objects.filter(
+            agent_url__in=[agent_url, agent_url.rstrip("/")]
+        ).exists():
             raise serializers.ValidationError("Agent already exists!")
         validate_url(agent_url)
 
