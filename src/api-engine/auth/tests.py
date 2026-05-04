@@ -1,10 +1,10 @@
-from django.test import TestCase
+from django.test import SimpleTestCase
 from urllib.parse import urljoin
 
 from common.utils import normalize_agent_url
 
 
-class AgentUrlNormalizationTests(TestCase):
+class AgentUrlNormalizationTests(SimpleTestCase):
     """
     Unit tests for Issue #768: Deal with the trailing slash of agent URL.
     Tests the real normalize_agent_url utility from common.utils.
