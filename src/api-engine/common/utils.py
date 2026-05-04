@@ -1,4 +1,5 @@
 import uuid
+from urllib.parse import urlparse, urlunparse
 
 
 def make_uuid():
@@ -15,3 +16,15 @@ def separate_upper_class(class_name):
             x += c
         i += 1
     return "_".join(x.strip().split(" "))
+
+
+def normalize_agent_url(url: str) -> str:
+    """Ensure the URL path ends with a trailing slash.
+
+    Uses urllib.parse to safely modify only the path component,
+    preserving any query strings or fragments unchanged.
+    """
+    parsed = urlparse(url)
+    if not parsed.path.endswith("/"):
+        parsed = parsed._replace(path=parsed.path + "/")
+    return urlunparse(parsed)
