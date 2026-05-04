@@ -28,3 +28,14 @@ def normalize_agent_url(url: str) -> str:
     if not parsed.path.endswith("/"):
         parsed = parsed._replace(path=parsed.path + "/")
     return urlunparse(parsed)
+
+
+def denormalize_agent_url(url: str) -> str:
+    """Return the URL with the trailing slash stripped from the path component.
+
+    Used to generate the unnormalized variant for duplicate DB lookups.
+    """
+    parsed = urlparse(url)
+    stripped = parsed.path.rstrip("/") or "/"
+    parsed = parsed._replace(path=stripped)
+    return urlunparse(parsed)

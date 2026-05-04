@@ -1,7 +1,7 @@
 from django.db import models
 
 from common.validators import validate_host, validate_url
-from common.utils import make_uuid
+from common.utils import make_uuid, normalize_agent_url
 
 
 class Organization(models.Model):
@@ -22,6 +22,12 @@ class Organization(models.Model):
         default=None
     )
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        """Normalize agent_url before saving to ensure trailing slash is always present."""
+        if self.agent_url:
+            self.agent_url = normalize_agent_url(self.agent_url)
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ("-created_at",)
