@@ -34,6 +34,8 @@ class RegisterBody(serializers.Serializer):
 
     @staticmethod
     def validate_agent_url(agent_url: str) -> str:
+        if not agent_url.endswith("/"):
+            agent_url += "/"
         if Organization.objects.filter(agent_url=agent_url).exists():
             raise serializers.ValidationError("Agent already exists!")
         validate_url(agent_url)
