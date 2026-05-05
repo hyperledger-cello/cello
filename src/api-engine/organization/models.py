@@ -4,6 +4,8 @@ from common.validators import validate_host, validate_url
 from common.utils import make_uuid
 
 
+# Create your models here.
+
 class Organization(models.Model):
     id = models.UUIDField(
         primary_key=True,
