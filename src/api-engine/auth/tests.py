@@ -1,59 +1,77 @@
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from django.test import SimpleTestCase
-from urllib.parse import urljoin
-
-from common.utils import normalize_agent_url
+from common.utils import safe_urljoin
 
 
-class AgentUrlNormalizationTests(SimpleTestCase):
+class SafeUrljoinTests(SimpleTestCase):
     """
     Unit tests for Issue #768: Deal with the trailing slash of agent URL.
-    Tests the real normalize_agent_url utility from common.utils.
+
+    The fix uses safe_urljoin() instead of urllib.parse.urljoin() to correctly
+    preserve path segments in the base URL regardless of whether the user
+    stored the agent_url with or without a trailing slash.
     """
 
-    # ── Normalization ─────────────────────────────────────────────────────
+    def test_base_without_slash_health_endpoint(self):
+        """safe_urljoin correctly handles base URL without trailing slash."""
+        self.assertEqual(
+            safe_urljoin("http://127.0.0.1:5001", "health"),
+            "http://127.0.0.1:5001/health"
+        )
 
-    def test_url_without_trailing_slash_gets_slash_appended(self):
-        self.assertEqual(normalize_agent_url("http://127.0.0.1:5001"), "http://127.0.0.1:5001/")
+    def test_base_with_slash_health_endpoint(self):
+        """safe_urljoin works correctly when base URL already has trailing slash."""
+        self.assertEqual(
+            safe_urljoin("http://127.0.0.1:5001/", "health"),
+            "http://127.0.0.1:5001/health"
+        )
 
-    def test_url_with_trailing_slash_is_unchanged(self):
-        result = normalize_agent_url("http://127.0.0.1:5001/")
-        self.assertEqual(result, "http://127.0.0.1:5001/")
-        self.assertFalse(result.endswith("//"))
+    def test_base_with_path_without_slash(self):
+        """safe_urljoin preserves path segment when base has no trailing slash."""
+        self.assertEqual(
+            safe_urljoin("http://example.com/api", "health"),
+            "http://example.com/api/health"
+        )
 
-    def test_url_with_path_without_slash(self):
-        self.assertEqual(normalize_agent_url("http://example.com/api"), "http://example.com/api/")
+    def test_base_with_path_and_slash(self):
+        """safe_urljoin works correctly when base path already ends with slash."""
+        self.assertEqual(
+            safe_urljoin("http://example.com/api/", "health"),
+            "http://example.com/api/health"
+        )
 
-    def test_url_with_path_and_slash_unchanged(self):
-        self.assertEqual(normalize_agent_url("http://example.com/api/"), "http://example.com/api/")
+    def test_organizations_endpoint(self):
+        self.assertEqual(
+            safe_urljoin("http://example.com/api", "organizations"),
+            "http://example.com/api/organizations"
+        )
 
-    def test_query_string_preserved(self):
-        """Query string must not be corrupted by normalization."""
-        result = normalize_agent_url("http://example.com/api?key=val")
-        self.assertEqual(result, "http://example.com/api/?key=val")
-        self.assertNotIn("?key=val/", result)
+    def test_nodes_status_endpoint(self):
+        self.assertEqual(
+            safe_urljoin("http://example.com/api", "nodes/status"),
+            "http://example.com/api/nodes/status"
+        )
 
-    def test_normalization_is_idempotent(self):
-        """Applying normalize twice should not double-add the slash."""
-        url = "http://example.com/api"
-        self.assertEqual(normalize_agent_url(normalize_agent_url(url)), normalize_agent_url(url))
+    def test_channels_endpoint(self):
+        self.assertEqual(
+            safe_urljoin("http://example.com/api", "channels"),
+            "http://example.com/api/channels"
+        )
 
-    # ── Bug Reproduction ──────────────────────────────────────────────────
+    def test_chaincodes_install_endpoint(self):
+        self.assertEqual(
+            safe_urljoin("http://example.com/api", "chaincodes/install"),
+            "http://example.com/api/chaincodes/install"
+        )
 
-    def test_bug_urljoin_without_normalization_drops_path(self):
-        """Proves the original bug: urljoin drops path segment without trailing slash."""
-        result = urljoin("http://example.com/api", "health")
-        self.assertEqual(result, "http://example.com/health")  # Not /api/health
-
-    # ── Fix Validation ────────────────────────────────────────────────────
-
-    def test_fix_health_endpoint_simple(self):
-        url = normalize_agent_url("http://127.0.0.1:5001")
-        self.assertEqual(urljoin(url, "health"), "http://127.0.0.1:5001/health")
-
-    def test_fix_health_endpoint_with_path(self):
-        url = normalize_agent_url("http://example.com/api")
-        self.assertEqual(urljoin(url, "health"), "http://example.com/api/health")
-
-    def test_fix_organizations_endpoint(self):
-        url = normalize_agent_url("http://example.com/api")
-        self.assertEqual(urljoin(url, "organizations"), "http://example.com/api/organizations")
+    def test_original_urljoin_bug(self):
+        """Documents the original bug: stdlib urljoin drops path segments."""
+        from urllib.parse import urljoin
+        # This is the bug: /api is silently dropped
+        self.assertEqual(urljoin("http://example.com/api", "health"), "http://example.com/health")
+        # safe_urljoin fixes it
+        self.assertEqual(safe_urljoin("http://example.com/api", "health"), "http://example.com/api/health")

@@ -1,5 +1,5 @@
 import uuid
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urljoin
 
 
 def make_uuid():
@@ -18,24 +18,20 @@ def separate_upper_class(class_name):
     return "_".join(x.strip().split(" "))
 
 
-def normalize_agent_url(url: str) -> str:
-    """Ensure the URL path ends with a trailing slash.
+def safe_urljoin(base: str, path: str) -> str:
+    """Join a base URL and a path, ensuring the base URL's path is preserved.
 
-    Uses urllib.parse to safely modify only the path component,
-    preserving any query strings or fragments unchanged.
+    Unlike urllib.parse.urljoin, this function guarantees the base URL ends
+    with a trailing slash before joining, so that any path segments in the
+    base are not silently dropped.
+
+    Example:
+        safe_urljoin("http://host/api", "health")
+        => "http://host/api/health"   (correct)
+
+        urljoin("http://host/api", "health")
+        => "http://host/health"       (wrong — drops /api)
     """
-    parsed = urlparse(url)
-    if not parsed.path.endswith("/"):
-        parsed = parsed._replace(path=parsed.path + "/")
-    return urlunparse(parsed)
-
-
-def denormalize_agent_url(url: str) -> str:
-    """Return the URL with the trailing slash stripped from the path component.
-
-    Used to generate the unnormalized variant for duplicate DB lookups.
-    """
-    parsed = urlparse(url)
-    stripped = parsed.path.rstrip("/") or "/"
-    parsed = parsed._replace(path=stripped)
-    return urlunparse(parsed)
+    if not base.endswith("/"):
+        base = base + "/"
+    return urljoin(base, path)
