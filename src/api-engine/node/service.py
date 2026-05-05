@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 from typing import Optional, Dict, Any, List
-from urllib.parse import urljoin
+from common.utils import safe_urljoin
 from zipfile import ZipFile
 
 import docker
@@ -26,9 +26,9 @@ def get_node(node_id: str) -> Optional[Node]:
 
 def get_node_status(organization: Organization, node: Node) -> str:
     agent_url = organization.agent_url
-    requests.get(urljoin(agent_url, "health")).raise_for_status()
+    requests.get(safe_urljoin(agent_url, "health")).raise_for_status()
     return requests.get(
-        urljoin(agent_url, "nodes/status"),
+        safe_urljoin(agent_url, "nodes/status"),
         params=dict(type=node.type, name=node.name)).json()["status"]
 
 
@@ -42,8 +42,8 @@ def organization_orderer_exists(organization: Organization) -> bool:
 
 def create(organization: Organization, node_type: Node.Type, node_name: str) -> Node:
     agent_url = organization.agent_url
-    requests.get(urljoin(agent_url, "health")).raise_for_status()
-    response = requests.post(urljoin(agent_url, "nodes"), json=dict(type=node_type, name=node_name))
+    requests.get(safe_urljoin(agent_url, "health")).raise_for_status()
+    response = requests.post(safe_urljoin(agent_url, "nodes"), json=dict(type=node_type, name=node_name))
     response.raise_for_status()
 
     node = Node(
