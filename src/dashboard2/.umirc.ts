@@ -28,14 +28,21 @@ export default defineConfig({
       path: '/',
       component: './Home',
       access: 'isLogin',
-      icon: 'team',
     },
     {
       name: 'organization',
       path: '/organization',
       component: './Organization',
       access: 'isLogin',
-      icon: 'team',
+      icon: 'Team',
+      title: true
+    },
+    {
+      name: 'node',
+      path: '/node',
+      component: './Node',
+      access: 'isLogin',
+      icon: 'NodeIndex',
       title: true
     },
   ],

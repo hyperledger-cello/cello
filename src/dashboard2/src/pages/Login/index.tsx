@@ -1,4 +1,4 @@
-import { GlobalOutlined, LinkOutlined, LockOutlined, MailOutlined, TeamOutlined } from '@ant-design/icons';
+import { LinkOutlined, LockOutlined, MailOutlined, TeamOutlined } from '@ant-design/icons';
 import { LoginForm, ProFormText } from '@ant-design/pro-components';
 import { Tabs } from 'antd';
 import { Helmet, SelectLang } from '@umijs/max';

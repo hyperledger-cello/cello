@@ -28,8 +28,13 @@ export default {
   'home.welcome.message': 'Welcome to Hyperledger Cello!',
   'home.title': 'Home',
 
-  // organization page
-  'organization.header.name': 'Name',
+  // page table
+  'header.name': 'Name',
+  'header.creation.timestamp': 'Creation Timestamp',
+  'header.type': 'Type',
+  'header.status': 'Status',
 
+  // side bar and title
   'menu.organization': 'Organization',
+  'menu.node': 'Node',
 };

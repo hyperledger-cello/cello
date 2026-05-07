@@ -28,9 +28,13 @@ export default {
   'home.welcome.message': '欢迎使用 Hyperledger Cello！',
   'home.title': '首页',
 
-  // organization page
-  'organization.header.name': '名称',
+  // page table
+  'header.name': '名称',
+  'header.creation.timestamp': '创建时间',
+  'header.type': '类型',
+  'header.status': '状态',
 
-  // sidebar
-  'menu.organization': '組織管理',
+  // side bar and title
+  'menu.organization': '组织管理',
+  'menu.node': '节点管理',
 };

@@ -1,14 +1,24 @@
 import { PageContainer, ProDescriptionsItemProps, ProTable } from "@ant-design/pro-components";
 import styles from './index.less';
 import { useIntl } from 'umi';
-import { queryOrganizationList } from "@/services/organization/OrganizationController";
+import { queryNodeList } from "@/services/node/NodeController";
 
-const OrganizationList: React.FC = () => {
+const NodeList: React.FC = () => {
   const intl = useIntl();
-  const columns: ProDescriptionsItemProps<OrganizationAPI.Info>[] = [
+  const columns: ProDescriptionsItemProps<NodeAPI.Info>[] = [
     {
       title: intl.formatMessage({id: 'header.name',}),
       dataIndex: 'name',
+      valueType: 'text',
+    },
+    {
+      title: intl.formatMessage({id: 'header.type',}),
+      dataIndex: 'type',
+      valueType: 'text',
+    },
+    {
+      title: intl.formatMessage({id: 'header.status',}),
+      dataIndex: 'status',
       valueType: 'text',
     },
     {
@@ -22,24 +32,22 @@ const OrganizationList: React.FC = () => {
   return (
     <PageContainer
       header={{
-        title: intl.formatMessage({id: 'menu.organization',}),
+        title: intl.formatMessage({id: 'menu.node',}),
         ghost: true,
         breadcrumb: {
           items: [
             {
-              path: '',
               title: intl.formatMessage({id: 'home.title',}),
             },
             {
-              path: 'organization',
-              title: intl.formatMessage({id: 'menu.organization',}),
+              title: intl.formatMessage({id: 'menu.node',}),
             },
           ],
         },
       }}
     >
       <div className={styles.container}>
-        <ProTable<OrganizationAPI.Info>
+        <ProTable<NodeAPI.Info>
           rowKey="id"
           search={false}
           columns={columns}
@@ -51,7 +59,7 @@ const OrganizationList: React.FC = () => {
             sorter, 
             filter
           ) => {
-            const { data } = await queryOrganizationList({...params});
+            const { data } = await queryNodeList({...params});
             return {
               data: data?.data || [],
             }
@@ -62,4 +70,4 @@ const OrganizationList: React.FC = () => {
   );
 };
 
-export default OrganizationList;
+export default NodeList;
