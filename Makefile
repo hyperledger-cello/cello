@@ -2,119 +2,60 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-#
 # -------------------------------------------------------------
-# This makefile defines the following targets, feel free to run "make help" to see help info
-#
-#   - all (default):  Builds all targets and runs all tests/checks
-#   - clean:          Cleans the docker containers.
-#   - check:          Setup as master node, and runs all tests/checks, will be triggered by CI
-#   - deep-clean:     Clean up all docker images and local storage.
-#   - doc:            Start a local web service to explore the documentation
-#   - docker[-clean]: Build/clean docker images locally
-#   - docker-compose: Start development docker-compose.
-#   - help:           Output the help instructions for each command
-#   - license:        Checks source files for Apache license header
-#   - local:          Run all services ad-hoc
-#   - reset:          Clean up and remove local storage (only use for development)
-#   - restart:        Stop the cello service and then start
-#   - setup-master:   Setup the host as a master node, install pkg and download docker images
-#   - setup-worker:   Setup the host as a worker node, install pkg and download docker images
-#   - start:          Start the cello service
-#   - stop:           Stop the cello service, and remove all service containers
+# This makefile defines targets for Hyperledger Cello management.
 
-GREEN  := $(shell tput -Txterm setaf 2)
-WHITE  := $(shell tput -Txterm setaf 7)
-YELLOW := $(shell tput -Txterm setaf 3)
-RESET  := $(shell tput -Txterm sgr0)
-ARCH   := $(shell uname -m)
+# --- Configuration ---
+DOCKER_NS ?= hyperledger
+VERSION   ?= 0.9.0
+IS_RELEASE ?= false
 
-# set the arm64 ARCH to amd64 for compatibility reason
+# Detect architecture and handle Mac arm64 compatibility
+ARCH := $(shell uname -m)
 ifeq ($(ARCH), arm64)
     ARCH := amd64
 endif
 
-#Set the source of PIP in docker agent image
-PIP=pip.conf.bak
-
-# changelog specific version tags
-PREV_VERSION?=0.9.0
-
-# Building image usage
-DOCKER_NS ?= hyperledger
-BASENAME ?= $(DOCKER_NS)/cello
-AGENT_BASENAME ?= $(DOCKER_NS)/cello-agent
-VERSION ?= 0.9.0
-IS_RELEASE=false
-
-DOCKER_BASE_x86_64=python:3.6
-DOCKER_BASE_ppc64le=ppc64le/python:3.6
-DOCKER_BASE_s390x=s390x/python:3.6
-DOCKER_BASE_arm64=python:3.6
-DOCKER_BASE_amd64=python:3.6
-DOCKER_BASE=$(DOCKER_BASE_$(ARCH))
-BASE_VERSION ?= $(ARCH)-$(VERSION)
-
+# Tagging logic for local builds vs releases
 ifeq ($(IS_RELEASE),false)
-	EXTRA_VERSION ?= snapshot-$(shell git rev-parse --short HEAD)
-	IMG_TAG=$(BASE_VERSION)-$(EXTRA_VERSION)
+    EXTRA_VERSION ?= snapshot-$(shell git rev-parse --short HEAD)
+    IMG_TAG := $(ARCH)-$(VERSION)-$(EXTRA_VERSION)
 else
-	IMG_TAG=$(BASE_VERSION)
+    IMG_TAG := $(ARCH)-$(VERSION)
 endif
 
-# The Cello service listen interface, please use the public available IP.
-SERVER_PUBLIC_IP ?= 127.0.0.1
-
-LOCAL_STORAGE_PATH=/opt/cello
-
-# Docker images needed to run cello services
-COMMON_DOCKER_IMAGES = api-engine nginx dashboard
-AGENT_DOCKER_IMAGES = ansible kubernetes
-DUMMY = .$(IMG_TAG)
-
-ifeq ($(DOCKER_BASE), )
-	$(error "Architecture \"$(ARCH)\" is unsupported")
+# Deployment mode: dev (default) or prod
+MODE ?= dev
+ifeq ($(MODE),prod)
+    COMPOSE_FILE := bootup/docker-compose-files/docker-compose.yml
+else
+    COMPOSE_FILE := docker-compose.dev.yaml
 endif
 
-# Frontend needed
-SLASH:=/
-REPLACE_SLASH:=\/
+# Exports for Docker Compose and tests
+export ROOT_PATH := $(shell pwd)
+export IMG_TAG
+.EXPORT_ALL_VARIABLES:
 
-# deploy method docker-compose/k8s
-export DEPLOY_METHOD?=docker-compose
-export CONFIG_DOCKER_COMPOSE_DEPLOY=y
-
+# Optional user-defined overrides
 -include .config
 -include .makerc/api-engine
 -include .makerc/dashboard
 
-.EXPORT_ALL_VARIABLES:
+# Tooling colors
+GREEN  := $(shell tput -Txterm setaf 2)
+WHITE  := $(shell tput -Txterm setaf 7)
+YELLOW := $(shell tput -Txterm setaf 3)
+RESET  := $(shell tput -Txterm sgr0)
 
-export ROOT_PATH = ${PWD}
-ROOT_PATH_REPLACE=$(subst $(SLASH),$(REPLACE_SLASH),$(ROOT_PATH))
+# --- General Targets ---
 
-# macOS has diff `sed` usage from Linux
-SYSTEM=$(shell uname)
-ifeq ($(SYSTEM), Darwin)
-	SED = sed -ix
-else
-	SED = sed -i
-endif
+.PHONY: all help license check docker start stop restart clean deep-clean doc check-api check-dashboard local reset start-server start-agent
 
-# Specify what type the worker node is setup as
-WORKER_TYPE ?= docker
+all: check
 
-# Specify the running mode, prod or dev
-MODE ?= prod
-ifeq ($(CONFIG_PROD_MODE),y)
-	COMPOSE_FILE=docker-compose.yml
-	export DEPLOY_TEMPLATE_NAME=deploy.tmpl
-	export DEBUG?=False
-else
-	COMPOSE_FILE=docker-compose.dev.yml
-	export DEPLOY_TEMPLATE_NAME=deploy-dev.tmpl
-	export DEBUG?=True
-endif
+help: ##@Help Show this help instructions.
+	@perl -e '$(HELP_FUN)' $(MAKEFILE_LIST)
 
 HELP_FUN = \
 	%help; \
@@ -128,138 +69,66 @@ HELP_FUN = \
 	}; \
 	print "\n"; }
 
-all: check
+license: ##@Code Check source files for Apache license header.
+	@scripts/check_license.sh
 
-clean: ##@Clean Stop services and clean docker containers.
-	make stop
-	@-docker ps -a --filter "name=cello-" --format "{{.ID}}" | xargs docker rm -f >/dev/null 2>&1
-	@echo "Cleared out containers"
-	
-check: ##@Code Check code format
-	@$(MAKE) license
-	find ./docs -type f -name "*.md" -exec egrep -l " +$$" {} \;
-	cd src/api-engine && tox && cd ${ROOT_PATH}
-	cd src/dashboard && yarn lint && cd ${ROOT_PATH}
+check: license ##@Code Run code format and style checks (license, tox, yarn lint).
+	@find ./docs -type f -name "*.md" -exec egrep -l " +$$" {} \;
+	@cd src/api-engine && tox
+	@cd src/dashboard && yarn lint
 
-deep-clean: ##@Clean Stop services, clean docker images and remove mounted local storage.
-	make clean-images
-	rm -rf $(LOCAL_STORAGE_PATH)
+doc: ##@Documentation Build local documentation and start serve.
+	@command -v mkdocs >/dev/null 2>&1 || pip install -r docs/requirements.txt
+	@mkdocs serve -f mkdocs.yml
 
-docs:
-	make doc
+# --- Build Targets ---
 
-doc: ##@Documentation Build local online documentation and start serve
-	command -v mkdocs >/dev/null 2>&1 || pip install -r docs/requirements.txt || pip3 -r docs/requirements.txt
-	mkdocs serve -f mkdocs.yml
+docker: api-engine dashboard agent fabric ##@Build Build all required docker images locally.
 
-docker: images ##@Build Build all required docker images locally
+api-engine: ##@Build Build api-engine image.
+	docker build -t $(DOCKER_NS)/cello-api-engine:$(IMG_TAG) -t $(DOCKER_NS)/cello-api-engine:latest ./src/api-engine --platform linux/$(ARCH)
 
-docker-clean:##@Clean Clean docker images locally
-	make clean-images
+dashboard: ##@Build Build dashboard image.
+	docker build -t $(DOCKER_NS)/cello-dashboard:$(IMG_TAG) -t $(DOCKER_NS)/cello-dashboard:latest ./src/dashboard
 
-docker-compose: api-engine fabric docker-rest-agent dashboard ##@Development Start development docker-compose
+agent: ##@Build Build agent image.
+	docker build -t $(DOCKER_NS)/cello-agent-fabric:$(IMG_TAG) -t $(DOCKER_NS)/cello-agent-fabric:latest ./src/agents/hyperledger-fabric --platform linux/$(ARCH)
 
-help: ##@Help Show this help.
-	@perl -e '$(HELP_FUN)' $(MAKEFILE_LIST)
+fabric: ##@Build Build fabric image.
+	docker build -t $(DOCKER_NS)/fabric:2.5.14 ./src/nodes/hyperledger-fabric
 
-license:  ##@Code Check source files for Apache license header
-	scripts/check_license.sh
+# --- Service Management ---
 
-local:##@Development Run all services ad-hoc
-	make docker-compose start-docker-compose 
+start: ##@Service Start cello services using docker compose.
+	docker compose -f $(COMPOSE_FILE) up -d --build --force-recreate --remove-orphans
 
-reset:##@Development Clean up and remove local storage (only use for development)
-	make clean 
-	echo "Clean up and remove all local storage..."
-	rm -rf ${LOCAL_STORAGE_PATH}/*
+stop: ##@Service Stop cello services.
+	docker compose -f $(COMPOSE_FILE) down --remove-orphans
 
-restart: stop start ##@Service Restart services
+restart: stop start ##@Service Restart cello services.
 
-setup-master: ##@Environment Setup dependency for master node
-	cd scripts/master_node && bash setup.sh
+local: start ##@Development Alias for start.
 
-setup-worker: ##@Environment Setup dependency for worker node
-	cd scripts/worker_node && bash setup.sh $(WORKER_TYPE)
+clean: ##@Clean Stop services and remove containers/volumes.
+	docker compose -f $(COMPOSE_FILE) down -v --remove-orphans
 
-start: ##@Service Start service
-	make start-docker-compose
+reset: clean ##@Development Alias for clean.
 
-stop: ##@Service Stop service
-	@if [ "$(CONFIG_DOCKER_COMPOSE_DEPLOY)" = "y" ]; then \
-		make stop-docker-compose; \
-	else \
-		make stop-k8s; \
-	fi
+deep-clean: clean ##@Clean Stop services, remove images and local storage.
+	@docker images --filter=reference='$(DOCKER_NS)/cello-*' --format '{{.ID}}' | xargs -r docker rmi -f 2>/dev/null || true
+	@docker image prune -f
+	@rm -rf /opt/cello
 
-## Help rules
-clean-images: 
-	@echo "Clean all cello related images, may need to remove all containers"
-	make clean
-	@-docker images --filter=reference='hyperledger/*cello*' --format '{{.ID}}' | xargs -r docker rmi -f 2>/dev/null  
-	@echo "Images deleted!"
-	@echo "Pruning dangling images..."
-	docker image prune
-	@echo "Dangling images pruned, cleanup finished!"
+# --- Advanced Service/Test ---
 
-check-dashboard:
-	docker compose -f tests/dashboard/docker-compose.yml up --abort-on-container-exit || (echo "check dashboard failed $$?"; exit 1)
-
-check-api: ##@Test Run API tests with newman
-	cd tests/postman && docker compose up --abort-on-container-exit || (echo "API tests failed $$?"; exit 1)
-
-start-docker-compose:
-	docker compose -f docker-compose.dev.yaml up -d --build --force-recreate --remove-orphans
-
-stop-docker-compose:
-	echo "Stop all services with bootup/docker-compose-files/${COMPOSE_FILE}..."
-	docker compose -f bootup/docker-compose-files/${COMPOSE_FILE} stop
-	echo "Stop all services successfully"
-
-images: api-engine docker-rest-agent fabric dashboard
-
-api-engine: 
-	docker build -t hyperledger/cello-api-engine:latest -f build_image/docker/common/api-engine/Dockerfile.in ./ --platform linux/$(ARCH)
-
-docker-rest-agent:
-	docker build -t hyperledger/cello-agent-docker:latest -f build_image/docker/agent/docker-rest-agent/Dockerfile.in ./ --build-arg pip=$(PIP) --platform linux/$(ARCH)
-
-fabric:
-	docker build -t hyperledger/fabric:2.5.14 src/nodes/hyperledger-fabric
-
-dashboard:
-	docker build -t hyperledger/cello-dashboard:latest -f build_image/docker/common/dashboard/Dockerfile.in ./
-
-server:
+start-server: ##@Service Start only the server-side services.
 	docker compose -f bootup/docker-compose-files/docker-compose.server.dev.yml up -d --force-recreate --remove-orphans
 
-agent:
+start-agent: ##@Service Start only the agent-side services.
 	docker compose -f bootup/docker-compose-files/docker-compose.agent.dev.yml up -d --force-recreate --remove-orphans
 
-.PHONY: \
-	all \
-	license \
-	check \
-	check-api \
-	check-dashboard \
-    docs \
-	doc \ 
-	help \
-	docker \
-	docker-clean \
-	start \
-	stop \
-	restart \
-	clean \
-	deep-clean \
-	api-engine \
-	fabric \
-	dashboard \
-	docker-compose \
-	reset \
-	local \
-	clean-images \
-	start-docker-compose \
-	stop-docker-compose \
-	images \
-	server \
-	agent
+check-api: ##@Test Run Newman-based API tests.
+	@cd tests/postman && docker compose -f docker-compose.dev.yml up --abort-on-container-exit
+
+check-dashboard: ##@Test Run dashboard-specific tests.
+	@docker compose -f tests/dashboard/docker-compose.yml up --abort-on-container-exit
