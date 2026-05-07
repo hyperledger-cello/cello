@@ -23,4 +23,14 @@ export default {
   'validation.password.different': '两次输入的密码不匹配！',
   'validation.agentUrl.required': '请输入代理地址！',
   'validation.agentUrl.format': '代理地址格式错误，必须以 http:// 或 https:// 开头！',
+
+  // home page
+  'home.welcome.message': '欢迎使用 Hyperledger Cello！',
+  'home.title': '首页',
+
+  // organization page
+  'organization.header.name': '名称',
+
+  // sidebar
+  'menu.organization': '組織管理',
 };

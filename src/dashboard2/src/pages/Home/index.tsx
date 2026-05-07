@@ -1,15 +1,33 @@
-import Guide from '@/components/Guide';
-import { trim } from '@/utils/format';
 import { PageContainer } from '@ant-design/pro-components';
-import { useModel } from '@umijs/max';
+import { useIntl } from 'umi';
 import styles from './index.less';
+import { Layout, Row, Typography } from 'antd';
 
 const HomePage: React.FC = () => {
-  const { name } = useModel('global');
+  const intl = useIntl();
   return (
-    <PageContainer ghost>
+    <PageContainer
+      header={{
+        title: '',
+        ghost: true,
+        breadcrumb: {
+          items: [
+            {
+              path: '',
+              title: intl.formatMessage({id: 'home.title',}),
+            },
+          ],
+        },
+      }}
+    >
       <div className={styles.container}>
-        <Guide name={trim(name)} />
+        <Layout>
+          <Row>
+            <Typography.Title level={3} className={styles.title}>
+              <strong>{intl.formatMessage({id: 'home.welcome.message',})}</strong>
+            </Typography.Title>
+          </Row>
+        </Layout>
       </div>
     </PageContainer>
   );

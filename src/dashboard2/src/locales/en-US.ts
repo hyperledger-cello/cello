@@ -23,4 +23,13 @@ export default {
   'validation.password.different': 'The passwords entered twice do not match!',
   'validation.agentUrl.required': 'Please enter your agent URL!',
   'validation.agentUrl.format': 'Agent URL format error, must start with http:// or https://!',
+
+  // home page
+  'home.welcome.message': 'Welcome to Hyperledger Cello!',
+  'home.title': 'Home',
+
+  // organization page
+  'organization.header.name': 'Name',
+
+  'menu.organization': 'Organization',
 };

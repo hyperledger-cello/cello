@@ -19,10 +19,10 @@ export default defineConfig({
   ],
   routes: [
     {
-      name: '登入',
       path: '/login',
       component: './Login',
-      layout: false
+      headerRender: false,
+      menuRender: false,
     },
     {
       path: '/',
@@ -31,21 +31,18 @@ export default defineConfig({
       icon: 'team',
     },
     {
-      name: '組織管理',
+      name: 'organization',
       path: '/organization',
       component: './Organization',
       access: 'isLogin',
       icon: 'team',
-    },
-    {
-      name: 'CRUD 示例',
-      path: '/table',
-      component: './Table',
-      access: 'isLogin',
-      icon: 'team',
+      title: true
     },
   ],
   npmClient: 'yarn',
   utoopack: {},
+  define: {
+    'process.env.API_BASE_URL': process.env.API_BASE_URL
+  },
 });
 

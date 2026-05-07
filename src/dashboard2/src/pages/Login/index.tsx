@@ -1,15 +1,17 @@
 import { GlobalOutlined, LinkOutlined, LockOutlined, MailOutlined, TeamOutlined } from '@ant-design/icons';
 import { LoginForm, ProFormText } from '@ant-design/pro-components';
-import { Tabs, theme } from 'antd';
+import { Tabs } from 'antd';
 import { Helmet, SelectLang } from '@umijs/max';
 import { useState } from 'react';
 import { useIntl } from 'umi';
+import { login, register } from '@/services/auth/AuthController';
+import { history } from '@umijs/max';
+import HeaderRight from '@/components/HeaderRight';
 
 
 type ActionType = 'login' | 'register';
 
 const AccessPage: React.FC = () => {
-  const { token } = theme.useToken();
   const [actionType, setActionType] = useState<ActionType>('login');
   const intl = useIntl();
 
@@ -45,10 +47,11 @@ const AccessPage: React.FC = () => {
       />
     </>
   );
+
   const registerForm = (
     <>
       <ProFormText
-        name="orgName"
+        name="org_name"
         fieldProps={{
           size: 'large',
           prefix: <TeamOutlined className={'prefixIcon'} />,
@@ -112,7 +115,7 @@ const AccessPage: React.FC = () => {
         ]}
       />
       <ProFormText
-        name="agentUrl"
+        name="agent_url"
         fieldProps={{
           size: 'large',
           prefix: <LinkOutlined className={'prefixIcon'} />,
@@ -132,6 +135,16 @@ const AccessPage: React.FC = () => {
     </>
   );
 
+  const handleSubmit = async (values: any) => {
+    if (actionType == 'login') {
+      const response = await login(values);
+      localStorage.setItem('token', response.data.token);
+      history.push('/');
+    } else {
+      await register(values);
+    }
+  }
+
   return (
     <>
       <Helmet>
@@ -140,7 +153,7 @@ const AccessPage: React.FC = () => {
       <div
         style={{
           height: "100vh",
-          background: token.colorBgLayout,
+          background: '#20343e',
           backgroundImage: "url('https://gw.alipayobjects.com/zos/rmsportal/TVYTbAXWheQpRcWDaDMu.svg')",
           display: "flex",
           justifyContent: "center",
@@ -148,21 +161,25 @@ const AccessPage: React.FC = () => {
         }}
       >
         <div style={{ position: "absolute", top: 20, right: 20 }}>
-          <SelectLang
-            icon={
-              <>
-                <GlobalOutlined />
-                <span className="lang-text">{intl.formatMessage({id: 'navBar.lang',})}</span>
-              </>
-            }
-            reload={false}
-          />
+          <HeaderRight />
         </div>
         <div>
           <LoginForm
             logo="/favicon.png"
             title="Cello Dashboard"
-            subTitle="Dashboard for management cello service"
+            subTitle={
+              <span style={{ color: '#dfe6eb' }}>
+                Dashboard for management cello service
+              </span>
+            }
+            onFinish={handleSubmit}
+            submitter={{
+              searchConfig: {
+                submitText: actionType == 'login' ?
+                  intl.formatMessage({id: 'app.login.login',}) :
+                  intl.formatMessage({id: 'app.register.register',}),
+              },
+            }}
           >
             <Tabs
               centered
