@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+from typing import Optional
+
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
@@ -6,6 +9,7 @@ from rest_framework.response import Response
 from api.common import ok
 from api.common.response import make_response_serializer
 from api.utils.common import with_common_response
+from common.responses import err
 from common.serializers import PageQuerySerializer
 from node.models import Node
 from node.serializers import NodeList, NodeCreateBody, NodeID, NodeResponse
@@ -53,3 +57,38 @@ class NodeViewSet(viewsets.ViewSet):
             status=status.HTTP_201_CREATED,
             data=ok(NodeID(serializer.save().__dict__).data),
         )
+
+    @swagger_auto_schema(
+        operation_summary="Retrieve a node by ID",
+        responses=with_common_response(
+            {status.HTTP_200_OK: make_response_serializer(NodeResponse)}
+        ),
+    )
+    def retrieve(self, request, pk: Optional[str] = None):
+        try:
+            node = Node.objects.get(pk=pk, organization=request.user.organization)
+        except Node.DoesNotExist:
+            return Response(
+                status=status.HTTP_404_NOT_FOUND,
+                data=err("Node not found"),
+            )
+        return Response(
+            status=status.HTTP_200_OK,
+            data=ok(NodeResponse(node, context={"organization": request.user.organization}).data),
+        )
+
+    @swagger_auto_schema(
+        operation_summary="Delete a node by ID",
+        responses=with_common_response(
+            {status.HTTP_204_NO_CONTENT: "No Content"}
+        ),
+    )
+    def destroy(self, request, pk: Optional[str] = None):
+        try:
+            Node.objects.get(pk=pk, organization=request.user.organization).delete()
+        except Node.DoesNotExist:
+            return Response(
+                status=status.HTTP_404_NOT_FOUND,
+                data=err("Node not found"),
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
