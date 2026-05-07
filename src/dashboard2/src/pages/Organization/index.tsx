@@ -10,9 +10,14 @@ const OrganizationList: React.FC = () => {
       title: 'Name',
       dataIndex: 'name',
       valueType: 'text',
+    },
+    {
+
+      title: 'Create Time',
+      dataIndex: 'created_at',
+      valueType: 'dateTime',
     }
   ];
-
 
   return (
     <PageContainer
