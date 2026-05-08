@@ -38,4 +38,5 @@ export default {
   'menu.organization': 'Organization',
   'menu.node': 'Node',
   'menu.channel': 'Channel',
+  'menu.docs': 'Document',
 };

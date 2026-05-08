@@ -1,7 +1,9 @@
 import type { HeaderProps } from '@ant-design/pro-layout';
-import { history, SelectLang } from 'umi';
-import { ConfigProvider, theme } from 'antd';
+import { history } from 'umi';
+import { ConfigProvider, Menu, theme } from 'antd';
 import HeaderRight from './components/HeaderRight';
+import { ApiOutlined, BookOutlined, GithubOutlined } from '@ant-design/icons';
+import { useIntl } from 'umi';
 
 export async function getInitialState() {
   const token = localStorage.getItem('token');
@@ -29,33 +31,88 @@ export const rootContainer = (container: React.ReactNode) => {
   );
 };
 
+const { useToken } = theme;
+
 export const layout = (initialState: any) => {
+  const { token } = useToken();
   return {
     logo: '/favicon.png',
     layout: 'mix',
 
     token: {
       header: {
-        colorBgHeader: '#20343e',
-        colorHeaderTitle: '#ffffff',
-        colorTextMenuSecondary: '#ffffff',
+        colorBgHeader: token.colorBgLayout,
       },
 
       sider: {
-        colorMenuBackground: '#2d3f49',
-        colorTextMenu: '#ffffff',
+        colorMenuBackground: token.colorBgBase,
+        colorTextMenu: token.colorText,
         colorTextMenuItemHover: '#5aaafa',
         colorTextMenuSelected: '#5aaafa',
-        colorBgMenuItemSelected: '#121e35'
+        colorBgMenuItemSelected: '#121e35',
       },
 
       pageContainer: {
-        colorBgPageContainer: '#20343e',
+        colorBgPageContainer: token.colorBgLayout,
       },
     },
 
     actionsRender: (_props: HeaderProps, defaultDom: React.ReactNode) => {
       return <HeaderRight />;
+    },
+
+    menuFooterRender: () => {
+      const intl = useIntl();
+      return (
+        <Menu
+          mode="inline"
+          selectable={false}
+          inlineIndent={16}
+          style={{
+            background: token.colorBgLayout,
+            borderTop: 'solid',
+            paddingBottom: 10
+          }}
+          items={[
+            {
+              key: 'api',
+              icon: <ApiOutlined />,
+              label: (
+                <a
+                  href={process.env.API_BASE_URL + '/docs'}
+                  target="_blank"
+                >
+                  REST API
+                </a>
+              ),
+            },
+            {
+              key: 'github',
+              icon: <GithubOutlined />,
+              label: (
+                <a
+                  href='https://github.com/hyperledger-cello'
+                  target="_blank"
+                >
+                  GitHub
+                </a>
+              ),
+            },
+            {
+              key: 'docs',
+              icon: <BookOutlined />,
+              label: (
+                <a
+                  href='https://hyperledger-cello.readthedocs.io'
+                  target="_blank"
+                >
+                  {intl.formatMessage({id: 'menu.docs'},)}
+                </a>
+              ),
+            },
+          ]}
+        />
+      );
     },
 
     onPageChange: () => {

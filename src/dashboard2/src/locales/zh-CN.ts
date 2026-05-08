@@ -38,4 +38,5 @@ export default {
   'menu.organization': '组织管理',
   'menu.node': '节点管理',
   'menu.channel': '通道管理',
+  'menu.docs': '线上文档',
 };
