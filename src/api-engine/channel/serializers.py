@@ -3,9 +3,10 @@ from typing import Dict, Any
 from rest_framework import serializers
 
 from channel.models import Channel
-from channel.service import create
+from channel.service import create, add_organization_to_channel
 from common.serializers import ListResponseSerializer
 from node.service import organization_orderer_exists, organization_peer_exists
+from organization.models import Organization
 from organization.serializers import OrganizationID
 
 
@@ -47,3 +48,31 @@ class ChannelCreateBody(serializers.Serializer):
         return ChannelID(create(
             self.context["organization"],
             validated_data["name"]))
+
+
+class AddOrganizationBody(serializers.Serializer):
+    organization_id = serializers.UUIDField(required=True)
+
+    def validate_organization_id(self, value) -> Organization:
+        try:
+            org = Organization.objects.get(pk=value)
+        except Organization.DoesNotExist:
+            raise serializers.ValidationError(
+                f"Organization with id {value} does not exist."
+            )
+        return org
+
+    def validate(self, attrs):
+        channel: Channel = self.context["channel"]
+        new_org: Organization = attrs["organization_id"]
+        if channel.organizations.filter(pk=new_org.pk).exists():
+            raise serializers.ValidationError(
+                "Organization is already a member of this channel."
+            )
+        return attrs
+
+    def save(self, **kwargs) -> Channel:
+        channel: Channel = self.context["channel"]
+        new_org: Organization = self.validated_data["organization_id"]
+        return add_organization_to_channel(channel, new_org)
+

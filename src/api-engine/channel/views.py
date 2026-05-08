@@ -1,14 +1,17 @@
-from django.core.paginator import Paginator
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.common import ok
 from api.common.response import make_response_serializer
 from channel.models import Channel
-from channel.serializers import ChannelList, ChannelID, ChannelResponse, ChannelCreateBody
-from common.responses import with_common_response
+from channel.serializers import (
+    ChannelList, ChannelID, ChannelResponse, ChannelCreateBody,
+    AddOrganizationBody,
+)
+from common.responses import with_common_response, err
 from common.serializers import PageQuerySerializer
 
 
@@ -51,3 +54,57 @@ class ChannelViewSet(viewsets.ViewSet):
             status=status.HTTP_201_CREATED,
             data=ok(serializer.save().data)
         )
+
+    @swagger_auto_schema(
+        operation_summary="Get details of a specific channel",
+        responses=with_common_response(
+            {status.HTTP_200_OK: make_response_serializer(ChannelResponse)}
+        ),
+    )
+    def retrieve(self, request, pk=None):
+        try:
+            channel = Channel.objects.get(
+                pk=pk,
+                organizations__id__contains=request.user.organization.id,
+            )
+        except Channel.DoesNotExist:
+            return Response(
+                status=status.HTTP_404_NOT_FOUND,
+                data=err("Channel not found"),
+            )
+        return Response(
+            status=status.HTTP_200_OK,
+            data=ok(ChannelResponse(channel).data),
+        )
+
+    @swagger_auto_schema(
+        operation_summary="Add an organization to an existing channel",
+        request_body=AddOrganizationBody(),
+        responses=with_common_response(
+            {status.HTTP_200_OK: make_response_serializer(ChannelResponse)}
+        ),
+    )
+    @action(detail=True, methods=["POST"])
+    def add_organization(self, request, pk=None):
+        try:
+            channel = Channel.objects.get(
+                pk=pk,
+                organizations__id__contains=request.user.organization.id,
+            )
+        except Channel.DoesNotExist:
+            return Response(
+                status=status.HTTP_404_NOT_FOUND,
+                data=err("Channel not found"),
+            )
+
+        serializer = AddOrganizationBody(
+            data=request.data,
+            context={"channel": channel},
+        )
+        serializer.is_valid(raise_exception=True)
+        updated_channel = serializer.save()
+        return Response(
+            status=status.HTTP_200_OK,
+            data=ok(ChannelResponse(updated_channel).data),
+        )
+

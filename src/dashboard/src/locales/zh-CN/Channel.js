@@ -21,4 +21,11 @@ export default {
   'app.channel.form.update.checkMSPId': '请输入MSP ID',
   'app.channel.form.update.file': '通道配置文件',
   'app.channel.form.update.fileSelect': '请选择通道配置文件',
+  'app.channel.form.addOrg.success': '添加组织成功',
+  'app.channel.form.addOrg.fail': '添加组织失败',
+  'app.channel.form.addOrg.header.title': '添加组织',
+  'app.channel.form.addOrg.organization': '组织',
+  'app.channel.form.addOrg.required.organization': '请选择组织',
+  'app.channel.table.operate.update': '更新',
+  'app.channel.table.operate.addOrg': '添加组织',
 };
