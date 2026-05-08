@@ -1,7 +1,13 @@
 /*
  SPDX-License-Identifier: Apache-2.0
 */
-import { listChannel, createChannel, getNodeConfig, updateChannelConfig } from '@/services/channel';
+import {
+  listChannel,
+  createChannel,
+  getNodeConfig,
+  updateChannelConfig,
+  addOrgToChannel,
+} from '@/services/channel';
 import { createModel, createListEffect, createSimpleEffect } from '@/utils/modelFactory';
 
 export default createModel({
@@ -30,6 +36,14 @@ export default createModel({
     // Custom effect for updateChannel with special parameter structure
     *updateChannel({ id, payload, callback }, { call }) {
       const response = yield call(updateChannelConfig, id, payload);
+      if (callback) {
+        callback(response);
+      }
+    },
+
+    // Add an organization to an existing channel
+    *addOrgToChannel({ id, payload, callback }, { call }) {
+      const response = yield call(addOrgToChannel, id, payload);
       if (callback) {
         callback(response);
       }

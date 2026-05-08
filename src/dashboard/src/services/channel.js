@@ -25,3 +25,10 @@ export const getNodeConfig = params =>
     responseType: 'json',
     getResponse: true,
   });
+
+// Add an organization to an existing channel
+export const addOrgToChannel = (id, params) =>
+  customRequest(`/api/v1/channels/${id}/add_organization`, {
+    method: 'POST',
+    data: params,
+  });

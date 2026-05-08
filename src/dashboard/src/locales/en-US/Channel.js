@@ -21,4 +21,11 @@ export default {
   'app.channel.form.update.checkMSPId': 'Please enter MSP id',
   'app.channel.form.update.file': 'Channel config file',
   'app.channel.form.update.fileSelect': 'Please select channel config file',
+  'app.channel.form.addOrg.success': 'Add organization succeed',
+  'app.channel.form.addOrg.fail': 'Add organization failed',
+  'app.channel.form.addOrg.header.title': 'Add Organization',
+  'app.channel.form.addOrg.organization': 'Organization',
+  'app.channel.form.addOrg.required.organization': 'Please select an Organization.',
+  'app.channel.table.operate.update': 'Update',
+  'app.channel.table.operate.addOrg': 'Add Organization',
 };

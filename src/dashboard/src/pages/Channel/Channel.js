@@ -264,10 +264,117 @@ const UpdateChannel = props => {
   );
 };
 
-const Channel = ({ dispatch, channel = {}, node = {}, loadingChannels, creating, updating }) => {
+const AddOrganization = props => {
+  const [form] = Form.useForm();
+  const intl = useIntl();
+  const {
+    addOrgModalVisible,
+    handleAddOrg,
+    handleModalVisible,
+    addingOrg,
+    fetchChannels,
+    channelData,
+    organizations = [],
+  } = props;
+
+  const addCallback = response => {
+    if (response && response.status === 'successful') {
+      message.success(
+        intl.formatMessage({
+          id: 'app.channel.form.addOrg.success',
+          defaultMessage: 'Add organization succeed',
+        })
+      );
+      form.resetFields();
+      handleModalVisible();
+      fetchChannels();
+    } else {
+      message.error(
+        intl.formatMessage({
+          id: 'app.channel.form.addOrg.fail',
+          defaultMessage: 'Add organization failed',
+        })
+      );
+    }
+  };
+
+  const onSubmit = () => {
+    form.submit();
+  };
+
+  const onFinish = values => {
+    handleAddOrg(channelData.id, values, addCallback);
+  };
+
+  const orgOptions = organizations.map(item => (
+    <Option value={item.id} key={item.id}>
+      <span>{item.name}</span>
+    </Option>
+  ));
+
+  const formItemLayout = {
+    labelCol: {
+      xs: { span: 24 },
+      sm: { span: 7 },
+    },
+    wrapperCol: {
+      xs: { span: 24 },
+      sm: { span: 12 },
+      md: { span: 10 },
+    },
+  };
+
+  return (
+    <Modal
+      destroyOnClose
+      title={intl.formatMessage({
+        id: 'app.channel.form.addOrg.header.title',
+        defaultMessage: 'Add Organization',
+      })}
+      confirmLoading={addingOrg}
+      open={addOrgModalVisible}
+      onOk={onSubmit}
+      onCancel={() => handleModalVisible(false)}
+    >
+      <Form onFinish={onFinish} form={form} preserve={false}>
+        <FormItem
+          {...formItemLayout}
+          label={intl.formatMessage({
+            id: 'app.channel.form.addOrg.organization',
+            defaultMessage: 'Organization',
+          })}
+          name="organization_id"
+          rules={[
+            {
+              required: true,
+              message: intl.formatMessage({
+                id: 'app.channel.form.addOrg.required.organization',
+                defaultMessage: 'Please select an Organization.',
+              }),
+            },
+          ]}
+        >
+          <Select>{orgOptions}</Select>
+        </FormItem>
+      </Form>
+    </Modal>
+  );
+};
+
+const Channel = ({
+  dispatch,
+  channel = {},
+  node = {},
+  organization = {},
+  loadingChannels,
+  creating,
+  updating,
+  addingOrg,
+}) => {
   const intl = useIntl();
   const { channels = [], pagination = {} } = channel;
   const { nodes = {} } = node;
+  const { organizations = [] } = organization;
 
   const { selectedRows, handleSelectRows, handleTableChange, refreshList } = useTableManagement({
     dispatch,
@@ -276,12 +383,14 @@ const Channel = ({ dispatch, channel = {}, node = {}, loadingChannels, creating,
 
   const [modalVisible, setModalVisible] = useState(false);
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
+  const [addOrgModalVisible, setAddOrgModalVisible] = useState(false);
   const [channelData, setChannelData] = useState({});
   const [newFile, setFile] = useState(null);
 
   useEffect(() => {
     dispatch({ type: 'channel/listChannel' });
     dispatch({ type: 'node/listNode' });
+    dispatch({ type: 'organization/listOrganization' });
     return () => {
       dispatch({ type: 'channel/clear' });
     };
@@ -298,6 +407,11 @@ const Channel = ({ dispatch, channel = {}, node = {}, loadingChannels, creating,
 
   const handleUpdateModalVisible = useCallback((visible, record) => {
     setUpdateModalVisible(!!visible);
+    setChannelData(record || {});
+  }, []);
+
+  const handleAddOrgModalVisible = useCallback((visible, record) => {
+    setAddOrgModalVisible(!!visible);
     setChannelData(record || {});
   }, []);
 
@@ -326,6 +440,18 @@ const Channel = ({ dispatch, channel = {}, node = {}, loadingChannels, creating,
         type: 'channel/updateChannel',
         id,
         payload: formData,
+        callback,
+      });
+    },
+    [dispatch]
+  );
+
+  const handleAddOrg = useCallback(
+    (id, values, callback) => {
+      dispatch({
+        type: 'channel/addOrgToChannel',
+        id,
+        payload: values,
         callback,
       });
     },
@@ -369,6 +495,29 @@ const Channel = ({ dispatch, channel = {}, node = {}, loadingChannels, creating,
     ]
   );
 
+  const addOrgFormProps = useMemo(
+    () => ({
+      addOrgModalVisible,
+      handleAddOrg,
+      handleModalVisible: handleAddOrgModalVisible,
+      fetchChannels,
+      addingOrg,
+      channelData,
+      organizations,
+      intl,
+    }),
+    [
+      addOrgModalVisible,
+      handleAddOrg,
+      handleAddOrgModalVisible,
+      fetchChannels,
+      addingOrg,
+      channelData,
+      organizations,
+      intl,
+    ]
+  );
+
   const columns = [
     {
       title: intl.formatMessage({
@@ -382,6 +531,23 @@ const Channel = ({ dispatch, channel = {}, node = {}, loadingChannels, creating,
         id: 'form.table.header.operation',
         defaultMessage: 'Operation',
       }),
+      render: (text, record) => (
+        <>
+          <a onClick={() => handleUpdateModalVisible(true, record)}>
+            {intl.formatMessage({
+              id: 'app.channel.table.operate.update',
+              defaultMessage: 'Update',
+            })}
+          </a>
+          <span className={styles.splitLine} style={{ margin: '0 8px' }} />
+          <a onClick={() => handleAddOrgModalVisible(true, record)}>
+            {intl.formatMessage({
+              id: 'app.channel.table.operate.addOrg',
+              defaultMessage: 'Add Organization',
+            })}
+          </a>
+        </>
+      ),
     },
   ];
 
@@ -421,14 +587,17 @@ const Channel = ({ dispatch, channel = {}, node = {}, loadingChannels, creating,
       </Card>
       <CreateChannel {...formProps} />
       <UpdateChannel {...updateFormProps} />
+      <AddOrganization {...addOrgFormProps} />
     </PageHeaderWrapper>
   );
 };
 
-export default connect(({ channel, node, loading }) => ({
+export default connect(({ channel, node, organization, loading }) => ({
   channel,
   node,
+  organization,
   loadingChannels: loading.effects['channel/listChannel'],
   creating: loading.effects['channel/createChannel'],
   updating: loading.effects['channel/updateChannel'],
+  addingOrg: loading.effects['channel/addOrgToChannel'],
 }))(Channel);
