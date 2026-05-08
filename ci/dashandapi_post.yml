@@ -6,7 +6,7 @@ steps:
 - script: |
     MODE=dev make start
     sleep 10
-    make test-api
+    make check-api
     MODE=dev make stop
     make check-dashboard
   displayName: 'Run API and Dashboard tests'
