@@ -1,7 +1,7 @@
 import type { HeaderProps } from '@ant-design/pro-layout';
 import { history } from 'umi';
 import { ConfigProvider, Menu, theme } from 'antd';
-import HeaderRight from './components/HeaderRight';
+import HeaderRight from './components/HeaderRight/HeaderRight';
 import { ApiOutlined, BookOutlined, GithubOutlined } from '@ant-design/icons';
 import { useIntl } from 'umi';
 
@@ -70,7 +70,7 @@ export const layout = (initialState: any) => {
           inlineIndent={16}
           style={{
             background: token.colorBgLayout,
-            borderTop: 'solid',
+            borderTop: '1px solid rgba(112,204,254,0.27)',
             paddingBottom: 10
           }}
           items={[
@@ -117,7 +117,7 @@ export const layout = (initialState: any) => {
 
     onPageChange: () => {
       const { location } = history;
-      if (!initialState.initialState.token && location.pathname != 'login') {
+      if (!initialState.initialState.token && location.pathname != '/login') {
         history.push('/login');
       }
     },

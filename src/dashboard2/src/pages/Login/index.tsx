@@ -1,12 +1,11 @@
 import { LinkOutlined, LockOutlined, MailOutlined, TeamOutlined } from '@ant-design/icons';
 import { LoginForm, ProFormText } from '@ant-design/pro-components';
 import { Tabs } from 'antd';
-import { Helmet } from '@umijs/max';
+import { Helmet, history } from '@umijs/max';
 import { useState } from 'react';
 import { useIntl } from 'umi';
 import { login, register } from '@/services/auth/AuthController';
-import { history } from '@umijs/max';
-import HeaderRight from '@/components/HeaderRight';
+import CustomizedSelectLang from '@/components/CustomizedSelectLang/CustomizedSelectLang';
 
 
 type ActionType = 'login' | 'register';
@@ -161,7 +160,7 @@ const AccessPage: React.FC = () => {
         }}
       >
         <div style={{ position: "absolute", top: 20, right: 20 }}>
-          <HeaderRight />
+          <CustomizedSelectLang />
         </div>
         <div>
           <LoginForm
