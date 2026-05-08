@@ -54,7 +54,7 @@ export const layout = (initialState: any) => {
       },
     },
 
-    rightContentRender: (_props: HeaderProps, defaultDom: React.ReactNode) => {
+    actionsRender: (_props: HeaderProps, defaultDom: React.ReactNode) => {
       return <HeaderRight />;
     },
 
