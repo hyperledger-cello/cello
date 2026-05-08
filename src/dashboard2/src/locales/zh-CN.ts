@@ -37,4 +37,5 @@ export default {
   // side bar and title
   'menu.organization': '组织管理',
   'menu.node': '节点管理',
+  'menu.channel': '通道管理',
 };

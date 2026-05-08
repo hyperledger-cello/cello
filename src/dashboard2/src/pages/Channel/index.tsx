@@ -1,29 +1,18 @@
 import { PageContainer, ProDescriptionsItemProps, ProTable } from "@ant-design/pro-components";
 import styles from './index.less';
 import { useIntl } from 'umi';
-import { queryNodeList } from "@/services/node/NodeController";
-import { NodeIndexOutlined } from "@ant-design/icons";
+import { queryChannelList } from "@/services/channel/ChannelController";
+import { DeploymentUnitOutlined } from "@ant-design/icons";
 
-const NodeList: React.FC = () => {
+const ChannelList: React.FC = () => {
   const intl = useIntl();
-  const columns: ProDescriptionsItemProps<NodeAPI.Info>[] = [
+  const columns: ProDescriptionsItemProps<ChannelAPI.Info>[] = [
     {
       title: intl.formatMessage({id: 'header.name',}),
       dataIndex: 'name',
       valueType: 'text',
     },
     {
-      title: intl.formatMessage({id: 'header.type',}),
-      dataIndex: 'type',
-      valueType: 'text',
-    },
-    {
-      title: intl.formatMessage({id: 'header.status',}),
-      dataIndex: 'status',
-      valueType: 'text',
-    },
-    {
-
       title: intl.formatMessage({id: 'header.creation.timestamp',}),
       dataIndex: 'created_at',
       valueType: 'dateTime',
@@ -34,23 +23,23 @@ const NodeList: React.FC = () => {
     <PageContainer
       header={{
         avatar: {
-          icon: <NodeIndexOutlined />
+          icon: <DeploymentUnitOutlined />
         },
-        title: intl.formatMessage({id: 'menu.node',}),
+        title: intl.formatMessage({id: 'menu.channel',}),
         breadcrumb: {
           items: [
             {
               title: intl.formatMessage({id: 'home.title',}),
             },
             {
-              title: intl.formatMessage({id: 'menu.node',}),
+              title: intl.formatMessage({id: 'menu.channel',}),
             },
           ],
         },
       }}
     >
       <div className={styles.container}>
-        <ProTable<NodeAPI.Info>
+        <ProTable<ChannelAPI.Info>
           rowKey="id"
           search={false}
           columns={columns}
@@ -62,7 +51,7 @@ const NodeList: React.FC = () => {
             sorter, 
             filter
           ) => {
-            const { data } = await queryNodeList({...params});
+            const { data } = await queryChannelList({...params});
             return {
               data: data?.data || [],
             }
@@ -73,4 +62,4 @@ const NodeList: React.FC = () => {
   );
 };
 
-export default NodeList;
+export default ChannelList;

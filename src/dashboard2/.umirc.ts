@@ -45,6 +45,14 @@ export default defineConfig({
       icon: 'NodeIndex',
       title: true
     },
+    {
+      name: 'channel',
+      path: '/channel',
+      component: './Channel',
+      access: 'isLogin',
+      icon: 'DeploymentUnit',
+      title: true
+    },
   ],
   npmClient: 'yarn',
   utoopack: {},

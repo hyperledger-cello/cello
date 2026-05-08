@@ -37,4 +37,5 @@ export default {
   // side bar and title
   'menu.organization': 'Organization',
   'menu.node': 'Node',
+  'menu.channel': 'Channel',
 };

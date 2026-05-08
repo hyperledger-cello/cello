@@ -2,6 +2,7 @@ import { PageContainer, ProDescriptionsItemProps, ProTable } from "@ant-design/p
 import styles from './index.less';
 import { useIntl } from 'umi';
 import { queryOrganizationList } from "@/services/organization/OrganizationController";
+import { TeamOutlined } from "@ant-design/icons";
 
 const OrganizationList: React.FC = () => {
   const intl = useIntl();
@@ -12,7 +13,6 @@ const OrganizationList: React.FC = () => {
       valueType: 'text',
     },
     {
-
       title: intl.formatMessage({id: 'header.creation.timestamp',}),
       dataIndex: 'created_at',
       valueType: 'dateTime',
@@ -22,16 +22,16 @@ const OrganizationList: React.FC = () => {
   return (
     <PageContainer
       header={{
+        avatar: {
+          icon: <TeamOutlined />
+        },
         title: intl.formatMessage({id: 'menu.organization',}),
-        ghost: true,
         breadcrumb: {
           items: [
             {
-              path: '',
               title: intl.formatMessage({id: 'home.title',}),
             },
             {
-              path: 'organization',
               title: intl.formatMessage({id: 'menu.organization',}),
             },
           ],
