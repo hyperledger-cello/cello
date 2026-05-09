@@ -178,24 +178,7 @@ const UploadForm = props => {
         >
           <Input placeholder="Chaincode version" />
         </FormItem>
-        <FormItem
-          {...formItemLayout}
-          label="sequence"
-          name="sequence"
-          rules={[
-            {
-              required: true,
-            },
-          ]}
-        >
-          <InputNumber
-            min={1}
-            precision={0}
-            step={1}
-            placeholder="Chaincode Sequence"
-            style={{ width: '100%' }}
-          />
-        </FormItem>
+
         <FormItem
           {...formItemLayout}
           label="initRequired"
