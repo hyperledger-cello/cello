@@ -2,7 +2,7 @@ services:
   cello-dashboard:
     build:
       context: ./src/dashboard
-    image: cello/dashboard:latest
+    image: hyperledger/cello-dashboard:latest
     container_name: cello-dashboard
     restart: unless-stopped
     ports:
@@ -30,7 +30,7 @@ services:
   cello-api-engine:
     build:
       context: ./src/api-engine
-    image: cello/api-engine:latest
+    image: hyperledger/cello-api-engine:latest
     container_name: cello-api-engine
     restart: unless-stopped
     stdin_open: true
