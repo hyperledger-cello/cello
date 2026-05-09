@@ -1,4 +1,3 @@
-version: '3.2'
 services:
   newman:
     image: postman/newman:latest
