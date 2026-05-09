@@ -33,10 +33,12 @@ export default {
   'header.creation.timestamp': '创建时间',
   'header.type': '类型',
   'header.status': '状态',
+  'header.approvals': '批准通道组织数量',
 
   // side bar and title
   'menu.organization': '组织管理',
   'menu.node': '节点管理',
   'menu.channel': '通道管理',
+  'menu.chaincode': '链码管理',
   'menu.docs': '线上文档',
 };

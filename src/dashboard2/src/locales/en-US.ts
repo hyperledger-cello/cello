@@ -33,10 +33,12 @@ export default {
   'header.creation.timestamp': 'Creation Timestamp',
   'header.type': 'Type',
   'header.status': 'Status',
+  'header.approvals': 'Approvals',
 
   // side bar and title
   'menu.organization': 'Organization',
   'menu.node': 'Node',
   'menu.channel': 'Channel',
+  'menu.chaincode': 'Chaincode',
   'menu.docs': 'Document',
 };

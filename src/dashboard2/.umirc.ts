@@ -53,6 +53,14 @@ export default defineConfig({
       icon: 'DeploymentUnit',
       title: true
     },
+    {
+      name: 'chaincode',
+      path: '/chaincode',
+      component: './Chaincode',
+      access: 'isLogin',
+      icon: 'Function',
+      title: true
+    },
   ],
   npmClient: 'yarn',
   utoopack: {},
