@@ -8,7 +8,7 @@ export default {
   'app.login.password': 'Password',
 
   // register form
-  'app.register.register': 'Register a Organization',
+  'app.register.register': 'Register an Organization',
   'app.register.orgName': 'Organization Name',
   'app.register.email': 'Admin Email',
   'app.register.password': 'Admin Password',
