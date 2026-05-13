@@ -25,11 +25,27 @@ const CreateForm: React.FC<PropsWithChildren<Props>> = (props) => {
           text: 'Orderer',
         },
       },
+      formItemProps: {
+        rules: [
+          {
+            required: true,
+            message: intl.formatMessage({id: 'validation.node.type.required',}),
+          },
+        ],
+      },
     },
     {
       title: intl.formatMessage({id: 'header.name',}),
       dataIndex: 'name',
       valueType: 'text',
+      formItemProps: {
+        rules: [
+          {
+            required: true,
+            message: intl.formatMessage({id: 'validation.node.name.required',}),
+          },
+        ],
+      },
     },
   ];
 

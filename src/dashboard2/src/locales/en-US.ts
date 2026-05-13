@@ -47,4 +47,9 @@ export default {
   'app.node.running': 'Running',
   'app.node.paused': 'Paused',
   'app.node.restarting': 'Restarting',
+  'validation.node.type.required': 'Please enter the node type!',
+  'validation.node.name.required': 'Please enter the node name!',
+
+  // channel page
+  'validation.channel.name.required': 'Please enter the channel name!',
 };

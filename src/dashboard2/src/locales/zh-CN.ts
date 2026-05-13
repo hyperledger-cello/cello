@@ -47,4 +47,9 @@ export default {
   'app.node.running': '运行中',
   'app.node.paused': '已停止',
   'app.node.restarting': '重启中',
+  'validation.node.type.required': '请输入节点类型！',
+  'validation.node.name.required': '请输入节点名称!',
+
+  // channel page
+  'validation.channel.name.required': '请输入通道名称！',
 };

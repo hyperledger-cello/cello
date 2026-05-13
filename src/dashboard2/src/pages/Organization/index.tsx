@@ -38,26 +38,25 @@ const OrganizationList: React.FC = () => {
         },
       }}
     >
-      <div className={styles.container}>
-        <ProTable<OrganizationAPI.Info>
-          rowKey="id"
-          search={false}
-          columns={columns}
-          request={async (
-            params: {
-              page?: number;
-              per_page?: number;
-            }, 
-            sorter, 
-            filter
-          ) => {
-            const { data } = await queryOrganizationList({...params});
-            return {
-              data: data?.data || [],
-            }
-          }}
-        />
-      </div>
+      <ProTable<OrganizationAPI.Info>
+        className={styles.container}
+        rowKey="id"
+        search={false}
+        columns={columns}
+        request={async (
+          params: {
+            page?: number;
+            per_page?: number;
+          }, 
+          sorter, 
+          filter
+        ) => {
+          const { data } = await queryOrganizationList({...params});
+          return {
+            data: data?.data || [],
+          }
+        }}
+      />
     </PageContainer>
   );
 };
