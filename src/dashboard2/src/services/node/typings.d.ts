@@ -6,4 +6,8 @@ declare namespace NodeAPI {
     status: string;
     created_at: string;
   }
+
+  interface CreationPayload {
+    
+  }
 }

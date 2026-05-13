@@ -33,7 +33,7 @@ export default {
   'header.creation.timestamp': '创建时间',
   'header.type': '类型',
   'header.status': '状态',
-  'header.approvals': '批准通道组织数量',
+  'header.approvals': '通道组织批准数量',
 
   // side bar and title
   'menu.organization': '组织管理',
@@ -41,4 +41,10 @@ export default {
   'menu.channel': '通道管理',
   'menu.chaincode': '链码管理',
   'menu.docs': '线上文档',
+
+  // node page
+  'app.node.creation': '新建',
+  'app.node.running': '运行中',
+  'app.node.paused': '已停止',
+  'app.node.restarting': '重启中',
 };

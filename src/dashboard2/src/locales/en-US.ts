@@ -41,4 +41,10 @@ export default {
   'menu.channel': 'Channel',
   'menu.chaincode': 'Chaincode',
   'menu.docs': 'Document',
+
+  // node page
+  'app.node.creation': 'Create',
+  'app.node.running': 'Running',
+  'app.node.paused': 'Paused',
+  'app.node.restarting': 'Restarting',
 };
