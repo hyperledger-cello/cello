@@ -3,8 +3,12 @@ import { ProDescriptionsItemProps, PageContainer, ProTable } from "@ant-design/p
 import { useIntl } from 'umi';
 import styles from './index.less'
 import { queryChaincodeList } from '@/services/chaincode/ChaincodeController';
+import { useState } from 'react';
+import { Button } from 'antd';
+import CreateForm from './Components/CreateForm';
 
 const ChaincodeList: React.FC = () => {
+  const [createModalVisible, handleCreateModalVisible] = useState<boolean>(false);
   const intl = useIntl();
   const columns: ProDescriptionsItemProps<ChaincodeAPI.Info>[] = [
     {
@@ -16,6 +20,24 @@ const ChaincodeList: React.FC = () => {
       title: intl.formatMessage({id: 'header.status',}),
       dataIndex: 'status',
       valueType: 'text',
+      valueEnum: {
+        'CREATED': {
+          text: intl.formatMessage({id: 'app.chaincode.created',}),
+          status: 'default',
+        },
+        'INSTALLED': {
+          text: intl.formatMessage({id: 'app.chaincode.installed',}),
+          status: 'processing',
+        },
+        'APPROVED': {
+          text: intl.formatMessage({id: 'app.chaincode.approved',}),
+          status: 'processing',
+        },
+        'COMMITTED': {
+          text: intl.formatMessage({id: 'app.chaincode.committed',}),
+          status: 'success'
+        }
+      },
     },
     {
       title: intl.formatMessage({id: 'header.approvals',}),
@@ -48,26 +70,38 @@ const ChaincodeList: React.FC = () => {
         },
       }}
     >
-      <div className={styles.container}>
-        <ProTable<ChaincodeAPI.Info>
-          rowKey="id"
-          search={false}
-          columns={columns}
-          request={async (
-            params: {
-              page?: number;
-              per_page?: number;
-            }, 
-            sorter, 
-            filter
-          ) => {
-            const { data } = await queryChaincodeList({...params});
-            return {
-              data: data?.data || [],
-            }
-          }}
-        />
-      </div>
+      <ProTable<ChaincodeAPI.Info>
+        className={styles.container}
+        rowKey="id"
+        search={false}
+        columns={columns}
+        request={async (
+          params: {
+            page?: number;
+            per_page?: number;
+          }, 
+          sorter, 
+          filter
+        ) => {
+          const { data } = await queryChaincodeList({...params});
+          return {
+            data: data?.data || [],
+          }
+        }}
+        toolBarRender={() => [
+          <Button
+            key="1"
+            type="primary"
+            onClick={() => handleCreateModalVisible(true)}
+          >
+            {intl.formatMessage({id: 'header.creation',})}
+          </Button>,
+        ]}
+      />
+      <CreateForm
+        visible={createModalVisible}
+        onCancel={() => handleCreateModalVisible(false)}
+      />
     </PageContainer>
   );
 };

@@ -14,4 +14,12 @@ declare namespace ChaincodeAPI {
     status: string;
     approvals: string;
   }
+
+  interface CreationPayload {
+    package: any[];
+    name: string;
+    version: string;
+    sequence: number;
+    channel: string;
+  }
 }

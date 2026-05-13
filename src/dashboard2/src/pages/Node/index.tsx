@@ -46,6 +46,10 @@ const NodeList: React.FC = () => {
           text: intl.formatMessage({id: 'app.node.restarting',}),
           status: 'error',
         },
+        'exited': {
+          text: intl.formatMessage({id: 'app.node.exited',}),
+          status: 'default'
+        }
       },
     },
     {

@@ -47,9 +47,24 @@ export default {
   'app.node.running': 'Running',
   'app.node.paused': 'Paused',
   'app.node.restarting': 'Restarting',
+  'app.node.exited': 'Terminated',
   'validation.node.type.required': 'Please enter the node type!',
   'validation.node.name.required': 'Please enter the node name!',
 
   // channel page
   'validation.channel.name.required': 'Please enter the channel name!',
+
+  // chaincode page
+  'app.chaincode.package.label': 'Chaincode Package',
+  'app.chaincode.package.title': 'Only tar.gz file is supported',
+  'app.chaincode.version': 'Version',
+  'app.chaincode.sequence': 'Sequence',
+  'app.chaincode.init-required': 'Require Initialization',
+  'app.chaincode.signature-policy': 'Signature Policy',
+  'app.chaincode.channel': 'Channel',
+  'app.chaincode.description': 'Description',
+  'app.chaincode.created': 'Created',
+  'app.chaincode.installed': 'Installed',
+  'app.chaincode.approved': 'Approved',
+  'app.chaincode.committed': 'Committed',
 };

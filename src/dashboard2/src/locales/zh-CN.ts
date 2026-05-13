@@ -47,9 +47,24 @@ export default {
   'app.node.running': '运行中',
   'app.node.paused': '已停止',
   'app.node.restarting': '重启中',
+  'app.node.exited': '未启动',
   'validation.node.type.required': '请输入节点类型！',
   'validation.node.name.required': '请输入节点名称!',
 
   // channel page
   'validation.channel.name.required': '请输入通道名称！',
+
+  // chaincode page
+  'app.chaincode.package.label': '链码包',
+  'app.chaincode.package.title': '仅支持 .tar.gz 文件',
+  'app.chaincode.version': '版本',
+  'app.chaincode.sequence': '序列号',
+  'app.chaincode.init-required': '是否需要初始化？',
+  'app.chaincode.signature-policy': '签署政策',
+  'app.chaincode.channel': '通道',
+  'app.chaincode.description': '描述',
+  'app.chaincode.created': '已建立',
+  'app.chaincode.installed': '已安装',
+  'app.chaincode.approved': '已批准',
+  'app.chaincode.committed': '已提交',
 };
