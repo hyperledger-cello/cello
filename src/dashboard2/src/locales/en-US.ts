@@ -34,6 +34,7 @@ export default {
   'header.type': 'Type',
   'header.status': 'Status',
   'header.approvals': 'Approvals',
+  'header.creation': 'Create',
 
   // side bar and title
   'menu.organization': 'Organization',
@@ -43,7 +44,6 @@ export default {
   'menu.docs': 'Document',
 
   // node page
-  'app.node.creation': 'Create',
   'app.node.running': 'Running',
   'app.node.paused': 'Paused',
   'app.node.restarting': 'Restarting',

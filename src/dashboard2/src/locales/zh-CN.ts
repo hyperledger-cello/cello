@@ -34,6 +34,7 @@ export default {
   'header.type': '类型',
   'header.status': '状态',
   'header.approvals': '通道组织批准数量',
+  'header.creation': '新建',
 
   // side bar and title
   'menu.organization': '组织管理',
@@ -43,7 +44,6 @@ export default {
   'menu.docs': '线上文档',
 
   // node page
-  'app.node.creation': '新建',
   'app.node.running': '运行中',
   'app.node.paused': '已停止',
   'app.node.restarting': '重启中',

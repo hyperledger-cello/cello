@@ -4,4 +4,8 @@ declare namespace ChannelAPI {
     name: string;
     created_at: string;
   }
+
+  interface CreationPayload {
+    name: string;
+  }
 }

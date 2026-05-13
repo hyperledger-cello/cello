@@ -79,7 +79,7 @@ export const layout = (initialState: any) => {
               icon: <ApiOutlined />,
               label: (
                 <a
-                  href={process.env.API_BASE_URL + '/docs'}
+                  href={process.env.API_BASE_URL + '/api/v1/docs'}
                   target="_blank"
                 >
                   REST API

@@ -2,7 +2,7 @@ import { ProDescriptionsItemProps, ProTable } from "@ant-design/pro-components";
 import { useIntl } from 'umi';
 import { Modal } from "antd";
 import { PropsWithChildren } from 'react';
-import { createNode } from "@/services/node/NodeController";
+import { createChannel } from "@/services/channel/ChannelController";
 
 interface Props {
   visible: boolean;
@@ -12,20 +12,7 @@ interface Props {
 const CreateForm: React.FC<PropsWithChildren<Props>> = (props) => {
   const { visible, onCancel } = props;
   const intl = useIntl();
-  const columns: ProDescriptionsItemProps<NodeAPI.CreationPayload>[] = [
-    {
-      title: intl.formatMessage({id: 'header.type',}),
-      dataIndex: 'type',
-      valueType: 'select',
-      valueEnum: {
-        'PEER': {
-          text: 'Peer',
-        },
-        'ORDERER': {
-          text: 'Orderer',
-        },
-      },
-    },
+  const columns: ProDescriptionsItemProps<ChannelAPI.CreationPayload>[] = [
     {
       title: intl.formatMessage({id: 'header.name',}),
       dataIndex: 'name',
@@ -41,11 +28,11 @@ const CreateForm: React.FC<PropsWithChildren<Props>> = (props) => {
       onCancel={onCancel}
       footer={null}
     >
-      <ProTable<NodeAPI.CreationPayload>
+      <ProTable<ChannelAPI.CreationPayload>
         type="form"
         columns={columns}
         onSubmit={async (value) => {
-          const success = await createNode(value);
+          const success = await createChannel(value);
           if (success) {
             onCancel();
           }

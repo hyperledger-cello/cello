@@ -75,39 +75,38 @@ const NodeList: React.FC = () => {
         },
       }}
     >
-      <div className={styles.container}>
-        <ProTable<NodeAPI.Info>
-          rowKey="id"
-          search={false}
-          columns={columns}
-          request={async (
-            params: {
-              page?: number;
-              per_page?: number;
-            }, 
-            sorter, 
-            filter
-          ) => {
-            const { data } = await queryNodeList({...params});
-            return {
-              data: data?.data || [],
-            }
-          }}
-          toolBarRender={() => [
-            <Button
-              key="1"
-              type="primary"
-              onClick={() => handleCreateModalVisible(true)}
-            >
-              {intl.formatMessage({id: 'app.node.creation',})}
-            </Button>,
-          ]}
-        />
-        <CreateForm
-          visible={createModalVisible}
-          onCancel={() => handleCreateModalVisible(false)}
-        />
-      </div>
+      <ProTable<NodeAPI.Info>
+        className={styles.container}
+        rowKey="id"
+        search={false}
+        columns={columns}
+        request={async (
+          params: {
+            page?: number;
+            per_page?: number;
+          }, 
+          sorter, 
+          filter
+        ) => {
+          const { data } = await queryNodeList({...params});
+          return {
+            data: data?.data || [],
+          }
+        }}
+        toolBarRender={() => [
+          <Button
+            key="1"
+            type="primary"
+            onClick={() => handleCreateModalVisible(true)}
+          >
+            {intl.formatMessage({id: 'header.creation',})}
+          </Button>,
+        ]}
+      />
+      <CreateForm
+        visible={createModalVisible}
+        onCancel={() => handleCreateModalVisible(false)}
+      />
     </PageContainer>
   );
 };

@@ -22,3 +22,18 @@ export async function queryChannelList(
         }
     );
 }
+
+export async function createChannel(
+  body?: ChannelAPI.CreationPayload,
+  options?: { [key: string]: any },
+) {
+  return request<API.Result<void>>('/api/v1/channels', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'JWT ' + localStorage.getItem('token'),
+    },
+    data: body,
+    ...(options || {}),
+  });
+}
