@@ -1,6 +1,7 @@
 export default {
   // login page
   'navBar.lang': '语言',
+  'navBar.logout': '注销',
 
   // login form
   'app.login.login': '登录',

@@ -1,6 +1,7 @@
 export default {
   // login page
   'navBar.lang': 'Language',
+  'navBar.logout': 'Logout',
 
   // login form
   'app.login.login': 'Login',
