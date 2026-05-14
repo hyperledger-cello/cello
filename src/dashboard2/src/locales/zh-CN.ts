@@ -35,6 +35,7 @@ export default {
   'header.status': '状态',
   'header.approvals': '通道组织批准数量',
   'header.creation': '新建',
+  'header.operations': '操作',
 
   // side bar and title
   'menu.organization': '组织管理',
@@ -67,4 +68,7 @@ export default {
   'app.chaincode.installed': '已安装',
   'app.chaincode.approved': '已批准',
   'app.chaincode.committed': '已提交',
+  'app.chaincode.install': '安装',
+  'app.chaincode.approve': '批准',
+  'app.chaincode.commit': '提交',
 };

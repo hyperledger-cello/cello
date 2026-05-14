@@ -12,7 +12,7 @@ declare namespace ChaincodeAPI {
     created_at: string;
     description: string;
     status: string;
-    approvals: string;
+    approvals: any;
   }
 
   interface CreationPayload {

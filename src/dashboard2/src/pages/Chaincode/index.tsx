@@ -53,6 +53,36 @@ const ChaincodeList: React.FC = () => {
       title: intl.formatMessage({id: 'header.creation.timestamp',}),
       dataIndex: 'created_at',
       valueType: 'dateTime',
+    },
+    {
+      title: intl.formatMessage({id: 'header.operations',}),
+      valueType: 'option',
+      render: (_, record) => {
+        const status = record.status;
+        if (status == 'COMMITTED') {
+          return null;
+        } else if (status == 'APPROVED') {
+          return (
+            <Button
+              type='link'
+            >
+              {intl.formatMessage({id: 'app.chaincode.commit',})}
+            </Button>
+          );
+        } else if (status == 'INSTALLED') {
+          return (
+            <Button>
+              {intl.formatMessage({id: 'app.chaincode.approve',})}
+            </Button>
+          );
+        } else {
+          return (
+            <Button>
+              {intl.formatMessage({id: 'app.chaincode.install',})}
+            </Button>
+          );
+        }
+      },
     }
   ];
 

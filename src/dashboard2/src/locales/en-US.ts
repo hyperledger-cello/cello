@@ -35,6 +35,7 @@ export default {
   'header.status': 'Status',
   'header.approvals': 'Approvals',
   'header.creation': 'Create',
+  'header.operations': 'Operations',
 
   // side bar and title
   'menu.organization': 'Organization',
@@ -67,4 +68,7 @@ export default {
   'app.chaincode.installed': 'Installed',
   'app.chaincode.approved': 'Approved',
   'app.chaincode.committed': 'Committed',
+  'app.chaincode.install': 'Install',
+  'app.chaincode.approve': 'Approve',
+  'app.chaincode.commit': 'Commit',
 };
