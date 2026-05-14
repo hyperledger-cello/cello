@@ -37,6 +37,7 @@ export default {
   'header.operations': '操作',
 
   // side bar and title
+  'menu.login': '登录',
   'menu.home': '首页',
   'menu.organization': '组织管理',
   'menu.node': '节点管理',

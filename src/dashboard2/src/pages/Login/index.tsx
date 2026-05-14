@@ -1,7 +1,7 @@
 import { LinkOutlined, LockOutlined, MailOutlined, TeamOutlined } from '@ant-design/icons';
 import { LoginForm, ProFormText } from '@ant-design/pro-components';
 import { Tabs } from 'antd';
-import { Helmet, history } from '@umijs/max';
+import { history } from '@umijs/max';
 import { useState } from 'react';
 import { useIntl } from 'umi';
 import { login, register } from '@/services/auth/AuthController';
@@ -146,9 +146,6 @@ const AccessPage: React.FC = () => {
 
   return (
     <>
-      <Helmet>
-        <title>{intl.formatMessage({id: 'app.login.login',}) + " - Cello Dashboard"}</title>
-      </Helmet>
       <div
         style={{
           height: "100vh",

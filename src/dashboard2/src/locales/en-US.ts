@@ -37,6 +37,7 @@ export default {
   'header.operations': 'Operations',
 
   // side bar and title
+  'menu.login': 'Login',
   'menu.home': 'Home',
   'menu.organization': 'Organization',
   'menu.node': 'Node',
