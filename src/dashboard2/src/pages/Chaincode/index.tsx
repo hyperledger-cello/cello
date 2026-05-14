@@ -2,12 +2,13 @@ import { FunctionOutlined } from '@ant-design/icons';
 import { ProDescriptionsItemProps, PageContainer, ProTable } from "@ant-design/pro-components";
 import { useIntl } from 'umi';
 import styles from './index.less'
-import { queryChaincodeList } from '@/services/chaincode/ChaincodeController';
+import { approveChaincode, commitChaincode, installChaincode, queryChaincodeList } from '@/services/chaincode/ChaincodeController';
 import { useState } from 'react';
 import { Button } from 'antd';
 import CreateForm from './Components/CreateForm';
 
 const ChaincodeList: React.FC = () => {
+  const [loading, handleLoading] = useState<boolean>(false);
   const [createModalVisible, handleCreateModalVisible] = useState<boolean>(false);
   const intl = useIntl();
   const columns: ProDescriptionsItemProps<ChaincodeAPI.Info>[] = [
@@ -65,6 +66,13 @@ const ChaincodeList: React.FC = () => {
           return (
             <Button
               type='link'
+              key='commit'
+              loading={loading}
+              onClick={async () => {
+                handleLoading(true);
+                await commitChaincode(record.id);
+                handleLoading(false);
+              }}
             >
               {intl.formatMessage({id: 'app.chaincode.commit',})}
             </Button>
@@ -73,6 +81,13 @@ const ChaincodeList: React.FC = () => {
           return (
             <Button
               type='link'
+              key='approve'
+              loading={loading}
+              onClick={async () => {
+                handleLoading(true);
+                await approveChaincode(record.id);
+                handleLoading(false);
+              }}
             >
               {intl.formatMessage({id: 'app.chaincode.approve',})}
             </Button>
@@ -81,6 +96,13 @@ const ChaincodeList: React.FC = () => {
           return (
             <Button
               type='link'
+              key='install'
+              loading={loading}
+              onClick={async () => {
+                handleLoading(true);
+                await installChaincode(record.id);
+                handleLoading(false);
+              }}
             >
               {intl.formatMessage({id: 'app.chaincode.install',})}
             </Button>

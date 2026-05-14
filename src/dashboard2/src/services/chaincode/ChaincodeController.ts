@@ -42,3 +42,39 @@ export async function createChaincode(
     ...(options || {}),
   });
 }
+
+export async function installChaincode(
+  id: string,
+) {
+  return request<API.Result<void>>(`/api/v1/chaincodes/${id}/install`, {
+    method: 'PUT',
+    headers: {
+      Authorization: 'JWT ' + localStorage.getItem('token'),
+    },
+
+  });
+}
+
+export async function approveChaincode(
+  id: string,
+) {
+  return request<API.Result<void>>(`/api/v1/chaincodes/${id}/approve`, {
+    method: 'PUT',
+    headers: {
+      Authorization: 'JWT ' + localStorage.getItem('token'),
+    },
+
+  });
+}
+
+export async function commitChaincode(
+  id: string,
+) {
+  return request<API.Result<void>>(`/api/v1/chaincodes/${id}/commit`, {
+    method: 'PUT',
+    headers: {
+      Authorization: 'JWT ' + localStorage.getItem('token'),
+    },
+
+  });
+}
