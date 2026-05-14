@@ -8,10 +8,11 @@ import { queryChannelList } from "@/services/channel/ChannelController";
 interface Props {
   visible: boolean;
   onCancel: () => void;
+  onSuccess: () => void;
 }
 
 const CreateForm: React.FC<PropsWithChildren<Props>> = (props) => {
-  const { visible, onCancel } = props;
+  const { visible, onCancel, onSuccess } = props;
   const intl = useIntl();
 
   return (
@@ -31,6 +32,7 @@ const CreateForm: React.FC<PropsWithChildren<Props>> = (props) => {
           const success = await createChaincode(values);
           if (success) {
             onCancel();
+            onSuccess();
           }
           return true;
         }}

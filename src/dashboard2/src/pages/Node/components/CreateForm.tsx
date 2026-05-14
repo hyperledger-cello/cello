@@ -7,11 +7,12 @@ import { createNode } from "@/services/node/NodeController";
 interface Props {
   visible: boolean;
   onCancel: () => void;
+  onSuccess: () => void;
 }
 
 const CreateForm: React.FC<PropsWithChildren<Props>> = (props) => {
   const [loading, handleLoading] = useState<boolean>(false);
-  const { visible, onCancel } = props;
+  const { visible, onCancel, onSuccess } = props;
   const intl = useIntl();
   const columns: ProDescriptionsItemProps<NodeAPI.CreationPayload>[] = [
     {
@@ -68,6 +69,7 @@ const CreateForm: React.FC<PropsWithChildren<Props>> = (props) => {
           handleLoading(false);
           if (success) {
             onCancel();
+            onSuccess();
           }
         }}
       />

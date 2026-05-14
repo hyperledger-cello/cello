@@ -1,9 +1,9 @@
-import { PageContainer, ProDescriptionsItemProps, ProTable } from "@ant-design/pro-components";
+import { ActionType, PageContainer, ProDescriptionsItemProps, ProTable } from "@ant-design/pro-components";
 import styles from './index.less';
 import { useIntl } from 'umi';
 import { queryChannelList } from "@/services/channel/ChannelController";
 import { DeploymentUnitOutlined } from "@ant-design/icons";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import CreateForm from "./components/CreateForm";
 import { Button } from "antd";
 
@@ -22,6 +22,7 @@ const ChannelList: React.FC = () => {
       valueType: 'dateTime',
     }
   ];
+  const actionRef = useRef<ActionType>();
 
   return (
     <PageContainer
@@ -46,6 +47,7 @@ const ChannelList: React.FC = () => {
         className={styles.container}
         rowKey="id"
         search={false}
+        actionRef={actionRef}
         columns={columns}
         request={async (
           params: {
@@ -73,6 +75,7 @@ const ChannelList: React.FC = () => {
       <CreateForm
         visible={createModalVisible}
         onCancel={() => handleCreateModalVisible(false)}
+        onSuccess={() => actionRef.current?.reload()}
       />
     </PageContainer>
   );

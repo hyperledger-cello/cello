@@ -1,10 +1,10 @@
-import { PageContainer, ProDescriptionsItemProps, ProTable } from "@ant-design/pro-components";
+import { ActionType, PageContainer, ProDescriptionsItemProps, ProTable } from "@ant-design/pro-components";
 import styles from './index.less';
 import { useIntl } from 'umi';
 import { queryNodeList } from "@/services/node/NodeController";
 import { NodeIndexOutlined } from "@ant-design/icons";
 import { Button } from "antd";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import CreateForm from "./components/CreateForm";
 
 const NodeList: React.FC = () => {
@@ -59,6 +59,7 @@ const NodeList: React.FC = () => {
       valueType: 'dateTime',
     }
   ];
+  const actionRef = useRef<ActionType>();
 
   return (
     <PageContainer
@@ -83,6 +84,7 @@ const NodeList: React.FC = () => {
         className={styles.container}
         rowKey="id"
         search={false}
+        actionRef={actionRef}
         columns={columns}
         request={async (
           params: {
@@ -110,6 +112,7 @@ const NodeList: React.FC = () => {
       <CreateForm
         visible={createModalVisible}
         onCancel={() => handleCreateModalVisible(false)}
+        onSuccess={() => actionRef.current?.reload()}
       />
     </PageContainer>
   );

@@ -1,9 +1,9 @@
 import { FunctionOutlined } from '@ant-design/icons';
-import { ProDescriptionsItemProps, PageContainer, ProTable } from "@ant-design/pro-components";
+import { ProDescriptionsItemProps, PageContainer, ProTable, ActionType } from "@ant-design/pro-components";
 import { useIntl } from 'umi';
 import styles from './index.less'
 import { approveChaincode, commitChaincode, installChaincode, queryChaincodeList } from '@/services/chaincode/ChaincodeController';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from 'antd';
 import CreateForm from './Components/CreateForm';
 
@@ -111,6 +111,7 @@ const ChaincodeList: React.FC = () => {
       },
     }
   ];
+  const actionRef = useRef<ActionType>();
 
   return (
     <PageContainer
@@ -135,6 +136,7 @@ const ChaincodeList: React.FC = () => {
         className={styles.container}
         rowKey="id"
         search={false}
+        actionRef={actionRef}
         columns={columns}
         request={async (
           params: {
@@ -162,6 +164,7 @@ const ChaincodeList: React.FC = () => {
       <CreateForm
         visible={createModalVisible}
         onCancel={() => handleCreateModalVisible(false)}
+        onSuccess={() => actionRef.current?.reload()}
       />
     </PageContainer>
   );
