@@ -43,6 +43,11 @@ const ChaincodeList: React.FC = () => {
       title: intl.formatMessage({id: 'header.approvals',}),
       dataIndex: 'approvals',
       valueType: 'text',
+      render: (obj: any) => {
+        const total = Object.keys(obj).length;
+        const trueCount = Object.values(obj).filter(v => v).length;
+        return `${total}/${trueCount}`;
+      },
     },
     {
       title: intl.formatMessage({id: 'header.creation.timestamp',}),
