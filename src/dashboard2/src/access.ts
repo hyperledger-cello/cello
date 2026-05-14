@@ -1,5 +1,5 @@
-export default (initialState: AuthAPI.Token) => {
+export default (initialState) => {
   return {
-    isLogin: !!initialState?.token,
+    isLogin: initialState.isLogin,
   };
 };

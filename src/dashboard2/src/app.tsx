@@ -4,12 +4,17 @@ import { ConfigProvider, Menu, theme } from 'antd';
 import HeaderRight from './components/HeaderRight/HeaderRight';
 import { ApiOutlined, BookOutlined, GithubOutlined } from '@ant-design/icons';
 import { useIntl } from 'umi';
+import { verify } from './services/auth/AuthController';
 
 export async function getInitialState() {
   const token = localStorage.getItem('token');
+  if (!token) {
+    return false;
+  }
 
+  const isLogin = await verify(token);
   return {
-    token,
+    isLogin: !!isLogin
   };
 }
 
@@ -33,7 +38,7 @@ export const rootContainer = (container: React.ReactNode) => {
 
 const { useToken } = theme;
 
-export const layout = (initialState: any) => {
+export const layout = ({ initialState }: any) => {
   const { token } = useToken();
   return {
     logo: '/favicon.png',
@@ -117,7 +122,7 @@ export const layout = (initialState: any) => {
 
     onPageChange: () => {
       const { location } = history;
-      if (!initialState.initialState.token && location.pathname != '/login') {
+      if (!initialState.isLogin && location.pathname != '/login') {
         history.push('/login');
       }
     },

@@ -13,7 +13,6 @@ export default function HeaderRight() {
   if (loading) {
     content = 'loading...'
   } else if (data) {
-    console.log(data);
     content = data.email;
   }
 
