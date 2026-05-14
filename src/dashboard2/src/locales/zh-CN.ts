@@ -3,10 +3,17 @@ export default {
   'navBar.lang': '语言',
   'navBar.logout': '注销',
 
+  // message
+  'message.error': '错误',
+  'message.error.server': '伺服器错误。查看日志以获得更多资讯。',
+  'message.success': '成功',
+  'message.info': '说明',
+
   // login form
   'app.login.login': '登录',
   'app.login.email': '邮箱地址',
   'app.login.password': '密码',
+  'app.login.error': '邮箱地址或密码错误',
 
   // register form
   'app.register.register': '注册组织',
@@ -15,6 +22,9 @@ export default {
   'app.register.password': '管理员密码',
   'app.register.confirmPassword': '确认密码',
   'app.register.agentUrl': '代理地址',
+  'app.register.error': '无效的组织信息',
+  'app.register.success': '您已成功注册，请登入组织！',
+  'app.register.info': '此注册功能仅用于创建新组织及其首位管理员账号。如果您的组织已完成注册，请联系组织管理员为您创建个人账号。',
 
   // validation
   'validation.email.required': '请输入邮箱地址！',

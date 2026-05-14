@@ -1,6 +1,6 @@
 import { LinkOutlined, LockOutlined, MailOutlined, TeamOutlined } from '@ant-design/icons';
 import { LoginForm, ProFormText } from '@ant-design/pro-components';
-import { Tabs } from 'antd';
+import { Alert, Tabs } from 'antd';
 import { history } from '@umijs/max';
 import { useState } from 'react';
 import { useIntl } from 'umi';
@@ -12,6 +12,8 @@ type ActionType = 'login' | 'register';
 
 const AccessPage: React.FC = () => {
   const [actionType, setActionType] = useState<ActionType>('login');
+  const [success, handleSuccess] = useState<boolean>(false);
+  const [error, handleError] = useState<any>(null);
   const intl = useIntl();
 
   const loginForm = (
@@ -134,14 +136,50 @@ const AccessPage: React.FC = () => {
     </>
   );
 
-  const handleSubmit = async (values: any) => {
-    if (actionType == 'login') {
-      const response = await login(values);
-      localStorage.setItem('token', response.data.token);
-      history.push('/');
+  let message = null;
+  if (error) {
+    const status = error.response.status;
+    if (status > 499) {
+      message = <Alert
+        message={intl.formatMessage({id: 'message.error'})}
+        description={intl.formatMessage({id: 'message.error.server'})}
+        type='warning'
+        showIcon
+      >
+      </Alert>;
+    } else if (actionType == 'login') {
+      message = <Alert
+        message={intl.formatMessage({id: 'message.error'})}
+        description={intl.formatMessage({id: 'app.login.error'})}
+        type='error'
+        showIcon
+      >
+      </Alert>;
     } else {
-      await register(values);
+      message = <Alert
+        message={intl.formatMessage({id: 'message.error'})}
+        description={intl.formatMessage({id: 'app.register.error'})}
+        type='error'
+        showIcon
+      >
+      </Alert>;
     }
+  } else if (success) {
+    message = <Alert
+      message={intl.formatMessage({id: 'message.success'})}
+      description={intl.formatMessage({id: 'app.register.success'})}
+      type='success'
+      showIcon
+    >
+    </Alert>;
+  } else if (actionType == 'register') {
+    message = <Alert
+      message={intl.formatMessage({id: 'message.info'})}
+      description={intl.formatMessage({id: 'app.register.info'})}
+      type='info'
+      showIcon
+    >
+    </Alert>;
   }
 
   return (
@@ -168,7 +206,30 @@ const AccessPage: React.FC = () => {
                 Dashboard for management cello service
               </span>
             }
-            onFinish={handleSubmit}
+            message={message}
+            onFinish={async (values: any) => {
+              if (actionType == 'login') {
+                try {
+                  const response = await login(values);
+                  localStorage.setItem('token', response.data.token);
+                  history.push('/');
+                  handleError(null);
+                } catch (error) {
+                  handleError(error);
+                  handleSuccess(false);
+                }
+              } else {
+                try {
+                  await register(values);
+                  setActionType('login');
+                  handleError(null);
+                  handleSuccess(true);
+                } catch (error) {
+                  handleError(error);
+                  handleSuccess(false);
+                }
+              }
+            }}
             submitter={{
               searchConfig: {
                 submitText: actionType == 'login' ?
@@ -180,7 +241,11 @@ const AccessPage: React.FC = () => {
             <Tabs
               centered
               activeKey={actionType}
-              onChange={(activeKey) => setActionType(activeKey as ActionType)}
+              onChange={(activeKey) => {
+                handleSuccess(false);
+                handleError(null);
+                setActionType(activeKey as ActionType);
+              }}
               items={[
                 { key: 'login', label: intl.formatMessage({id: 'app.login.login',}) },
                 { key: 'register', label: intl.formatMessage({id: 'app.register.register',}) },

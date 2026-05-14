@@ -3,10 +3,17 @@ export default {
   'navBar.lang': 'Language',
   'navBar.logout': 'Logout',
 
+  // message
+  'message.error': 'Error',
+  'message.error.server': 'Something went wrong. Check logs for more info.',
+  'message.success': 'Success',
+  'message.info': 'Info',
+
   // login form
   'app.login.login': 'Login',
   'app.login.email': 'Email',
   'app.login.password': 'Password',
+  'app.login.error': 'Wrong email or password',
 
   // register form
   'app.register.register': 'Register an Organization',
@@ -15,6 +22,9 @@ export default {
   'app.register.password': 'Admin Password',
   'app.register.confirmPassword': 'Confirm Admin Password',
   'app.register.agentUrl': 'Agent URL',
+  'app.register.error': 'Invalid organization info',
+  'app.register.success': 'Success! You can login to the organization now!',
+  'app.register.info': 'This registration form is only for setting up a new organization and its first administrator. If your organization already exists, please ask your administrator to create your account.',
 
   // validation
   'validation.email.required': 'Please enter your email!',
