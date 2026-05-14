@@ -1,7 +1,7 @@
 import { ProDescriptionsItemProps, ProTable } from "@ant-design/pro-components";
 import { useIntl } from 'umi';
 import { Modal } from "antd";
-import { PropsWithChildren } from 'react';
+import { PropsWithChildren, useState } from 'react';
 import { createChannel } from "@/services/channel/ChannelController";
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
 }
 
 const CreateForm: React.FC<PropsWithChildren<Props>> = (props) => {
+  const [loading, handleLoading] = useState<boolean>(false);
   const { visible, onCancel } = props;
   const intl = useIntl();
   const columns: ProDescriptionsItemProps<ChannelAPI.CreationPayload>[] = [
@@ -38,9 +39,12 @@ const CreateForm: React.FC<PropsWithChildren<Props>> = (props) => {
     >
       <ProTable<ChannelAPI.CreationPayload>
         type="form"
+        loading={loading}
         columns={columns}
         onSubmit={async (value) => {
+          handleLoading(true);
           const success = await createChannel(value);
+          handleLoading(false);
           if (success) {
             onCancel();
           }
