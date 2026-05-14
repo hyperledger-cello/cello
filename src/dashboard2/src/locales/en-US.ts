@@ -26,7 +26,6 @@ export default {
 
   // home page
   'home.welcome.message': 'Welcome to Hyperledger Cello!',
-  'home.title': 'Home',
 
   // page table
   'header.name': 'Name',
@@ -38,6 +37,7 @@ export default {
   'header.operations': 'Operations',
 
   // side bar and title
+  'menu.home': 'Home',
   'menu.organization': 'Organization',
   'menu.node': 'Node',
   'menu.channel': 'Channel',

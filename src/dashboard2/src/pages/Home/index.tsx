@@ -14,7 +14,7 @@ const HomePage: React.FC = () => {
           items: [
             {
               path: '',
-              title: intl.formatMessage({id: 'home.title',}),
+              title: intl.formatMessage({id: 'menu.home',}),
             },
           ],
         },

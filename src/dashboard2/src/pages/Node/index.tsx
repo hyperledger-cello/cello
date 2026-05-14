@@ -70,7 +70,7 @@ const NodeList: React.FC = () => {
         breadcrumb: {
           items: [
             {
-              title: intl.formatMessage({id: 'home.title',}),
+              title: intl.formatMessage({id: 'menu.home',}),
             },
             {
               title: intl.formatMessage({id: 'menu.node',}),

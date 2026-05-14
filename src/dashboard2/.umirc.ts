@@ -19,12 +19,14 @@ export default defineConfig({
   ],
   routes: [
     {
+      name: 'login',
       path: '/login',
       component: './Login',
       headerRender: false,
       menuRender: false,
     },
     {
+      name: 'home',
       path: '/',
       component: './Home',
       access: 'isLogin',

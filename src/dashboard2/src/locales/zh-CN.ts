@@ -26,7 +26,6 @@ export default {
 
   // home page
   'home.welcome.message': '欢迎使用 Hyperledger Cello！',
-  'home.title': '首页',
 
   // page table
   'header.name': '名称',
@@ -38,6 +37,7 @@ export default {
   'header.operations': '操作',
 
   // side bar and title
+  'menu.home': '首页',
   'menu.organization': '组织管理',
   'menu.node': '节点管理',
   'menu.channel': '通道管理',
