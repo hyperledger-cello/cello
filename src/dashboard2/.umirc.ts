@@ -24,12 +24,14 @@ export default defineConfig({
       component: './Login',
       headerRender: false,
       menuRender: false,
+      hideInMenu: true,
     },
     {
       name: 'home',
       path: '/',
       component: './Home',
       access: 'isLogin',
+      hideInMenu: true,
     },
     {
       name: 'organization',
