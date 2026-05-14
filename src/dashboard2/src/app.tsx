@@ -13,6 +13,9 @@ export async function getInitialState() {
   }
 
   const isLogin = await verify(token);
+  if (!isLogin) {
+    localStorage.removeItem('token');
+  }
   return {
     isLogin: !!isLogin
   };
