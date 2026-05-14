@@ -71,13 +71,17 @@ const ChaincodeList: React.FC = () => {
           );
         } else if (status == 'INSTALLED') {
           return (
-            <Button>
+            <Button
+              type='link'
+            >
               {intl.formatMessage({id: 'app.chaincode.approve',})}
             </Button>
           );
         } else {
           return (
-            <Button>
+            <Button
+              type='link'
+            >
               {intl.formatMessage({id: 'app.chaincode.install',})}
             </Button>
           );
