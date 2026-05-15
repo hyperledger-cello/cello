@@ -1,25 +1,9 @@
 import type { HeaderProps } from '@ant-design/pro-layout';
 import { history } from 'umi';
-import { ConfigProvider, Menu, theme } from 'antd';
+import { ConfigProvider, Menu, Modal, theme } from 'antd';
 import HeaderRight from './components/HeaderRight/HeaderRight';
 import { ApiOutlined, BookOutlined, GithubOutlined } from '@ant-design/icons';
 import { useIntl } from 'umi';
-import { verify } from './services/auth/AuthController';
-
-export async function getInitialState() {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    return false;
-  }
-
-  const isLogin = await verify(token);
-  if (!isLogin) {
-    localStorage.removeItem('token');
-  }
-  return {
-    isLogin: !!isLogin
-  };
-}
 
 export const rootContainer = (container: React.ReactNode) => {
   return (
@@ -41,7 +25,7 @@ export const rootContainer = (container: React.ReactNode) => {
 
 const { useToken } = theme;
 
-export const layout = ({ initialState }: any) => {
+export const layout = () => {
   const { token } = useToken();
   return {
     logo: '/favicon.png',
@@ -125,8 +109,9 @@ export const layout = ({ initialState }: any) => {
 
     onPageChange: () => {
       const { location } = history;
-      if (!initialState.isLogin && location.pathname != '/login') {
-        history.push('/login');
+      const isLogin = !!localStorage.getItem('token');
+      if (isLogin && location.pathname == '/login') {
+        history.push('/');
       }
     },
   };
@@ -139,4 +124,27 @@ export const request = {
       return { url, options };
     },
   ],
+
+  responseInterceptors: [[
+    (response: any) => response,
+    (error: any) => {
+      if (error?.response?.status === 401) {
+        if (document.querySelector('.token-expired-modal')) {
+          return Promise.reject(error);
+        }
+
+        Modal.error({
+          className: 'token-expired-modal',
+          title: '登入已過期',
+          content: '您的登入狀態已過期，請重新登入。',
+          okText: '重新登入',
+          onOk: () => {
+            localStorage.removeItem('token');
+            history.push('/login');
+          },
+        });
+      }
+      return Promise.reject(error);
+    },
+  ]],
 };

@@ -30,14 +30,13 @@ export default defineConfig({
       name: 'home',
       path: '/',
       component: './Home',
-      access: 'isLogin',
       hideInMenu: true,
     },
     {
       name: 'organization',
       path: '/organization',
       component: './Organization',
-      access: 'isLogin',
+      
       icon: 'Team',
       title: true
     },
@@ -45,7 +44,6 @@ export default defineConfig({
       name: 'node',
       path: '/node',
       component: './Node',
-      access: 'isLogin',
       icon: 'NodeIndex',
       title: true
     },
@@ -53,7 +51,6 @@ export default defineConfig({
       name: 'channel',
       path: '/channel',
       component: './Channel',
-      access: 'isLogin',
       icon: 'DeploymentUnit',
       title: true
     },
@@ -61,7 +58,6 @@ export default defineConfig({
       name: 'chaincode',
       path: '/chaincode',
       component: './Chaincode',
-      access: 'isLogin',
       icon: 'Function',
       title: true
     },

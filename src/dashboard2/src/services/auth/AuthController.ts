@@ -38,20 +38,3 @@ export async function register(
     }
   );
 }
-
-export async function verify(
-  token: string
-) {
-  return request<API.Result<void>>(
-    'api/v1/token-verify',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      data: {
-        token: token
-      },
-    }
-  );
-}

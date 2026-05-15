@@ -1,19 +1,19 @@
-import { useIntl, history } from '@umijs/max';
+import { useIntl, history, useRequest } from '@umijs/max';
 import { Avatar, Button, Dropdown } from 'antd';
 import styles from './HeaderRight.less'
 import CustomizedSelectLang from '../CustomizedSelectLang/CustomizedSelectLang';
 import { quereyUserProfile } from '@/services/user/UserController';
-import { useRequest } from '@umijs/max';
 
 export default function HeaderRight() {
   const intl = useIntl();
-  const { data, loading, error } = useRequest(quereyUserProfile);
   let content = '';
-
-  if (loading) {
-    content = 'loading...'
-  } else if (data) {
-    content = data.email;
+  if (location.pathname != '/login') {
+    const { data, loading, error } = useRequest(quereyUserProfile);
+    if (loading) {
+      content = 'loading...'
+    } else if (data) {
+      content = data.email;
+    }
   }
 
   return (
