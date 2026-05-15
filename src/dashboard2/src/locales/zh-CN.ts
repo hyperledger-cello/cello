@@ -35,9 +35,6 @@ export default {
   'validation.agentUrl.required': '请输入代理地址！',
   'validation.agentUrl.format': '代理地址格式错误，必须以 http:// 或 https:// 开头！',
 
-  // home page
-  'home.welcome.message': '欢迎使用 Hyperledger Cello！',
-
   // page table
   'header.name': '名称',
   'header.creation.timestamp': '创建时间',
@@ -55,6 +52,9 @@ export default {
   'menu.channel': '通道管理',
   'menu.chaincode': '链码管理',
   'menu.docs': '线上文档',
+
+  // home page
+  'app.home.welcome': '欢迎使用 Hyperledger Cello！',
 
   // node page
   'app.node.running': '运行中',

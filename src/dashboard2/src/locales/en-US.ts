@@ -35,9 +35,6 @@ export default {
   'validation.agentUrl.required': 'Please enter your agent URL!',
   'validation.agentUrl.format': 'Agent URL format error, must start with http:// or https://!',
 
-  // home page
-  'home.welcome.message': 'Welcome to Hyperledger Cello!',
-
   // page table
   'header.name': 'Name',
   'header.creation.timestamp': 'Creation Timestamp',
@@ -46,7 +43,7 @@ export default {
   'header.approvals': 'Approvals',
   'header.creation': 'Create',
   'header.operations': 'Operations',
-
+  
   // side bar and title
   'menu.login': 'Login',
   'menu.home': 'Home',
@@ -55,6 +52,9 @@ export default {
   'menu.channel': 'Channel',
   'menu.chaincode': 'Chaincode',
   'menu.docs': 'Document',
+
+  // home page
+  'app.home.welcome': 'Welcome to Hyperledger Cello!',
 
   // node page
   'app.node.running': 'Running',

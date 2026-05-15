@@ -24,7 +24,7 @@ const HomePage: React.FC = () => {
         <Layout>
           <Row>
             <Typography.Title level={3} className={styles.title}>
-              <strong>{intl.formatMessage({id: 'home.welcome.message',})}</strong>
+              <strong>{intl.formatMessage({id: 'app.home.welcome',})}</strong>
             </Typography.Title>
           </Row>
         </Layout>
