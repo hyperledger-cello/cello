@@ -128,6 +128,10 @@ export const request = {
   responseInterceptors: [[
     (response: any) => response,
     (error: any) => {
+      const { location } = history;
+      if (location.pathname == '/login') {
+        return Promise.reject(error);
+      }
       if (error?.response?.status === 401) {
         if (document.querySelector('.token-expired-modal')) {
           return Promise.reject(error);
