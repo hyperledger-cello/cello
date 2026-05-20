@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Start Dashboard, DB, and API Engine
         run: docker compose -f docker-compose.dev.yaml up -d --build
