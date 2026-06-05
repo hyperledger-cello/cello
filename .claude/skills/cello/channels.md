@@ -7,17 +7,19 @@ Fields: `id`, `name`, `organizations` (list of `{id}` objects),
 ### List channels (names)
 ```bash
 curl -s -H "Authorization: JWT $(cat ~/.cello/token)" \
-     http://localhost:8080/api/v1/channels | jq -r '.data.data[] | .name'
+     'http://localhost:8080/api/v1/channels?page=1&per_page=100' \
+  | jq -r '.data.data[] | .name'
 ```
 
 ### Count
 ```bash
 curl -s -H "Authorization: JWT $(cat ~/.cello/token)" \
-     http://localhost:8080/api/v1/channels | jq '.data.total'
+     'http://localhost:8080/api/v1/channels?page=1&per_page=100' \
+  | jq '.data.total'
 ```
 
 ### Full details
 ```bash
 curl -s -H "Authorization: JWT $(cat ~/.cello/token)" \
-     http://localhost:8080/api/v1/channels
+     'http://localhost:8080/api/v1/channels?page=1&per_page=100'
 ```

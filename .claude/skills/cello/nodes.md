@@ -7,14 +7,14 @@ Fields: `id`, `name`, `type` (PEER | ORDERER),
 ### List nodes (summary)
 ```bash
 curl -s -H "Authorization: JWT $(cat ~/.cello/token)" \
-     http://localhost:8080/api/v1/nodes \
+     'http://localhost:8080/api/v1/nodes?page=1&per_page=100' \
   | jq -r '.data.data[] | "\(.name) (\(.type), \(.status))"'
 ```
 
 ### Running peers only
 ```bash
 curl -s -H "Authorization: JWT $(cat ~/.cello/token)" \
-     http://localhost:8080/api/v1/nodes \
+     'http://localhost:8080/api/v1/nodes?page=1&per_page=100' \
   | jq -r '.data.data[]
           | select(.type=="PEER" and .status=="RUNNING") | .name'
 ```
@@ -22,11 +22,12 @@ curl -s -H "Authorization: JWT $(cat ~/.cello/token)" \
 ### Count
 ```bash
 curl -s -H "Authorization: JWT $(cat ~/.cello/token)" \
-     http://localhost:8080/api/v1/nodes | jq '.data.total'
+     'http://localhost:8080/api/v1/nodes?page=1&per_page=100' \
+  | jq '.data.total'
 ```
 
 ### Full details (use only when fields above are insufficient)
 ```bash
 curl -s -H "Authorization: JWT $(cat ~/.cello/token)" \
-     http://localhost:8080/api/v1/nodes
+     'http://localhost:8080/api/v1/nodes?page=1&per_page=100'
 ```
