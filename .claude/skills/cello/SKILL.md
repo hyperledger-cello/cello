@@ -26,16 +26,16 @@ curl -s -X POST http://localhost:8080/api/v1/login \
      -H "Content-Type: application/json" \
      -d "{\"email\":\"$CELLO_EMAIL\",\"password\":\"$CELLO_PASSWORD\"}" \
   | jq -r '.data.token' > ~/.cello/token
+chmod 600 ~/.cello/token
 ```
 
-If `~/.cello/credentials` does not exist, ask the user to create it
-instead of guessing. If it exists but the helper writes an empty
-or `null` token, login failed — stop and ask the user to verify the
-credentials in that file and that the API Engine is reachable. Don't
-retry blindly.
+If login fails or the token is empty or null, ask the user to verify
+`~/.cello/credentials` and API availability. Do not guess credentials.
 
-All responses are wrapped as `{status, msg, data}`. List endpoints
-paginate with `?page=1&per_page=10` (max per_page=100).
+Successful responses use `{status, msg, data}`; error responses may not.
+
+List endpoints default to `per_page=10`; use `per_page=100` for
+inspection and page further only when `.data.total > 100`.
 
 ## Topics — load the matching file as needed
 
