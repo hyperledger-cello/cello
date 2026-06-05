@@ -1,10 +1,7 @@
 {
 	"info": {
-		"_postman_id": "04314160-39b9-401c-b74f-6ea9f1cd89fd",
 		"name": "Cello Engine CI Test",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "43793131",
-		"_collection_link": "https://www.postman.com/haiboyang-3238546/workspace/hyperledger-cello/collection/43793131-04314160-39b9-401c-b74f-6ea9f1cd89fd?action=share&source=collection_link&creator=43793131"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
@@ -14,14 +11,9 @@
 					"listen": "test",
 					"script": {
 						"exec": [
-							"pm.test(\"Status code is 200\", function () {",
-							"    pm.response.to.have.status(200);",
-							"});",
-							"",
-							"if (pm.response.code === 200) {",
-							"    var jsonData = pm.response.json();",
-							"    pm.environment.set(\"org_id\", jsonData.data.id);",
-							"}"
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});"
 						],
 						"type": "text/javascript"
 					}
@@ -38,7 +30,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"email\": \"foo@email.com\",\n\t\"password\": \"foo\",\n\t\"orgName\": \"org1.foo.com\"\n}"
+					"raw": "{\n\t\"email\": \"foo@email.com\",\n\t\"password\": \"foo\",\n\t\"org_name\": \"org1.foo.com\",\n\t\"agent_url\": \"http://cello-hyperledger-fabric-agent:8080/api/v1/\"\n}"
 				},
 				"url": {
 					"raw": "{{base_url}}/api/v1/register",
@@ -102,7 +94,7 @@
 			}
 		},
 		{
-			"name": "Create Agent",
+			"name": "Create A Peer",
 			"event": [
 				{
 					"listen": "test",
@@ -110,12 +102,7 @@
 						"exec": [
 							"pm.test(\"Status code is 201\", function () {",
 							"    pm.response.to.have.status(201);",
-							"});",
-							"",
-							"if (pm.response.code === 201) {",
-							"    var jsonData = pm.response.json();",
-							"    pm.environment.set(\"agent_id\", jsonData.data.id);",
-							"}"
+							"});"
 						],
 						"type": "text/javascript"
 					}
@@ -137,59 +124,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"name\": \"cello-agent-docker\",\n\t\"type\": \"docker\",\n\t\"urls\": \"http://cello.docker.agent:5001\"\n}"
-				},
-				"url": {
-					"raw": "{{base_url}}/api/v1/agents",
-					"host": [
-						"{{base_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"agents"
-					]
-				},
-				"description": "Create new agent"
-			}
-		},
-		{
-			"name": "Create Peer Node",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 201\", function () {",
-							"    pm.response.to.have.status(201);",
-							"});",
-							"",
-							"if (pm.response.code === 201) {",
-							"    var jsonData = pm.response.json();",
-							"    pm.environment.set(\"peer_id\", jsonData.data.id);",
-							"}"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json",
-						"type": "text"
-					},
-					{
-						"key": "Authorization",
-						"value": "JWT {{token}}",
-						"type": "text"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n\t\"name\": \"peer0\",\n\t\"type\": \"peer\"\n}"
+					"raw": "{\n\t\"name\": \"peer0\",\n\t\"type\": \"PEER\"\n}"
 				},
 				"url": {
 					"raw": "{{base_url}}/api/v1/nodes",
@@ -202,11 +137,11 @@
 						"nodes"
 					]
 				},
-				"description": "Create new peer node"
+				"description": "Create a new peer"
 			}
 		},
 		{
-			"name": "Create Orderer Node",
+			"name": "Create An Orderer",
 			"event": [
 				{
 					"listen": "test",
@@ -214,12 +149,7 @@
 						"exec": [
 							"pm.test(\"Status code is 201\", function () {",
 							"    pm.response.to.have.status(201);",
-							"});",
-							"",
-							"if (pm.response.code === 201) {",
-							"    var jsonData = pm.response.json();",
-							"    pm.environment.set(\"orderer_id\", jsonData.data.id);",
-							"}"
+							"});"
 						],
 						"type": "text/javascript"
 					}
@@ -241,7 +171,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"name\": \"orderer0\",\n\t\"type\": \"orderer\"\n}"
+					"raw": "{\n\t\"name\": \"orderer0\",\n\t\"type\": \"ORDERER\"\n}"
 				},
 				"url": {
 					"raw": "{{base_url}}/api/v1/nodes",
@@ -254,11 +184,11 @@
 						"nodes"
 					]
 				},
-				"description": "Create new orderer node"
+				"description": "Create a new orderer"
 			}
 		},
 		{
-			"name": "Create Network",
+			"name": "Create A Channel",
 			"event": [
 				{
 					"listen": "test",
@@ -270,11 +200,7 @@
 							"",
 							"if (pm.response.code === 201) {",
 							"    var jsonData = pm.response.json();",
-							"    pm.environment.set(\"network_id\", jsonData.data.id);",
-							"    ",
-							"    setTimeout(function() {",
-							"        console.log(\"Delayed 5 seconds\");",
-							"    }, 5000);",
+							"    pm.environment.set(\"channel_id\", jsonData.data.id);",
 							"}"
 						],
 						"type": "text/javascript"
@@ -297,63 +223,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"name\": \"test-network\",\n\t\"consensus\": \"etcdraft\",\n\t\"database\": \"couchdb\"\n}"
-				},
-				"url": {
-					"raw": "{{base_url}}/api/v1/networks",
-					"host": [
-						"{{base_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"networks"
-					]
-				},
-				"description": "Create new blockchain network"
-			}
-		},
-		{
-			"name": "Create Channel",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 201\", function () {",
-							"    pm.response.to.have.status(201);",
-							"});",
-							"",
-							"if (pm.response.code === 201) {",
-							"    var jsonData = pm.response.json();",
-							"    pm.environment.set(\"channel_id\", jsonData.id);",
-							"    ",
-							"    setTimeout(function() {",
-							"        console.log(\"Delayed 10 seconds\");",
-							"    }, 10000);",
-							"}"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json",
-						"type": "text"
-					},
-					{
-						"key": "Authorization",
-						"value": "JWT {{token}}",
-						"type": "text"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n\t\"name\": \"mychannel\",\n\t\"orderers\": [\"{{orderer_id}}\"],\n\t\"peers\": [\"{{peer_id}}\"]\n}"
+					"raw": "{\n\t\"name\": \"channel0\"\n}"
 				},
 				"url": {
 					"raw": "{{base_url}}/api/v1/channels",
@@ -366,19 +236,24 @@
 						"channels"
 					]
 				},
-				"description": "Create new channel with specified peers and orderers"
+				"description": "Create a new channel"
 			}
 		},
 		{
-			"name": "Upload Chaincode Package",
+			"name": "Upload a Chaincode",
 			"event": [
 				{
 					"listen": "test",
 					"script": {
 						"exec": [
-							"pm.test(\"Status code is 200\", function () {",
-							"    pm.response.to.have.status(200);",
-							"});"
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"if (pm.response.code === 201) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"chaincode_id\", jsonData.data.id);",
+							"}"
 						],
 						"type": "text/javascript"
 					}
@@ -397,35 +272,48 @@
 					"mode": "formdata",
 					"formdata": [
 						{
-							"key": "file",
-							"type": "file",
-							"src": ["basic.tar.gz"],
-							"description": "basic chaincode package"
+							"key": "name",
+							"value": "basic",
+							"type": "text"
 						},
 						{
-							"key": "description",
-							"value": "Sample chaincode for testing",
+							"key": "version",
+							"value": "1.0",
+							"type": "text"
+						},
+						{
+							"key": "sequence",
+							"value": "1",
+							"type": "text"
+						},
+						{
+							"key": "package",
+							"type": "file",
+							"src": ["basic.tar.gz"]
+						},
+						{
+							"key": "channel",
+							"value": "{{channel_id}}",
 							"type": "text"
 						}
 					]
 				},
 				"url": {
-					"raw": "{{base_url}}/api/v1/chaincodes/chaincodeRepo",
+					"raw": "{{base_url}}/api/v1/chaincodes",
 					"host": [
 						"{{base_url}}"
 					],
 					"path": [
 						"api",
 						"v1",
-						"chaincodes",
-						"chaincodeRepo"
+						"chaincodes"
 					]
 				},
-				"description": "Upload chaincode package file"
+				"description": "Create a new chaincode"
 			}
 		},
 		{
-			"name": "List Chaincodes",
+			"name": "Wait for the chaincode to be approved",
 			"event": [
 				{
 					"listen": "test",
@@ -433,15 +321,47 @@
 						"exec": [
 							"pm.test(\"Status code is 200\", function () {",
 							"    pm.response.to.have.status(200);",
-							"});",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "https://postman-echo.com/delay/10",
+					"host": [
+						"postman-echo.com"
+					],
+					"path": [
+						"delay",
+						"10"
+					],
+					"query": []
+				},
+				"description": "Wait a minute"
+			}
+		},
+		{
+			"name": "Check if the chaincode is approved",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let json = pm.response.json();",
+							"let chaincode = json.data.data[0];",
+							"let status = chaincode.status;",
 							"",
-							"if (pm.response.code === 200) {",
-							"    var jsonData = pm.response.json();",
-							"    if (jsonData.data && jsonData.data.data && jsonData.data.data.length > 0) {",
-							"        var latestChaincode = jsonData.data.data[0];",
-							"        pm.environment.set(\"package_id\", latestChaincode.package_id);",
+							"let retries = pm.collectionVariables.get(\"retries\");",
+							"if (status !== \"APPROVED\") {",
+							"    if (retries < 30) {",
+							"        console.log(`Not ready (status=${status}), retry #${retries}`);",
+							"        pm.collectionVariables.set(\"retries\", retries + 1);",
+							"        pm.execution.setNextRequest(\"Wait for the chaincode to be approved\");",
 							"    } else {",
-							"        console.log(\"No chaincodes found in response\");",
+							"        pm.expect.fail(`Max retries reached. Last status: ${status}`);",
 							"    }",
 							"}"
 						],
@@ -479,18 +399,18 @@
 						}
 					]
 				},
-				"description": "List chaincodes to get the latest uploaded chaincode ID"
+				"description": "List chaincodes to check if it's been approved"
 			}
 		},
 		{
-			"name": "Install Chaincode",
+			"name": "Commit the chaincode",
 			"event": [
 				{
 					"listen": "test",
 					"script": {
 						"exec": [
-							"pm.test(\"Status code is 200\", function () {",
-							"    pm.response.to.have.status(200);",
+							"pm.test(\"Status code is 204\", function () {",
+							"    pm.response.to.have.status(204);",
 							"});"
 						],
 						"type": "text/javascript"
@@ -498,7 +418,7 @@
 				}
 			],
 			"request": {
-				"method": "POST",
+				"method": "PUT",
 				"header": [
 					{
 						"key": "Content-Type",
@@ -511,12 +431,9 @@
 						"type": "text"
 					}
 				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n\t\"id\": \"{{package_id}}\",\n\t\"node\": \"{{peer_id}}\"\n}"
-				},
+				"body": {},
 				"url": {
-					"raw": "{{base_url}}/api/v1/chaincodes/install",
+					"raw": "{{base_url}}/api/v1/chaincodes/{{chaincode_id}}/commit",
 					"host": [
 						"{{base_url}}"
 					],
@@ -524,106 +441,11 @@
 						"api",
 						"v1",
 						"chaincodes",
-						"install"
-					]
-				},
-				"description": "Install chaincode package to peer node"
-			}
-		},
-		{
-			"name": "Approve Chaincode",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 200\", function () {",
-							"    pm.response.to.have.status(200);",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json",
-						"type": "text"
-					},
-					{
-						"key": "Authorization",
-						"value": "JWT {{token}}",
-						"type": "text"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n\t\"channel_name\": \"mychannel\",\n\t\"chaincode_name\": \"basic\",\n\t\"chaincode_version\": \"1.0\",\n\t\"sequence\": 1,\n\t\"policy\": \"\",\n\t\"init_flag\": false\n}"
-				},
-				"url": {
-					"raw": "{{base_url}}/api/v1/chaincodes/approve_for_my_org",
-					"host": [
-						"{{base_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"chaincodes",
-						"approve_for_my_org"
-					]
-				},
-				"description": "Approve chaincode for organization"
-			}
-		},
-		{
-			"name": "Commit Chaincode",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 200\", function () {",
-							"    pm.response.to.have.status(200);",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json",
-						"type": "text"
-					},
-					{
-						"key": "Authorization",
-						"value": "JWT {{token}}",
-						"type": "text"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n\t\"channel_name\": \"mychannel\",\n\t\"chaincode_name\": \"basic\",\n\t\"chaincode_version\": \"1.0\",\n\t\"sequence\": 1,\n\t\"policy\": \"\",\n\t\"init_flag\": false\n}"
-				},
-				"url": {
-					"raw": "{{base_url}}/api/v1/chaincodes/commit",
-					"host": [
-						"{{base_url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"chaincodes",
+						"{{chaincode_id}}",
 						"commit"
 					]
 				},
-				"description": "Commit chaincode definition to channel"
+				"description": "Commit the chaincode"
 			}
 		}
 	],
@@ -639,37 +461,17 @@
 			"type": "string"
 		},
 		{
-			"key": "org_id",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "agent_id",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "network_id",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "peer_id",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "orderer_id",
-			"value": "",
-			"type": "string"
-		},
-		{
 			"key": "channel_id",
 			"value": "",
 			"type": "string"
 		},
 		{
-			"key": "package_id",
+			"key": "retries",
+			"value": 0,
+			"type": "number"
+		},
+		{
+			"key": "chaincode_id",
 			"value": "",
 			"type": "string"
 		}
