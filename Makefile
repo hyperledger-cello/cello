@@ -69,7 +69,6 @@ LOCAL_STORAGE_PATH=/opt/cello
 LOCAL_COMPOSE_FILE ?= docker-compose.dev.yaml
 LOCAL_AGENT_NAME ?= cello-docker-agent
 LOCAL_AGENT_IMAGE ?= cello/hyperledger-fabric-agent:local
-LOCAL_AGENT_VOLUME ?= cello-hyperledger-fabric-agent
 LOCAL_AGENT_PORT ?= 5001
 LOCAL_AGENT_INTERNAL_PORT ?= 8080
 LOCAL_AGENT_URL ?= http://$(LOCAL_AGENT_NAME):$(LOCAL_AGENT_INTERNAL_PORT)/api/v1/
@@ -173,15 +172,13 @@ help: ##@Help Show this help.
 license:  ##@Code Check source files for Apache license header
 	scripts/check_license.sh
 
-local: fabric hyperledger-fabric-agent start-docker-compose start-local-agent ##@Development Run local API, dashboard, database, and Fabric agent
+local: fabric start-docker-compose ##@Development Run local API, dashboard, database, and Fabric agent
 	@echo "Cello dashboard: http://localhost:8081"
 	@echo "Cello API engine: http://localhost:8080"
 	@echo "Fabric agent health: http://localhost:$(LOCAL_AGENT_PORT)/api/v1/health"
 	@echo "Use this agent URL when registering: $(LOCAL_AGENT_URL)"
 
 local-reset:##@Development Remove local data and restart all local services
-	@-docker rm -f $(LOCAL_AGENT_NAME) >/dev/null 2>&1
-	@-docker volume rm -f $(LOCAL_AGENT_VOLUME) >/dev/null 2>&1
 	docker compose -f $(LOCAL_COMPOSE_FILE) down -v --remove-orphans
 	$(MAKE) local
 
@@ -225,11 +222,11 @@ check-api: ##@Test Run API tests with newman
 	cd tests/postman && docker compose up --abort-on-container-exit || (echo "API tests failed $$?"; exit 1)
 
 start-docker-compose:
+	@-docker rm -f $(LOCAL_AGENT_NAME) >/dev/null 2>&1
 	docker compose -f $(LOCAL_COMPOSE_FILE) up -d --build --force-recreate --remove-orphans
 
 stop-docker-compose:
 	echo "Stop all services with $(LOCAL_COMPOSE_FILE)..."
-	@-docker rm -f $(LOCAL_AGENT_NAME) >/dev/null 2>&1
 	docker compose -f $(LOCAL_COMPOSE_FILE) stop
 	echo "Stop all services successfully"
 
@@ -243,13 +240,6 @@ docker-rest-agent:
 
 fabric:
 	docker build -t hyperledger/fabric:$(HLF_FABRIC_VERSION) src/nodes/hyperledger-fabric
-
-hyperledger-fabric-agent:
-	docker build -t $(LOCAL_AGENT_IMAGE) src/agents/hyperledger-fabric
-
-start-local-agent:
-	@-docker rm -f $(LOCAL_AGENT_NAME) >/dev/null 2>&1
-	docker run -d --restart unless-stopped --name $(LOCAL_AGENT_NAME) --hostname $(LOCAL_AGENT_NAME) --network cello-net -p $(LOCAL_AGENT_PORT):$(LOCAL_AGENT_INTERNAL_PORT) -v /var/run/docker.sock:/var/run/docker.sock -v $(LOCAL_AGENT_VOLUME):/cello $(LOCAL_AGENT_IMAGE)
 
 dashboard:
 	docker build -t hyperledger/cello-dashboard:latest -f build_image/docker/common/dashboard/Dockerfile.in ./
@@ -278,7 +268,6 @@ agent:
 	deep-clean \
 	api-engine \
 	fabric \
-	hyperledger-fabric-agent \
 	dashboard \
 	docker-compose \
 	reset \
@@ -286,7 +275,6 @@ agent:
 	local-reset \
 	clean-images \
 	start-docker-compose \
-	start-local-agent \
 	stop-docker-compose \
 	images \
 	server \
