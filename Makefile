@@ -69,6 +69,7 @@ LOCAL_STORAGE_PATH=/opt/cello
 LOCAL_COMPOSE_FILE ?= docker-compose.dev.yaml
 LOCAL_AGENT_NAME ?= cello-docker-agent
 LOCAL_AGENT_IMAGE ?= cello/hyperledger-fabric-agent:local
+LOCAL_AGENT_VOLUME ?= cello-hyperledger-fabric-agent
 LOCAL_AGENT_PORT ?= 5001
 LOCAL_AGENT_INTERNAL_PORT ?= 8080
 LOCAL_AGENT_URL ?= http://$(LOCAL_AGENT_NAME):$(LOCAL_AGENT_INTERNAL_PORT)/api/v1/
@@ -180,6 +181,7 @@ local: fabric hyperledger-fabric-agent start-docker-compose start-local-agent ##
 
 local-reset:##@Development Remove local data and restart all local services
 	@-docker rm -f $(LOCAL_AGENT_NAME) >/dev/null 2>&1
+	@-docker volume rm -f $(LOCAL_AGENT_VOLUME) >/dev/null 2>&1
 	docker compose -f $(LOCAL_COMPOSE_FILE) down -v --remove-orphans
 	$(MAKE) local
 
@@ -247,7 +249,7 @@ hyperledger-fabric-agent:
 
 start-local-agent:
 	@-docker rm -f $(LOCAL_AGENT_NAME) >/dev/null 2>&1
-	docker run -d --name $(LOCAL_AGENT_NAME) --hostname $(LOCAL_AGENT_NAME) --network cello-net -p $(LOCAL_AGENT_PORT):$(LOCAL_AGENT_INTERNAL_PORT) -v /var/run/docker.sock:/var/run/docker.sock $(LOCAL_AGENT_IMAGE)
+	docker run -d --restart unless-stopped --name $(LOCAL_AGENT_NAME) --hostname $(LOCAL_AGENT_NAME) --network cello-net -p $(LOCAL_AGENT_PORT):$(LOCAL_AGENT_INTERNAL_PORT) -v /var/run/docker.sock:/var/run/docker.sock -v $(LOCAL_AGENT_VOLUME):/cello $(LOCAL_AGENT_IMAGE)
 
 dashboard:
 	docker build -t hyperledger/cello-dashboard:latest -f build_image/docker/common/dashboard/Dockerfile.in ./
