@@ -1,4 +1,4 @@
-name: Cello CI
+name: Integration Tests
 
 on:
   push:
@@ -24,7 +24,17 @@ jobs:
 
       - name: Build Hyperledger Fabric Node
         working-directory: src/nodes/hyperledger-fabric
-        run: docker build -t hyperledger/fabric:2.5.14 .
+        run: docker build -t hyperledger/fabric:2.5.15 .
+
+      - name: Run newman tests
+        working-directory: tests/postman
+        run: docker compose up --abort-on-container-exit
+
+      - name: Stop Hyperledger Fabric Chaincode
+        run: docker ps -q --filter "name=dev-peer0.org1.foo.com-basic_1.0" | xargs -r docker stop
+
+      - name: Stop Hyperledger Fabric Nodes
+        run: docker stop orderer0.foo.com peer0.org1.foo.com
 
       - name: Stop Hyperledger Fabric Agent
         run: docker stop cello-hyperledger-fabric-agent
