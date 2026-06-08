@@ -78,7 +78,7 @@ class UserViewSet(viewsets.ViewSet):
     )
     def destroy(self, request: Request, pk: Optional[str] = None) -> Response:
         try:
-            UserProfile.objects.get(organzation=request.user.organization, id=pk).delete()
+            UserProfile.objects.get(organization=request.user.organization, id=pk).delete()
         except Exception as e:
             raise CustomError(detail=str(e))
         return Response(status=status.HTTP_204_NO_CONTENT)
