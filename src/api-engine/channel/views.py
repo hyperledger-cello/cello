@@ -8,7 +8,7 @@ from api.common import ok
 from api.common.response import make_response_serializer
 from channel.models import Channel
 from channel.serializers import ChannelList, ChannelID, ChannelResponse, ChannelCreateBody
-from common.responses import with_common_response
+from api.utils.common import with_common_response
 from common.serializers import PageQuerySerializer
 
 

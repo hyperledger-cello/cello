@@ -4,17 +4,7 @@
 from enum import Enum, unique, EnumMeta
 import inspect
 
-
-def separate_upper_class(class_name):
-    x = ""
-    i = 0
-    for c in class_name:
-        if c.isupper() and not class_name[i - 1].isupper():
-            x += " %s" % c.lower()
-        else:
-            x += c
-        i += 1
-    return "_".join(x.strip().split(" "))
+from common.utils import separate_upper_class
 
 
 class ExtraEnum(Enum):

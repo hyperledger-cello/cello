@@ -9,7 +9,8 @@ from api.common.response import make_response_serializer
 from chaincode.models import Chaincode
 from chaincode.serializers import ChaincodeCommitBody, ChaincodeList, ChaincodeCreateBody, ChaincodeID, ChaincodeRequestBody, ChaincodeResponse, \
     ChaincodeInstallBody, ChaincodeApproveBody
-from common.responses import with_common_response, ok
+from common.responses import ok
+from api.utils.common import with_common_response
 from common.serializers import PageQuerySerializer
 
 
