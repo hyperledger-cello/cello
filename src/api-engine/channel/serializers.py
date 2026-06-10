@@ -1,5 +1,6 @@
 from typing import Dict, Any
 
+from django.core.files.base import ContentFile
 from django.db import transaction
 from rest_framework import serializers
 
@@ -9,7 +10,7 @@ from channel.models import (
     ChannelInvitationInvitee,
     ChannelInvitationSignature,
 )
-from channel.service import create
+from channel.service import create, create_invitation_artifact
 from common.serializers import ListResponseSerializer
 from node.service import organization_orderer_exists, organization_peer_exists
 from organization.models import Organization
@@ -162,6 +163,22 @@ class ChannelInvitationCreateBody(serializers.Serializer):
                 ]
             })
 
+        active_invitees = ChannelInvitationInvitee.objects.filter(
+            organization__in=org_ids,
+            status=ChannelInvitationInvitee.Status.PENDING,
+            invitation__channel=channel,
+            invitation__status__in=(
+                ChannelInvitation.Status.DRAFT,
+                ChannelInvitation.Status.SIGNING,
+                ChannelInvitation.Status.READY,
+            ),
+        )
+        if active_invitees.exists():
+            raise serializers.ValidationError(
+                "An active invitation already exists for one or more "
+                "of the specified organizations."
+            )
+
         member_count = channel.organizations.count()
         required = attrs.get("required_signatures", member_count)
         if required > member_count:
@@ -178,11 +195,23 @@ class ChannelInvitationCreateBody(serializers.Serializer):
     def create(self, validated_data):
         orgs = validated_data.pop("organizations")
         validated_data.pop("organization_ids")
+        channel = self.context["channel"]
+        creator = self.context["organization"]
+        artifact_bytes, artifact_hash = create_invitation_artifact(
+            agent_url=creator.agent_url,
+            channel_name=channel.name,
+            msp_ids=[str(o.id) for o in orgs],
+        )
         with transaction.atomic():
             invitation = ChannelInvitation.objects.create(
-                channel=self.context["channel"],
-                creator_organization=self.context["organization"],
+                channel=channel,
+                creator_organization=creator,
                 required_signatures=validated_data["required_signatures"],
+                artifact_hash=artifact_hash,
+            )
+            invitation.artifact.save(
+                f"channel_update_{channel.name}.bin",
+                ContentFile(artifact_bytes),
             )
             ChannelInvitationInvitee.objects.bulk_create([
                 ChannelInvitationInvitee(
@@ -190,3 +219,20 @@ class ChannelInvitationCreateBody(serializers.Serializer):
                 ) for o in orgs
             ])
         return invitation
+
+
+class ChannelInvitationCancelSerializer(serializers.Serializer):
+    def validate(self, attrs):
+        invitation = self.context["invitation"]
+
+        if invitation.status not in (
+            ChannelInvitation.Status.DRAFT,
+            ChannelInvitation.Status.SIGNING,
+            ChannelInvitation.Status.FAILED,
+            ChannelInvitation.Status.READY,
+        ):
+            raise serializers.ValidationError(
+                "Only DRAFT, SIGNING, FAILED, or READY invitations can be canceled."
+            )
+
+        return attrs

@@ -1,5 +1,10 @@
+from unittest.mock import patch
+
 from django.db import IntegrityError, transaction
 from django.test import TestCase
+from rest_framework import status
+from rest_framework.test import APIClient
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from channel.models import (
     Channel,
@@ -9,6 +14,7 @@ from channel.models import (
 )
 from channel.serializers import ChannelInvitationCreateBody
 from organization.models import Organization
+from user.models import UserProfile
 
 
 class ChannelInvitationTestCase(TestCase):
@@ -91,7 +97,7 @@ class ChannelInvitationTestCase(TestCase):
             self.member_org
         )
 
-        self.assertIn(invitation, visible)
+        self.assertIn(str(invitation.pk), [str(i.pk) for i in visible])
 
     def test_invited_organization_cannot_see_draft_invitation(self):
         invitation = self.create_invitation()
@@ -100,7 +106,7 @@ class ChannelInvitationTestCase(TestCase):
             self.invited_org
         )
 
-        self.assertNotIn(invitation, visible)
+        self.assertNotIn(str(invitation.pk), [str(i.pk) for i in visible])
 
     def test_invited_organization_can_see_ready_invitation(self):
         invitation = self.create_invitation(
@@ -111,7 +117,7 @@ class ChannelInvitationTestCase(TestCase):
             self.invited_org
         )
 
-        self.assertIn(invitation, visible)
+        self.assertIn(str(invitation.pk), [str(i.pk) for i in visible])
 
     def test_unrelated_organization_cannot_see_ready_invitation(self):
         invitation = self.create_invitation(
@@ -122,7 +128,7 @@ class ChannelInvitationTestCase(TestCase):
             self.other_org
         )
 
-        self.assertNotIn(invitation, visible)
+        self.assertNotIn(str(invitation.pk), [str(i.pk) for i in visible])
 
     def test_member_organization_can_see_canceled_invitation(self):
         invitation = self.create_invitation(
@@ -133,7 +139,7 @@ class ChannelInvitationTestCase(TestCase):
             self.member_org
         )
 
-        self.assertIn(invitation, visible)
+        self.assertIn(str(invitation.pk), [str(i.pk) for i in visible])
 
     def test_invited_organization_cannot_see_canceled_invitation(self):
         invitation = self.create_invitation(
@@ -144,7 +150,7 @@ class ChannelInvitationTestCase(TestCase):
             self.invited_org
         )
 
-        self.assertNotIn(invitation, visible)
+        self.assertNotIn(str(invitation.pk), [str(i.pk) for i in visible])
 
     def test_create_serializer_rejects_non_member_creator(self):
         serializer = ChannelInvitationCreateBody(
@@ -202,7 +208,11 @@ class ChannelInvitationTestCase(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertIn("required_signatures", serializer.errors)
 
-    def test_create_serializer_defaults_required_signatures(self):
+    @patch("channel.serializers.create_invitation_artifact")
+    def test_create_serializer_defaults_required_signatures(
+        self, mock_create_artifact
+    ):
+        mock_create_artifact.return_value = (b"artifact", "a" * 64)
         serializer = ChannelInvitationCreateBody(
             data={"organization_ids": [self.invited_org.id]},
             context={
@@ -216,7 +226,11 @@ class ChannelInvitationTestCase(TestCase):
 
         self.assertEqual(invitation.required_signatures, 2)
 
-    def test_create_serializer_creates_invitation_and_invitees(self):
+    @patch("channel.serializers.create_invitation_artifact")
+    def test_create_serializer_creates_invitation_and_invitees(
+        self, mock_create_artifact
+    ):
+        mock_create_artifact.return_value = (b"artifact", "a" * 64)
         serializer = ChannelInvitationCreateBody(
             data={
                 "organization_ids": [self.invited_org.id],
@@ -236,6 +250,359 @@ class ChannelInvitationTestCase(TestCase):
         self.assertEqual(invitation.required_signatures, 1)
         self.assertEqual(invitation.invitees.count(), 1)
         self.assertEqual(
-            invitation.invitees.get().organization,
-            self.invited_org,
+            str(invitation.invitees.get().organization.pk),
+            str(self.invited_org.pk),
         )
+
+
+class ChannelInvitationEndpointTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.member_org = Organization.objects.create(
+            name="member.example.com",
+            agent_url="http://member-agent.example.com",
+        )
+        self.second_member_org = Organization.objects.create(
+            name="second-member.example.com",
+            agent_url="http://second-agent.example.com",
+        )
+        self.other_org = Organization.objects.create(
+            name="other.example.com",
+            agent_url="http://other-agent.example.com",
+        )
+        self.invited_org = Organization.objects.create(
+            name="invited.example.com",
+            agent_url="http://invited-agent.example.com",
+        )
+
+        self.channel = Channel.objects.create(name="testchannel")
+        self.channel.organizations.add(self.member_org, self.second_member_org)
+
+        self.admin_user = UserProfile.objects.create_user(
+            username="admin",
+            email="admin@example.com",
+            password="testpass123",
+            organization=self.member_org,
+            role=UserProfile.Role.ADMIN,
+        )
+        self.non_admin_user = UserProfile.objects.create_user(
+            username="user",
+            email="user@example.com",
+            password="testpass123",
+            organization=self.member_org,
+            role=UserProfile.Role.USER,
+        )
+        self.second_admin_user = UserProfile.objects.create_user(
+            username="second_admin",
+            email="second@example.com",
+            password="testpass123",
+            organization=self.second_member_org,
+            role=UserProfile.Role.ADMIN,
+        )
+        self.other_user = UserProfile.objects.create_user(
+            username="other",
+            email="other@example.com",
+            password="testpass123",
+            organization=self.other_org,
+        )
+
+        self.admin_token = str(
+            RefreshToken.for_user(self.admin_user).access_token
+        )
+        self.user_token = str(
+            RefreshToken.for_user(self.non_admin_user).access_token
+        )
+        self.second_admin_token = str(
+            RefreshToken.for_user(self.second_admin_user).access_token
+        )
+        self.other_token = str(
+            RefreshToken.for_user(self.other_user).access_token
+        )
+
+        self.invited_user = UserProfile.objects.create_user(
+            username="invited",
+            email="invited@example.com",
+            password="testpass123",
+            organization=self.invited_org,
+        )
+        self.invited_token = str(
+            RefreshToken.for_user(self.invited_user).access_token
+        )
+
+    def _url(self, path=""):
+        return f"/api/v1/channels/{self.channel.id}/{path}"
+
+    def _auth(self, token):
+        self.client.credentials(HTTP_AUTHORIZATION=f"JWT {token}")
+
+    def create_invitation(self, status=ChannelInvitation.Status.DRAFT):
+        invitation = ChannelInvitation.objects.create(
+            channel=self.channel,
+            creator_organization=self.member_org,
+            status=status,
+            required_signatures=1,
+        )
+        ChannelInvitationInvitee.objects.create(
+            invitation=invitation,
+            organization=self.invited_org,
+        )
+        return invitation
+
+    def test_member_lists_invitations(self):
+        self.create_invitation()
+        self._auth(self.admin_token)
+
+        resp = self.client.get(self._url("invitations"))
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(resp.data["data"]["data"]), 1)
+
+    def test_invitee_does_not_see_draft(self):
+        self.create_invitation()
+        self._auth(self.other_token)
+
+        resp = self.client.get(self._url("invitations"))
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(resp.data["data"]["data"]), 0)
+
+    def test_invitee_sees_ready(self):
+        self.create_invitation(status=ChannelInvitation.Status.READY)
+        self._auth(self.invited_token)
+
+        resp = self.client.get(self._url("invitations"))
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(resp.data["data"]["data"]), 1)
+
+    @patch("channel.serializers.create_invitation_artifact")
+    def test_admin_creates_invitation(self, mock_create_artifact):
+        mock_create_artifact.return_value = (b"artifact", "a" * 64)
+        self._auth(self.admin_token)
+
+        resp = self.client.post(
+            self._url("invitations"),
+            {"organization_ids": [self.invited_org.id]},
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            ChannelInvitation.objects.count(), 1
+        )
+        invitation = ChannelInvitation.objects.get()
+        self.assertEqual(invitation.artifact_hash, "a" * 64)
+        self.assertTrue(invitation.artifact)
+
+    def test_non_admin_cannot_create(self):
+        self._auth(self.user_token)
+
+        resp = self.client.post(
+            self._url("invitations"),
+            {"organization_ids": [self.invited_org.id]},
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_non_member_cannot_create(self):
+        self._auth(self.other_token)
+
+        resp = self.client.post(
+            self._url("invitations"),
+            {"organization_ids": [self.invited_org.id]},
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_retrieve_invitation(self):
+        invitation = self.create_invitation()
+        self._auth(self.admin_token)
+
+        resp = self.client.get(
+            self._url(f"invitations/{invitation.id}")
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            resp.data["data"]["id"], str(invitation.id)
+        )
+
+    def test_cancel_draft_invitation(self):
+        invitation = self.create_invitation()
+        self._auth(self.admin_token)
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/cancel"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        invitation.refresh_from_db()
+        self.assertEqual(
+            invitation.status, ChannelInvitation.Status.CANCELED
+        )
+
+    def test_cancel_already_canceled_fails(self):
+        invitation = self.create_invitation(
+            status=ChannelInvitation.Status.CANCELED
+        )
+        self._auth(self.admin_token)
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/cancel"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_member_admin_cancels_ready(self):
+        invitation = self.create_invitation(
+            status=ChannelInvitation.Status.READY,
+        )
+        self._auth(self.admin_token)
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/cancel"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        invitation.refresh_from_db()
+        self.assertEqual(
+            invitation.status, ChannelInvitation.Status.CANCELED,
+        )
+
+    def test_member_admin_non_creator_cancels(self):
+        invitation = self.create_invitation()
+        self._auth(self.second_admin_token)
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/cancel"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        invitation.refresh_from_db()
+        self.assertEqual(
+            invitation.status, ChannelInvitation.Status.CANCELED,
+        )
+
+    def test_non_admin_member_cannot_cancel(self):
+        invitation = self.create_invitation()
+        self._auth(self.user_token)
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/cancel"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_unrelated_org_cannot_cancel(self):
+        invitation = self.create_invitation()
+        self._auth(self.other_token)
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/cancel"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_invited_org_can_cancel(self):
+        invitation = self.create_invitation()
+        self._auth(self.invited_token)
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/cancel"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, ChannelInvitation.Status.CANCELED)
+
+    def test_invited_org_non_pending_cannot_cancel(self):
+        invitation = self.create_invitation()
+        invitee = invitation.invitees.get()
+        invitee.status = ChannelInvitationInvitee.Status.ACCEPTED
+        invitee.save()
+        self._auth(self.invited_token)
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/cancel"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch("channel.serializers.create_invitation_artifact")
+    def test_reinvite_after_cancel(self, mock_create_artifact):
+        mock_create_artifact.return_value = (b"artifact", "a" * 64)
+        invitation = self.create_invitation()
+        self._auth(self.admin_token)
+
+        self.client.post(
+            self._url(f"invitations/{invitation.id}/cancel"),
+            format="json",
+        )
+
+        resp = self.client.post(
+            self._url("invitations"),
+            {"organization_ids": [self.invited_org.id]},
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+
+    @patch("channel.serializers.create_invitation_artifact")
+    def test_reinvite_after_reject(self, mock_create_artifact):
+        mock_create_artifact.return_value = (b"artifact", "a" * 64)
+        invitation = self.create_invitation()
+        invitee = invitation.invitees.get()
+        invitee.status = ChannelInvitationInvitee.Status.REJECTED
+        invitee.save()
+
+        self._auth(self.admin_token)
+        resp = self.client.post(
+            self._url("invitations"),
+            {"organization_ids": [self.invited_org.id]},
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+
+    @patch("channel.serializers.create_invitation_artifact")
+    def test_duplicate_active_invitation_blocked(self, mock_create_artifact):
+        mock_create_artifact.return_value = (b"artifact", "a" * 64)
+        self._auth(self.admin_token)
+
+        self.client.post(
+            self._url("invitations"),
+            {"organization_ids": [self.invited_org.id]},
+            format="json",
+        )
+
+        resp = self.client.post(
+            self._url("invitations"),
+            {"organization_ids": [self.invited_org.id]},
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch("channel.serializers.create_invitation_artifact")
+    def test_agent_failure_no_partial_state(self, mock_create_artifact):
+        mock_create_artifact.side_effect = Exception("Agent error")
+        self._auth(self.admin_token)
+
+        with self.assertRaises(Exception):
+            self.client.post(
+                self._url("invitations"),
+                {"organization_ids": [self.invited_org.id]},
+                format="json",
+            )
+
+        self.assertEqual(ChannelInvitation.objects.count(), 0)
