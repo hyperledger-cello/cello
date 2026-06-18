@@ -16,9 +16,14 @@ class RegisterBody(serializers.Serializer):
     email = serializers.EmailField(help_text="Admin Email")
     password = serializers.CharField(help_text="Admin Password")
     agent_url = serializers.CharField(help_text="Agent URL")
+    msp_id = serializers.CharField(
+        help_text="Fabric MSP ID (e.g. Org1MSP)",
+        required=False,
+        allow_blank=True,
+    )
 
     class Meta:
-        fields = ("org_name", "email", "password")
+        fields = ("org_name", "email", "password", "msp_id")
         extra_kwargs = {
             "org_name": {"required": True},
             "email": {"required": True},
@@ -40,8 +45,17 @@ class RegisterBody(serializers.Serializer):
 
         return agent_url
 
+    def validate_msp_id(self, msp_id: str) -> str:
+        if msp_id and Organization.objects.filter(msp_id=msp_id).exists():
+            raise serializers.ValidationError("MSP ID already exists!")
+        return msp_id
+
     def create(self, validated_data: Dict[str, Any]) -> Optional[Organization]:
-        organization = create_organization(validated_data.get("org_name"), validated_data.get("agent_url"))
+        organization = create_organization(
+            validated_data.get("org_name"),
+            validated_data.get("agent_url"),
+            validated_data.get("msp_id", ""),
+        )
         create_user(organization, validated_data["email"], validated_data["password"], UserProfile.Role.ADMIN)
         return organization
 

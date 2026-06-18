@@ -22,18 +22,22 @@ class ChannelInvitationTestCase(TestCase):
         self.member_org = Organization.objects.create(
             name="member.example.com",
             agent_url="http://member-agent.example.com",
+            msp_id="MemberMSP",
         )
         self.second_member_org = Organization.objects.create(
             name="second.example.com",
             agent_url="http://second-agent.example.com",
+            msp_id="SecondMSP",
         )
         self.invited_org = Organization.objects.create(
             name="invited.example.com",
             agent_url="http://invited-agent.example.com",
+            msp_id="InvitedMSP",
         )
         self.other_org = Organization.objects.create(
             name="other.example.com",
             agent_url="http://other-agent.example.com",
+            msp_id="OtherMSP",
         )
         self.channel = Channel.objects.create(name="testchannel")
         self.channel.organizations.add(
@@ -261,18 +265,22 @@ class ChannelInvitationEndpointTests(TestCase):
         self.member_org = Organization.objects.create(
             name="member.example.com",
             agent_url="http://member-agent.example.com",
+            msp_id="MemberMSP",
         )
         self.second_member_org = Organization.objects.create(
             name="second-member.example.com",
             agent_url="http://second-agent.example.com",
+            msp_id="Second-memberMSP",
         )
         self.other_org = Organization.objects.create(
             name="other.example.com",
             agent_url="http://other-agent.example.com",
+            msp_id="OtherMSP",
         )
         self.invited_org = Organization.objects.create(
             name="invited.example.com",
             agent_url="http://invited-agent.example.com",
+            msp_id="InvitedMSP",
         )
 
         self.channel = Channel.objects.create(name="testchannel")
@@ -595,14 +603,14 @@ class ChannelInvitationEndpointTests(TestCase):
 
     @patch("channel.serializers.create_invitation_artifact")
     def test_agent_failure_no_partial_state(self, mock_create_artifact):
-        mock_create_artifact.side_effect = Exception("Agent error")
+        mock_create_artifact.side_effect = RuntimeError("Agent error")
         self._auth(self.admin_token)
 
-        with self.assertRaises(Exception):
-            self.client.post(
-                self._url("invitations"),
-                {"organization_ids": [self.invited_org.id]},
-                format="json",
-            )
+        resp = self.client.post(
+            self._url("invitations"),
+            {"organization_ids": [self.invited_org.id]},
+            format="json",
+        )
 
+        self.assertEqual(resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertEqual(ChannelInvitation.objects.count(), 0)
