@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { injectIntl, useIntl } from 'umi';
-import { Button, Modal, Input, Upload, message, Switch, Select, InputNumber, Tag } from 'antd';
+import { Button, Modal, Input, Upload, message, Switch, Select, Tag } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { Form } from 'antd/lib/index';
 import { listChannel } from '@/services/channel';
@@ -178,24 +178,7 @@ const UploadForm = props => {
         >
           <Input placeholder="Chaincode version" />
         </FormItem>
-        <FormItem
-          {...formItemLayout}
-          label="sequence"
-          name="sequence"
-          rules={[
-            {
-              required: true,
-            },
-          ]}
-        >
-          <InputNumber
-            min={1}
-            precision={0}
-            step={1}
-            placeholder="Chaincode Sequence"
-            style={{ width: '100%' }}
-          />
-        </FormItem>
+
         <FormItem
           {...formItemLayout}
           label="initRequired"
