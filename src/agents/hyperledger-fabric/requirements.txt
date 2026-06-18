@@ -1,4 +1,4 @@
-django==6.0
+django==6.0.5
 psycopg==3.3.2
 djangorestframework==3.16.1
 drf-spectacular==0.29.0
