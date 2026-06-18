@@ -200,7 +200,7 @@ class ChannelInvitationCreateBody(serializers.Serializer):
         artifact_bytes, artifact_hash = create_invitation_artifact(
             agent_url=creator.agent_url,
             channel_name=channel.name,
-            msp_ids=[str(o.id) for o in orgs],
+            msp_ids=[o.msp_id for o in orgs],
         )
         with transaction.atomic():
             invitation = ChannelInvitation.objects.create(

@@ -75,6 +75,7 @@ class Chaincode(models.Model):
     )
     signature_policy = models.CharField(
         help_text="Chaincode Signature Policy",
+        max_length=1024,
         null=True,
         blank=True,
     )

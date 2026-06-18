@@ -23,8 +23,6 @@ from common.responses import with_common_response
 from common.serializers import PageQuerySerializer
 
 
-# Create your views here.
-
 class ChannelViewSet(viewsets.ViewSet):
     permission_classes = [
         IsAuthenticated,
@@ -137,7 +135,13 @@ class ChannelViewSet(viewsets.ViewSet):
                     status=status.HTTP_403_FORBIDDEN,
                     data=err("Admin role required."),
                 )
-            invitation = serializer.save()
+            try:
+                invitation = serializer.save()
+            except Exception as e:
+                return Response(
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    data=err(str(e)),
+                )
             return Response(
                 status=status.HTTP_201_CREATED,
                 data=ok(ChannelInvitationResponse(invitation).data),
