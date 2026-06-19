@@ -670,3 +670,62 @@ def generate_invitation_definition(channel_name, organization_msp_ids):
                 os.remove(f_path)
             except OSError:
                 pass
+
+
+def sign_config_update(channel_name, artifact_bytes):
+    channel_dir = _channel_dir(channel_name)
+    os.makedirs(channel_dir, exist_ok=True)
+
+    input_pb = os.path.join(channel_dir, "sign_input.pb")
+    output_pb = os.path.join(channel_dir, "sign_output.pb")
+
+    temp_files = [input_pb, output_pb]
+
+    try:
+        crypto_config = _read_crypto_config()
+        peer_org = crypto_config["PeerOrgs"][0]
+        domain = peer_org["Domain"]
+        peer_org_dir = os.path.join(CELLO_HOME, "peerOrganizations", domain)
+
+        peer_env = {
+            "CORE_PEER_TLS_ENABLED": "true",
+            "CORE_PEER_LOCALMSPID": peer_org["Name"] + "MSP",
+            "CORE_PEER_TLS_ROOTCERT_FILE": os.path.join(
+                peer_org_dir, "peers",
+                "{}.{}".format(peer_org["Specs"][0]["Hostname"], domain),
+                "tls", "ca.crt"
+            ),
+            "CORE_PEER_MSPCONFIGPATH": os.path.join(
+                peer_org_dir, "users", "Admin@" + domain, "msp"
+            ),
+            "CORE_PEER_ADDRESS": "{}.{}:7051".format(
+                peer_org["Specs"][0]["Hostname"], domain
+            ),
+            "FABRIC_CFG_PATH": os.path.join(
+                peer_org_dir, "peers",
+                "{}.{}".format(peer_org["Specs"][0]["Hostname"], domain)
+            ),
+        }
+
+        with open(input_pb, "wb") as f:
+            f.write(artifact_bytes)
+
+        subprocess.run(
+            [
+                os.path.join(FABRIC_TOOL, "peer"),
+                "channel", "signconfigtx",
+                "-f", input_pb,
+                "--output", output_pb,
+            ],
+            check=True, env=peer_env,
+        )
+
+        with open(output_pb, "rb") as f:
+            return f.read()
+
+    finally:
+        for f_path in temp_files:
+            try:
+                os.remove(f_path)
+            except OSError:
+                pass

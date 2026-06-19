@@ -7,8 +7,8 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from channel.serializers import InvitationDefinitionSerializer
-from channel.service import generate_invitation_definition
+from channel.serializers import InvitationDefinitionSerializer, InvitationSignSerializer
+from channel.service import generate_invitation_definition, sign_config_update
 
 
 FAKE_CRYPTO_CONFIG = {
@@ -191,3 +191,78 @@ class InvitationDefinitionEndpointTest(TestCase):
         )
 
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class InvitationSignSerializerTest(TestCase):
+    def test_serializer_accepts_valid_context(self):
+        serializer = InvitationSignSerializer(
+            data={},
+            context={"channel_name": "testchannel", "artifact_bytes": b"fake-artifact"},
+        )
+        self.assertTrue(serializer.is_valid())
+
+
+class SignConfigUpdateTest(TestCase):
+    def setUp(self):
+        self.channel_name = "testchannel"
+        self.artifact_bytes = b"fake-config-update-envelope"
+
+    @patch("channel.service.CRYPTO_CONFIG", "/fake/crypto-config.yaml")
+    @patch("channel.service.CELLO_HOME", "/fake/cello")
+    @patch("channel.service.FABRIC_TOOL", "/fake/bin")
+    @patch("channel.service._read_crypto_config", return_value=FAKE_CRYPTO_CONFIG)
+    @patch("channel.service.subprocess.run")
+    @patch("builtins.open", new_callable=MagicMock)
+    @patch("os.remove")
+    @patch("os.makedirs")
+    def test_signs_artifact(self, mock_makedirs, mock_remove, mock_open,
+                            mock_subprocess, mock_read_crypto):
+        mock_fp = MagicMock()
+        mock_fp.__enter__.return_value = mock_fp
+        mock_fp.read.return_value = b"signed-artifact-data"
+        mock_open.return_value = mock_fp
+
+        result = sign_config_update(self.channel_name, self.artifact_bytes)
+
+        self.assertEqual(result, b"signed-artifact-data")
+        mock_subprocess.assert_called_once()
+
+    @patch("channel.service.CRYPTO_CONFIG", "/fake/crypto-config.yaml")
+    @patch("channel.service.CELLO_HOME", "/fake/cello")
+    @patch("channel.service.FABRIC_TOOL", "/fake/bin")
+    @patch("channel.service._read_crypto_config", return_value=FAKE_CRYPTO_CONFIG)
+    @patch("channel.service.subprocess.run",
+           side_effect=subprocess.CalledProcessError(1, "peer"))
+    @patch("builtins.open", new_callable=MagicMock)
+    @patch("os.remove")
+    @patch("os.makedirs")
+    def test_subprocess_failure_surfaces_error(self, mock_makedirs, mock_remove,
+                                                mock_open, mock_subprocess,
+                                                mock_read_crypto):
+        mock_fp = MagicMock()
+        mock_fp.__enter__.return_value = mock_fp
+        mock_open.return_value = mock_fp
+
+        with self.assertRaises(subprocess.CalledProcessError):
+            sign_config_update(self.channel_name, self.artifact_bytes)
+
+
+class InvitationSignEndpointTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.channel_name = "testchannel"
+        self.url = f"/api/v1/channels/{self.channel_name}/invitations/sign"
+
+    @patch("channel.serializers.sign_config_update")
+    def test_endpoint_returns_200_with_binary(self, mock_sign):
+        mock_sign.return_value = b"signed-artifact-data"
+
+        resp = self.client.post(
+            self.url,
+            b"unsigned-artifact-data",
+            content_type="application/octet-stream",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp["Content-Type"], "application/octet-stream")
+        self.assertEqual(resp.content, b"signed-artifact-data")
