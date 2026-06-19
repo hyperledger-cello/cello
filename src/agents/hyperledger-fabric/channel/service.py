@@ -729,3 +729,99 @@ def sign_config_update(channel_name, artifact_bytes):
                 os.remove(f_path)
             except OSError:
                 pass
+
+
+def join_channel(channel_name, artifact_bytes):
+    channel_dir = _channel_dir(channel_name)
+    os.makedirs(channel_dir, exist_ok=True)
+
+    envelope_pb = os.path.join(channel_dir, "join_envelope.pb")
+    genesis_block = os.path.join(channel_dir, "genesis.block")
+
+    temp_files = [envelope_pb, genesis_block]
+
+    try:
+        crypto_config = _read_crypto_config()
+        peer_org = crypto_config["PeerOrgs"][0]
+        domain = peer_org["Domain"]
+        peer_org_dir = os.path.join(CELLO_HOME, "peerOrganizations", domain)
+
+        peer_env = {
+            "CORE_PEER_TLS_ENABLED": "true",
+            "CORE_PEER_LOCALMSPID": peer_org["Name"] + "MSP",
+            "CORE_PEER_TLS_ROOTCERT_FILE": os.path.join(
+                peer_org_dir, "peers",
+                "{}.{}".format(peer_org["Specs"][0]["Hostname"], domain),
+                "tls", "ca.crt"
+            ),
+            "CORE_PEER_MSPCONFIGPATH": os.path.join(
+                peer_org_dir, "users", "Admin@" + domain, "msp"
+            ),
+            "CORE_PEER_ADDRESS": "{}.{}:7051".format(
+                peer_org["Specs"][0]["Hostname"], domain
+            ),
+            "FABRIC_CFG_PATH": os.path.join(
+                peer_org_dir, "peers",
+                "{}.{}".format(peer_org["Specs"][0]["Hostname"], domain)
+            ),
+        }
+
+        order_org = crypto_config["OrdererOrgs"][0]
+        orderer_host = "{}.{}".format(order_org["Specs"][0]["Hostname"], order_org["Domain"])
+        orderer_dir = os.path.join(
+            CELLO_HOME, "ordererOrganizations", order_org["Domain"],
+            "orderers", orderer_host
+        )
+
+        with open(envelope_pb, "wb") as f:
+            f.write(artifact_bytes)
+
+        subprocess.run(
+            [
+                os.path.join(FABRIC_TOOL, "peer"),
+                "channel", "update",
+                "-f", envelope_pb,
+                "-c", channel_name,
+                "-o", "{}:7050".format(orderer_host),
+                "--ordererTLSHostnameOverride", orderer_host,
+                "--tls",
+                "--cafile", os.path.join(
+                    orderer_dir, "msp", "tlscacerts",
+                    "tlsca.{}-cert.pem".format(order_org["Domain"])
+                ),
+            ],
+            check=True, env=peer_env,
+        )
+
+        subprocess.run(
+            [
+                os.path.join(FABRIC_TOOL, "peer"),
+                "channel", "fetch", "0",
+                genesis_block,
+                "-c", channel_name,
+                "-o", "{}:7050".format(orderer_host),
+                "--ordererTLSHostnameOverride", orderer_host,
+                "--tls",
+                "--cafile", os.path.join(
+                    orderer_dir, "msp", "tlscacerts",
+                    "tlsca.{}-cert.pem".format(order_org["Domain"])
+                ),
+            ],
+            check=True, env=peer_env,
+        )
+
+        subprocess.run(
+            [
+                os.path.join(FABRIC_TOOL, "peer"),
+                "channel", "join",
+                "-b", genesis_block,
+            ],
+            check=True, env=peer_env,
+        )
+
+    finally:
+        for f_path in temp_files:
+            try:
+                os.remove(f_path)
+            except OSError:
+                pass

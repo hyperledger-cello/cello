@@ -45,3 +45,12 @@ def sign_invitation_artifact(agent_url, channel_name, artifact_bytes):
     )
     resp.raise_for_status()
     return resp.content
+
+
+def accept_invitation(agent_url, channel_name, artifact_bytes):
+    resp = requests.post(
+        urljoin(agent_url, f"channels/{channel_name}/invitations/join"),
+        data=artifact_bytes,
+        headers={"Content-Type": "application/octet-stream"},
+    )
+    resp.raise_for_status()

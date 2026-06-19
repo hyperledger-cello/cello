@@ -8,6 +8,7 @@ from channel.serializers import (
     ChannelSerializer,
     InvitationDefinitionSerializer,
     InvitationSignSerializer,
+    InvitationJoinSerializer,
 )
 
 
@@ -57,3 +58,17 @@ class ChannelViewSet(viewsets.ViewSet):
             content_type="application/octet-stream",
             status=status.HTTP_200_OK,
         )
+
+    @action(detail=True, methods=["post"], url_path="invitations/join")
+    @extend_schema(
+        request=None,
+        responses={200: None},
+    )
+    def invitation_join(self, request, pk=None):
+        serializer = InvitationJoinSerializer(
+            data={},
+            context={"channel_name": pk, "artifact_bytes": request.body},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_200_OK)

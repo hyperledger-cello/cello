@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.core.files.base import ContentFile
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 from rest_framework import status
@@ -764,3 +765,126 @@ class ChannelInvitationEndpointTests(TestCase):
         invitation.refresh_from_db()
         self.assertEqual(invitation.status, ChannelInvitation.Status.FAILED)
         self.assertIn("Agent unreachable", invitation.error_message)
+
+    def _create_ready_invitation(self, required_signatures=1):
+        invitation = ChannelInvitation.objects.create(
+            channel=self.channel,
+            creator_organization=self.member_org,
+            status=ChannelInvitation.Status.READY,
+            required_signatures=required_signatures,
+            artifact_hash="a" * 64,
+        )
+        invitation.artifact.save(
+            "test_artifact.bin",
+            ContentFile(b"test-artifact-data"),
+        )
+        ChannelInvitationInvitee.objects.create(
+            invitation=invitation,
+            organization=self.invited_org,
+        )
+        return invitation
+
+    @patch("channel.serializers.accept_invitation")
+    def test_invitee_accepts_ready_invitation(self, mock_accept):
+        mock_accept.return_value = None
+        self._auth(self.invited_token)
+        invitation = self._create_ready_invitation()
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/accept"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        invitation.refresh_from_db()
+        invitee = ChannelInvitationInvitee.objects.get(
+            invitation=invitation, organization=self.invited_org
+        )
+        self.assertEqual(invitee.status, ChannelInvitationInvitee.Status.ACCEPTED)
+        org_ids = [str(pk) for pk in self.channel.organizations.values_list("pk", flat=True)]
+        self.assertIn(str(self.invited_org.pk), org_ids)
+
+    @patch("channel.serializers.create_invitation_artifact")
+    def test_invitee_cannot_accept_before_ready(self, mock_create):
+        mock_create.return_value = (b"artifact", "a" * 64)
+        self._auth(self.admin_token)
+        invitation = self._create_draft_invitation()
+
+        self._auth(self.invited_token)
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/accept"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_unrelated_org_cannot_accept(self):
+        self._auth(self.other_token)
+        invitation = self._create_ready_invitation()
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/accept"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("channel.serializers.accept_invitation")
+    def test_agent_failure_on_accept_sets_failed(self, mock_accept):
+        mock_accept.side_effect = RuntimeError("Agent unreachable")
+        self._auth(self.invited_token)
+        invitation = self._create_ready_invitation()
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/accept"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, ChannelInvitation.Status.FAILED)
+        invited_org_ids = [str(pk) for pk in self.channel.organizations.values_list("pk", flat=True)]
+        self.assertNotIn(str(self.invited_org.pk), invited_org_ids)
+
+    def test_invitee_rejects_ready_invitation(self):
+        self._auth(self.invited_token)
+        invitation = self._create_ready_invitation()
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/reject"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        invitee = ChannelInvitationInvitee.objects.get(
+            invitation=invitation, organization=self.invited_org
+        )
+        self.assertEqual(invitee.status, ChannelInvitationInvitee.Status.REJECTED)
+        self.assertIsNotNone(invitee.responded_at)
+        invited_org_ids = [str(pk) for pk in self.channel.organizations.values_list("pk", flat=True)]
+        self.assertNotIn(str(self.invited_org.pk), invited_org_ids)
+
+    @patch("channel.serializers.create_invitation_artifact")
+    def test_invitee_cannot_reject_before_ready(self, mock_create):
+        mock_create.return_value = (b"artifact", "a" * 64)
+        self._auth(self.admin_token)
+        invitation = self._create_draft_invitation()
+
+        self._auth(self.invited_token)
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/reject"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_unrelated_org_cannot_reject(self):
+        self._auth(self.other_token)
+        invitation = self._create_ready_invitation()
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/reject"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)

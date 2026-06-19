@@ -19,6 +19,8 @@ from channel.serializers import (
     ChannelInvitationList,
     ChannelInvitationCancelSerializer,
     ChannelInvitationSignSerializer,
+    ChannelInvitationAcceptSerializer,
+    ChannelInvitationRejectSerializer,
 )
 from common.responses import with_common_response
 from common.serializers import PageQuerySerializer
@@ -201,6 +203,113 @@ class ChannelViewSet(viewsets.ViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 data=ok(ChannelInvitationResponse(invitation).data),
             )
+
+        return Response(
+            status=status.HTTP_200_OK,
+            data=ok(ChannelInvitationResponse(invitation).data),
+        )
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path=r"invitations/(?P<invitation_pk>[^/.]+)/accept",
+    )
+    @swagger_auto_schema(
+        operation_summary="Accept a channel invitation",
+        responses=with_common_response(
+            {status.HTTP_200_OK: make_response_serializer(ChannelInvitationResponse)}
+        ),
+    )
+    def accept_invitation(self, request, pk=None, invitation_pk=None):
+        channel = self._get_channel(pk)
+        org = request.user.organization
+
+        invitation = ChannelInvitation.objects.filter(
+            pk=invitation_pk, channel=channel
+        ).first()
+        if not invitation:
+            return Response(
+                status=status.HTTP_404_NOT_FOUND,
+                data=err("Not found."),
+            )
+
+        if not ChannelInvitationInvitee.objects.filter(
+            invitation=invitation,
+            organization=org,
+            status=ChannelInvitationInvitee.Status.PENDING,
+        ).exists():
+            return Response(
+                status=status.HTTP_404_NOT_FOUND,
+                data=err("Not found."),
+            )
+
+        serializer = ChannelInvitationAcceptSerializer(
+            data=request.data,
+            context={
+                "invitation": invitation,
+                "organization": org,
+            },
+        )
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            invitation = serializer.save()
+        except Exception:
+            invitation.refresh_from_db()
+            return Response(
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                data=ok(ChannelInvitationResponse(invitation).data),
+            )
+
+        return Response(
+            status=status.HTTP_200_OK,
+            data=ok(ChannelInvitationResponse(invitation).data),
+        )
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path=r"invitations/(?P<invitation_pk>[^/.]+)/reject",
+    )
+    @swagger_auto_schema(
+        operation_summary="Reject a channel invitation",
+        responses=with_common_response(
+            {status.HTTP_200_OK: make_response_serializer(ChannelInvitationResponse)}
+        ),
+    )
+    def reject_invitation(self, request, pk=None, invitation_pk=None):
+        channel = self._get_channel(pk)
+        org = request.user.organization
+
+        invitation = ChannelInvitation.objects.filter(
+            pk=invitation_pk, channel=channel
+        ).first()
+        if not invitation:
+            return Response(
+                status=status.HTTP_404_NOT_FOUND,
+                data=err("Not found."),
+            )
+
+        if not ChannelInvitationInvitee.objects.filter(
+            invitation=invitation,
+            organization=org,
+            status=ChannelInvitationInvitee.Status.PENDING,
+        ).exists():
+            return Response(
+                status=status.HTTP_404_NOT_FOUND,
+                data=err("Not found."),
+            )
+
+        serializer = ChannelInvitationRejectSerializer(
+            data=request.data,
+            context={
+                "invitation": invitation,
+                "organization": org,
+            },
+        )
+        serializer.is_valid(raise_exception=True)
+
+        invitation = serializer.save()
 
         return Response(
             status=status.HTTP_200_OK,
