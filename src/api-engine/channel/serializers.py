@@ -1,3 +1,4 @@
+import hashlib
 from typing import Dict, Any
 
 from django.core.files.base import ContentFile
@@ -10,7 +11,7 @@ from channel.models import (
     ChannelInvitationInvitee,
     ChannelInvitationSignature,
 )
-from channel.service import create, create_invitation_artifact
+from channel.service import create, create_invitation_artifact, sign_invitation_artifact
 from common.serializers import ListResponseSerializer
 from node.service import organization_orderer_exists, organization_peer_exists
 from organization.models import Organization
@@ -236,3 +237,77 @@ class ChannelInvitationCancelSerializer(serializers.Serializer):
             )
 
         return attrs
+
+
+class ChannelInvitationSignSerializer(serializers.Serializer):
+    def validate(self, attrs):
+        invitation = self.context["invitation"]
+        org = self.context["organization"]
+
+        if invitation.status not in (
+            ChannelInvitation.Status.DRAFT,
+            ChannelInvitation.Status.SIGNING,
+        ):
+            raise serializers.ValidationError(
+                "Only DRAFT or SIGNING invitations can be signed."
+            )
+
+        channel = invitation.channel
+        if not channel.organizations.filter(pk=org.pk).exists():
+            raise serializers.ValidationError(
+                "Only channel members can sign."
+            )
+
+        if ChannelInvitationSignature.objects.filter(
+            invitation=invitation, organization=org
+        ).exists():
+            raise serializers.ValidationError(
+                "This organization has already signed."
+            )
+
+        return attrs
+
+    def create(self, validated_data):
+        invitation = self.context["invitation"]
+        org = self.context["organization"]
+        channel = invitation.channel
+        agent_url = org.agent_url
+
+        try:
+            with open(invitation.artifact.path, "rb") as f:
+                artifact_bytes = f.read()
+
+            signed_bytes = sign_invitation_artifact(
+                agent_url, channel.name, artifact_bytes
+            )
+        except Exception as e:
+            invitation.status = ChannelInvitation.Status.FAILED
+            invitation.error_message = str(e)
+            invitation.save(update_fields=["status", "error_message"])
+            raise
+
+        new_hash = hashlib.sha256(signed_bytes).hexdigest()
+
+        with transaction.atomic():
+            invitation.artifact.save(
+                f"channel_update_{channel.name}.bin",
+                ContentFile(signed_bytes),
+            )
+            invitation.artifact_hash = new_hash
+
+            if invitation.status == ChannelInvitation.Status.DRAFT:
+                invitation.status = ChannelInvitation.Status.SIGNING
+
+            sig_count = invitation.signatures.count() + 1
+            if sig_count >= invitation.required_signatures:
+                invitation.status = ChannelInvitation.Status.READY
+
+            invitation.save(update_fields=["artifact_hash", "status"])
+
+            ChannelInvitationSignature.objects.create(
+                invitation=invitation,
+                organization=org,
+                artifact_hash=new_hash,
+            )
+
+        return invitation

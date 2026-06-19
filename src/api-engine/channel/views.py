@@ -18,6 +18,7 @@ from channel.serializers import (
     ChannelInvitationResponse,
     ChannelInvitationList,
     ChannelInvitationCancelSerializer,
+    ChannelInvitationSignSerializer,
 )
 from common.responses import with_common_response
 from common.serializers import PageQuerySerializer
@@ -146,6 +147,65 @@ class ChannelViewSet(viewsets.ViewSet):
                 status=status.HTTP_201_CREATED,
                 data=ok(ChannelInvitationResponse(invitation).data),
             )
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path=r"invitations/(?P<invitation_pk>[^/.]+)/sign",
+    )
+    @swagger_auto_schema(
+        operation_summary="Sign a channel invitation",
+        responses=with_common_response(
+            {status.HTTP_200_OK: make_response_serializer(ChannelInvitationResponse)}
+        ),
+    )
+    def sign_invitation(self, request, pk=None, invitation_pk=None):
+        channel = self._get_channel(pk)
+        org = request.user.organization
+
+        invitation = ChannelInvitation.objects.filter(
+            pk=invitation_pk, channel=channel
+        ).first()
+        if not invitation:
+            return Response(
+                status=status.HTTP_404_NOT_FOUND,
+                data=err("Not found."),
+            )
+
+        if not channel.organizations.filter(pk=org.pk).exists():
+            return Response(
+                status=status.HTTP_404_NOT_FOUND,
+                data=err("Not found."),
+            )
+
+        if not self._can_admin(org, channel):
+            return Response(
+                status=status.HTTP_403_FORBIDDEN,
+                data=err("Admin role required."),
+            )
+
+        serializer = ChannelInvitationSignSerializer(
+            data=request.data,
+            context={
+                "invitation": invitation,
+                "organization": org,
+            },
+        )
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            invitation = serializer.save()
+        except Exception:
+            invitation.refresh_from_db()
+            return Response(
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                data=ok(ChannelInvitationResponse(invitation).data),
+            )
+
+        return Response(
+            status=status.HTTP_200_OK,
+            data=ok(ChannelInvitationResponse(invitation).data),
+        )
 
     @action(detail=True, methods=["get"], url_path=r"invitations/(?P<invitation_pk>[^/.]+)")
     @swagger_auto_schema(

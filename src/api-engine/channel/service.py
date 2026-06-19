@@ -2,9 +2,10 @@ import hashlib
 import logging
 from urllib.parse import urljoin
 
+from django.core.files.base import ContentFile
 import requests
 
-from channel.models import Channel
+from channel.models import Channel, ChannelInvitation, ChannelInvitationSignature
 from organization.models import Organization
 
 LOG = logging.getLogger(__name__)
@@ -34,3 +35,13 @@ def create_invitation_artifact(agent_url, channel_name, msp_ids):
     resp.raise_for_status()
     content = resp.content
     return content, hashlib.sha256(content).hexdigest()
+
+
+def sign_invitation_artifact(agent_url, channel_name, artifact_bytes):
+    resp = requests.post(
+        urljoin(agent_url, f"channels/{channel_name}/invitations/sign"),
+        data=artifact_bytes,
+        headers={"Content-Type": "application/octet-stream"},
+    )
+    resp.raise_for_status()
+    return resp.content

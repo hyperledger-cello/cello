@@ -614,3 +614,153 @@ class ChannelInvitationEndpointTests(TestCase):
 
         self.assertEqual(resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertEqual(ChannelInvitation.objects.count(), 0)
+
+    def _create_draft_invitation(self, required_signatures=1):
+        resp = self.client.post(
+            self._url("invitations"),
+            {
+                "organization_ids": [self.invited_org.id],
+                "required_signatures": required_signatures,
+            },
+            format="json",
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        return ChannelInvitation.objects.get()
+
+    @patch("channel.serializers.create_invitation_artifact")
+    @patch("channel.serializers.sign_invitation_artifact")
+    def test_admin_signs_draft_invitation(self, mock_sign, mock_create):
+        mock_create.return_value = (b"artifact", "a" * 64)
+        mock_sign.return_value = b"signed-artifact"
+        self._auth(self.admin_token)
+        invitation = self._create_draft_invitation()
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/sign"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.artifact_hash, "c630a95966de219529d790cf9274097eda29e25744f1674d720c908d9b52dbb4")
+        self.assertEqual(ChannelInvitationSignature.objects.count(), 1)
+
+    @patch("channel.serializers.create_invitation_artifact")
+    @patch("channel.serializers.sign_invitation_artifact")
+    def test_sign_moves_draft_to_signing(self, mock_sign, mock_create):
+        mock_create.return_value = (b"artifact", "a" * 64)
+        mock_sign.return_value = b"signed-artifact"
+        self._auth(self.admin_token)
+        invitation = self._create_draft_invitation(required_signatures=2)
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/sign"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, ChannelInvitation.Status.SIGNING)
+
+    @patch("channel.serializers.create_invitation_artifact")
+    @patch("channel.serializers.sign_invitation_artifact")
+    def test_sign_moves_to_ready_when_threshold_met(self, mock_sign, mock_create):
+        mock_create.return_value = (b"artifact", "a" * 64)
+        mock_sign.return_value = b"signed-artifact"
+        self._auth(self.admin_token)
+        invitation = self._create_draft_invitation(required_signatures=1)
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/sign"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, ChannelInvitation.Status.READY)
+
+    @patch("channel.serializers.create_invitation_artifact")
+    def test_non_admin_cannot_sign(self, mock_create):
+        mock_create.return_value = (b"artifact", "a" * 64)
+        self._auth(self.admin_token)
+        invitation = self._create_draft_invitation()
+        self._auth(self.user_token)
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/sign"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch("channel.serializers.create_invitation_artifact")
+    def test_non_member_cannot_sign(self, mock_create):
+        mock_create.return_value = (b"artifact", "a" * 64)
+        self._auth(self.admin_token)
+        invitation = self._create_draft_invitation()
+        self._auth(self.other_token)
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/sign"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("channel.serializers.create_invitation_artifact")
+    @patch("channel.serializers.sign_invitation_artifact")
+    def test_duplicate_sign_rejected(self, mock_sign, mock_create):
+        mock_create.return_value = (b"artifact", "a" * 64)
+        mock_sign.return_value = b"signed-artifact"
+        self._auth(self.admin_token)
+        invitation = self._create_draft_invitation(required_signatures=2)
+
+        self.client.post(
+            self._url(f"invitations/{invitation.id}/sign"),
+            format="json",
+        )
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/sign"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch("channel.serializers.create_invitation_artifact")
+    @patch("channel.serializers.sign_invitation_artifact")
+    def test_canceled_invitation_cannot_be_signed(self, mock_sign, mock_create):
+        mock_create.return_value = (b"artifact", "a" * 64)
+        mock_sign.return_value = b"signed-artifact"
+        self._auth(self.admin_token)
+        invitation = self._create_draft_invitation()
+
+        self.client.post(
+            self._url(f"invitations/{invitation.id}/cancel"),
+            format="json",
+        )
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/sign"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @patch("channel.serializers.create_invitation_artifact")
+    @patch("channel.serializers.sign_invitation_artifact")
+    def test_agent_failure_sets_failed_status(self, mock_sign, mock_create):
+        mock_create.return_value = (b"artifact", "a" * 64)
+        mock_sign.side_effect = RuntimeError("Agent unreachable")
+        self._auth(self.admin_token)
+        invitation = self._create_draft_invitation()
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/sign"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        invitation.refresh_from_db()
+        self.assertEqual(invitation.status, ChannelInvitation.Status.FAILED)
+        self.assertIn("Agent unreachable", invitation.error_message)
