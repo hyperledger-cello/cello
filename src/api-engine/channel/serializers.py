@@ -3,6 +3,7 @@ from typing import Dict, Any
 
 from django.core.files.base import ContentFile
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import serializers
 
 from channel.models import (
@@ -11,7 +12,7 @@ from channel.models import (
     ChannelInvitationInvitee,
     ChannelInvitationSignature,
 )
-from channel.service import create, create_invitation_artifact, sign_invitation_artifact
+from channel.service import create, create_invitation_artifact, sign_invitation_artifact, accept_invitation
 from common.serializers import ListResponseSerializer
 from node.service import organization_orderer_exists, organization_peer_exists
 from organization.models import Organization
@@ -237,6 +238,95 @@ class ChannelInvitationCancelSerializer(serializers.Serializer):
             )
 
         return attrs
+
+
+class ChannelInvitationAcceptSerializer(serializers.Serializer):
+    def validate(self, attrs):
+        invitation = self.context["invitation"]
+        org = self.context["organization"]
+
+        if invitation.status != ChannelInvitation.Status.READY:
+            raise serializers.ValidationError(
+                "Only READY invitations can be accepted."
+            )
+
+        invitee = ChannelInvitationInvitee.objects.filter(
+            invitation=invitation,
+            organization=org,
+            status=ChannelInvitationInvitee.Status.PENDING,
+        ).first()
+        if not invitee:
+            raise serializers.ValidationError(
+                "This organization is not a pending invitee for this invitation."
+            )
+
+        attrs["invitee"] = invitee
+        return attrs
+
+    def create(self, validated_data):
+        invitation = self.context["invitation"]
+        org = self.context["organization"]
+        invitee = validated_data["invitee"]
+        channel = invitation.channel
+
+        try:
+            with open(invitation.artifact.path, "rb") as f:
+                artifact_bytes = f.read()
+
+            accept_invitation(org.agent_url, channel.name, artifact_bytes)
+
+            with transaction.atomic():
+                channel.organizations.add(org)
+                invitee.status = ChannelInvitationInvitee.Status.ACCEPTED
+                invitee.responded_at = timezone.now()
+                invitee.save(update_fields=["status", "responded_at"])
+
+                all_done = not ChannelInvitationInvitee.objects.filter(
+                    invitation=invitation,
+                    status=ChannelInvitationInvitee.Status.PENDING,
+                ).exists()
+                if all_done:
+                    invitation.status = ChannelInvitation.Status.ACCEPTED
+                    invitation.save(update_fields=["status"])
+
+        except Exception as e:
+            invitation.status = ChannelInvitation.Status.FAILED
+            invitation.error_message = str(e)
+            invitation.save(update_fields=["status", "error_message"])
+            raise
+
+        return invitation
+
+
+class ChannelInvitationRejectSerializer(serializers.Serializer):
+    def validate(self, attrs):
+        invitation = self.context["invitation"]
+        org = self.context["organization"]
+
+        if invitation.status != ChannelInvitation.Status.READY:
+            raise serializers.ValidationError(
+                "Only READY invitations can be rejected."
+            )
+
+        invitee = ChannelInvitationInvitee.objects.filter(
+            invitation=invitation,
+            organization=org,
+            status=ChannelInvitationInvitee.Status.PENDING,
+        ).first()
+        if not invitee:
+            raise serializers.ValidationError(
+                "This organization is not a pending invitee for this invitation."
+            )
+
+        attrs["invitee"] = invitee
+        return attrs
+
+    def create(self, validated_data):
+        invitee = validated_data["invitee"]
+        invitee.status = ChannelInvitationInvitee.Status.REJECTED
+        invitee.responded_at = timezone.now()
+        invitee.save(update_fields=["status", "responded_at"])
+        return self.context["invitation"]
 
 
 class ChannelInvitationSignSerializer(serializers.Serializer):

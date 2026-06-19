@@ -7,8 +7,8 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from channel.serializers import InvitationDefinitionSerializer, InvitationSignSerializer
-from channel.service import generate_invitation_definition, sign_config_update
+from channel.serializers import InvitationDefinitionSerializer, InvitationSignSerializer, InvitationJoinSerializer
+from channel.service import generate_invitation_definition, sign_config_update, join_channel
 
 
 FAKE_CRYPTO_CONFIG = {
@@ -266,3 +266,100 @@ class InvitationSignEndpointTest(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(resp["Content-Type"], "application/octet-stream")
         self.assertEqual(resp.content, b"signed-artifact-data")
+
+
+class InvitationJoinSerializerTest(TestCase):
+    def test_serializer_accepts_valid_context(self):
+        serializer = InvitationJoinSerializer(
+            data={},
+            context={"channel_name": "testchannel", "artifact_bytes": b"fake-artifact"},
+        )
+        self.assertTrue(serializer.is_valid())
+
+
+class JoinChannelTest(TestCase):
+    def setUp(self):
+        self.channel_name = "testchannel"
+        self.artifact_bytes = b"signed-config-update-envelope"
+
+    @patch("channel.service.CRYPTO_CONFIG", "/fake/crypto-config.yaml")
+    @patch("channel.service.CELLO_HOME", "/fake/cello")
+    @patch("channel.service.FABRIC_TOOL", "/fake/bin")
+    @patch("channel.service._read_crypto_config", return_value=FAKE_CRYPTO_CONFIG)
+    @patch("channel.service.subprocess.run")
+    @patch("builtins.open", new_callable=MagicMock)
+    @patch("os.remove")
+    @patch("os.makedirs")
+    def test_joins_channel(self, mock_makedirs, mock_remove, mock_open,
+                           mock_subprocess, mock_read_crypto):
+        mock_fp = MagicMock()
+        mock_fp.__enter__.return_value = mock_fp
+        mock_open.return_value = mock_fp
+
+        join_channel(self.channel_name, self.artifact_bytes)
+
+        self.assertEqual(mock_subprocess.call_count, 3)
+
+    @patch("channel.service.CRYPTO_CONFIG", "/fake/crypto-config.yaml")
+    @patch("channel.service.CELLO_HOME", "/fake/cello")
+    @patch("channel.service.FABRIC_TOOL", "/fake/bin")
+    @patch("channel.service._read_crypto_config", return_value=FAKE_CRYPTO_CONFIG)
+    @patch("channel.service.subprocess.run",
+           side_effect=subprocess.CalledProcessError(1, "peer"))
+    @patch("builtins.open", new_callable=MagicMock)
+    @patch("os.remove")
+    @patch("os.makedirs")
+    def test_subprocess_failure_surfaces_error(self, mock_makedirs, mock_remove,
+                                                mock_open, mock_subprocess,
+                                                mock_read_crypto):
+        mock_fp = MagicMock()
+        mock_fp.__enter__.return_value = mock_fp
+        mock_open.return_value = mock_fp
+
+        with self.assertRaises(subprocess.CalledProcessError):
+            join_channel(self.channel_name, self.artifact_bytes)
+
+    @patch("channel.service.CRYPTO_CONFIG", "/fake/crypto-config.yaml")
+    @patch("channel.service.CELLO_HOME", "/fake/cello")
+    @patch("channel.service.FABRIC_TOOL", "/fake/bin")
+    @patch("channel.service._read_crypto_config", return_value=FAKE_CRYPTO_CONFIG)
+    @patch("channel.service.subprocess.run")
+    @patch("builtins.open", new_callable=MagicMock)
+    @patch("os.remove")
+    @patch("os.makedirs")
+    def test_subprocess_uses_correct_commands(self, mock_makedirs, mock_remove,
+                                               mock_open, mock_subprocess,
+                                               mock_read_crypto):
+        mock_fp = MagicMock()
+        mock_fp.__enter__.return_value = mock_fp
+        mock_open.return_value = mock_fp
+
+        join_channel(self.channel_name, self.artifact_bytes)
+
+        calls = mock_subprocess.call_args_list
+        update_cmd = calls[0][0][0]
+        fetch_cmd = calls[1][0][0]
+        join_cmd = calls[2][0][0]
+
+        self.assertIn("peer", update_cmd)
+        self.assertIn("update", update_cmd)
+        self.assertIn("fetch", fetch_cmd)
+        self.assertIn("join", join_cmd)
+
+
+class InvitationJoinEndpointTest(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.channel_name = "testchannel"
+        self.url = f"/api/v1/channels/{self.channel_name}/invitations/join"
+
+    @patch("channel.serializers.join_channel")
+    def test_endpoint_returns_200(self, mock_join):
+        resp = self.client.post(
+            self.url,
+            b"signed-artifact",
+            content_type="application/octet-stream",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        mock_join.assert_called_once_with(self.channel_name, b"signed-artifact")
