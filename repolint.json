@@ -32,8 +32,7 @@
               ".circleci/config.yml", 
               "Jenkinsfile", 
               ".drone.yml",
-              ".github/workflows/*",
-              "ci/azure-pipelines.yml"
+              ".github/workflows/*"
             ]
           }
         ],

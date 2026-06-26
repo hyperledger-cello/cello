@@ -66,6 +66,13 @@ endif
 SERVER_PUBLIC_IP ?= 127.0.0.1
 
 LOCAL_STORAGE_PATH=/opt/cello
+LOCAL_COMPOSE_FILE ?= docker-compose.dev.yaml
+LOCAL_AGENT_NAME ?= cello-docker-agent
+LOCAL_AGENT_IMAGE ?= cello/hyperledger-fabric-agent:local
+LOCAL_AGENT_PORT ?= 5001
+LOCAL_AGENT_INTERNAL_PORT ?= 8080
+LOCAL_AGENT_URL ?= http://$(LOCAL_AGENT_NAME):$(LOCAL_AGENT_INTERNAL_PORT)/api/v1/
+HLF_FABRIC_VERSION ?= 2.5.15
 
 # Docker images needed to run cello services
 COMMON_DOCKER_IMAGES = api-engine nginx dashboard
@@ -165,8 +172,15 @@ help: ##@Help Show this help.
 license:  ##@Code Check source files for Apache license header
 	scripts/check_license.sh
 
-local:##@Development Run all services ad-hoc
-	make docker-compose start-docker-compose 
+local: fabric start-docker-compose ##@Development Run local API, dashboard, database, and Fabric agent
+	@echo "Cello dashboard: http://localhost:8081"
+	@echo "Cello API engine: http://localhost:8080"
+	@echo "Fabric agent health: http://localhost:$(LOCAL_AGENT_PORT)/api/v1/health"
+	@echo "Use this agent URL when registering: $(LOCAL_AGENT_URL)"
+
+local-reset:##@Development Remove local data and restart all local services
+	docker compose -f $(LOCAL_COMPOSE_FILE) down -v --remove-orphans
+	$(MAKE) local
 
 reset:##@Development Clean up and remove local storage (only use for development)
 	make clean 
@@ -208,11 +222,12 @@ check-api: ##@Test Run API tests with newman
 	cd tests/postman && docker compose up --abort-on-container-exit || (echo "API tests failed $$?"; exit 1)
 
 start-docker-compose:
-	docker compose -f docker-compose.dev.yaml up -d --build --force-recreate --remove-orphans
+	@-docker rm -f $(LOCAL_AGENT_NAME) >/dev/null 2>&1
+	docker compose -f $(LOCAL_COMPOSE_FILE) up -d --build --force-recreate --remove-orphans
 
 stop-docker-compose:
-	echo "Stop all services with bootup/docker-compose-files/${COMPOSE_FILE}..."
-	docker compose -f bootup/docker-compose-files/${COMPOSE_FILE} stop
+	echo "Stop all services with $(LOCAL_COMPOSE_FILE)..."
+	docker compose -f $(LOCAL_COMPOSE_FILE) stop
 	echo "Stop all services successfully"
 
 images: api-engine docker-rest-agent fabric dashboard
@@ -224,7 +239,7 @@ docker-rest-agent:
 	docker build -t hyperledger/cello-agent-docker:latest -f build_image/docker/agent/docker-rest-agent/Dockerfile.in ./ --build-arg pip=$(PIP) --platform linux/$(ARCH)
 
 fabric:
-	docker build -t hyperledger/fabric:2.5.14 src/nodes/hyperledger-fabric
+	docker build -t hyperledger/fabric:$(HLF_FABRIC_VERSION) src/nodes/hyperledger-fabric
 
 dashboard:
 	docker build -t hyperledger/cello-dashboard:latest -f build_image/docker/common/dashboard/Dockerfile.in ./
@@ -257,6 +272,7 @@ agent:
 	docker-compose \
 	reset \
 	local \
+	local-reset \
 	clean-images \
 	start-docker-compose \
 	stop-docker-compose \
