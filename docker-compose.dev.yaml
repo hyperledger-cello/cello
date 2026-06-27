@@ -55,6 +55,21 @@ services:
     depends_on:
       - cello-postgres
 
+  cello-docker-agent:
+    build:
+      context: ./src/agents/hyperledger-fabric
+    image: "${LOCAL_AGENT_IMAGE:-cello/hyperledger-fabric-agent:local}"
+    container_name: "${LOCAL_AGENT_NAME:-cello-docker-agent}"
+    hostname: "${LOCAL_AGENT_NAME:-cello-docker-agent}"
+    restart: unless-stopped
+    ports:
+      - "${LOCAL_AGENT_PORT:-5001}:${LOCAL_AGENT_INTERNAL_PORT:-8080}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - cello-hyperledger-fabric-agent:/cello
+    networks:
+      - cello-net
+
 networks:
   cello-net:
     name: cello-net
@@ -63,3 +78,4 @@ volumes:
   cello-postgres:
   cello-api-engine:
   cello-api-engine-chaincode:
+  cello-hyperledger-fabric-agent:
