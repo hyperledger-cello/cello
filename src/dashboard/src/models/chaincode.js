@@ -8,6 +8,7 @@ import {
   installChainCode,
   approveChainCode,
   commitChainCode,
+  transactChainCode,
 } from '@/services/chaincode';
 import { createModel, createListEffect, createSimpleEffect } from '@/utils/modelFactory';
 
@@ -48,6 +49,10 @@ export default createModel({
     commitChainCode: createSimpleEffect(commitChainCode, {
       includePayloadInCallback: false,
       getServiceParams: payload => ({ id: payload.id }),
+    }),
+
+    transactChainCode: createSimpleEffect(transactChainCode, {
+      includePayloadInCallback: false,
     }),
   },
 });

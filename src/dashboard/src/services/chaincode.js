@@ -31,3 +31,14 @@ export const commitChainCode = params =>
   customRequest(`${BASE_URL}/${params.id}/commit`, {
     method: 'PUT',
   });
+
+// Transact chaincode (PUT request with id, action, function, and arguments)
+export const transactChainCode = params =>
+  customRequest(`${BASE_URL}/${params.id}/transact`, {
+    method: 'PUT',
+    data: {
+      action: params.action,
+      function: params.function,
+      arguments: params.arguments,
+    },
+  });

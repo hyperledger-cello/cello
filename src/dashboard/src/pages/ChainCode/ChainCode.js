@@ -8,10 +8,11 @@ import { PlusOutlined, FunctionOutlined } from '@ant-design/icons';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import StandardTable from '@/components/StandardTable';
 import UploadForm from '@/pages/ChainCode/forms/UploadForm';
+import InteractForm from '@/pages/ChainCode/forms/InteractForm';
 import { useTableManagement } from '@/hooks';
 import styles from './styles.less';
 
-const ChainCode = ({ dispatch, chainCode = {}, loadingChainCodes, uploading }) => {
+const ChainCode = ({ dispatch, chainCode = {}, loadingChainCodes, uploading, transacting }) => {
   const intl = useIntl();
   const { chainCodes = [], paginations = {} } = chainCode;
 
@@ -24,6 +25,8 @@ const ChainCode = ({ dispatch, chainCode = {}, loadingChainCodes, uploading }) =
   const [newFile, setFile] = useState(null);
   const [operatingId, setOperatingId] = useState(null);
   const [operationType, setOperationType] = useState(null);
+  const [interactModalVisible, setInteractModalVisible] = useState(false);
+  const [currentRecord, setCurrentRecord] = useState(null);
 
   useEffect(() => {
     dispatch({ type: 'chainCode/listChainCode' });
@@ -101,6 +104,19 @@ const ChainCode = ({ dispatch, chainCode = {}, loadingChainCodes, uploading }) =
         type: 'chainCode/createChainCode',
         payload: formData,
         callback,
+      });
+    },
+    [dispatch]
+  );
+
+  const handleTransact = useCallback(
+    (values, callback) => {
+      dispatch({
+        type: 'chainCode/transactChainCode',
+        payload: values,
+        callback: response => {
+          if (callback) callback(response);
+        },
       });
     },
     [dispatch]
@@ -290,7 +306,23 @@ const ChainCode = ({ dispatch, chainCode = {}, loadingChainCodes, uploading }) =
           );
         }
 
-        // COMMITTED 或其他状态不显示按钮
+        if (record.status === 'COMMITTED') {
+          return (
+            <a
+              onClick={() => {
+                setCurrentRecord(record);
+                setInteractModalVisible(true);
+              }}
+              style={{ cursor: 'pointer' }}
+            >
+              {intl.formatMessage({
+                id: 'app.chainCode.table.operate.interact',
+                defaultMessage: 'Interact',
+              })}
+            </a>
+          );
+        }
+
         return null;
       },
     },
@@ -337,6 +369,13 @@ const ChainCode = ({ dispatch, chainCode = {}, loadingChainCodes, uploading }) =
         </div>
       </Card>
       <UploadForm {...uploadFormProps} />
+      <InteractForm
+        modalVisible={interactModalVisible}
+        handleTransact={handleTransact}
+        handleModalVisible={setInteractModalVisible}
+        transacting={transacting}
+        record={currentRecord}
+      />
     </PageHeaderWrapper>
   );
 };
@@ -345,4 +384,5 @@ export default connect(({ chainCode, loading }) => ({
   chainCode,
   loadingChainCodes: loading.effects['chainCode/listChainCode'],
   uploading: loading.effects['chainCode/uploadChainCode'],
+  transacting: loading.effects['chainCode/transactChainCode'],
 }))(ChainCode);

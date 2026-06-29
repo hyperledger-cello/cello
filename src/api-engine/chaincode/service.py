@@ -21,6 +21,10 @@ from user.models import UserProfile
 
 LOG = logging.getLogger(__name__)
 
+
+class ChaincodeTransactionError(Exception):
+    pass
+
 peer_command = os.path.join(FABRIC_TOOL, "peer")
 
 
@@ -183,7 +187,7 @@ def send_chaincode_request(
         chaincode: Chaincode,
         action: ChaincodeAction,
         function: str,
-        *args: str):
+        *args: str) -> str:
     # Pick any organization peer
     peer_env: Dict[str, str] = get_peers_root_certs_and_addresses_and_envs(
         organization.name,
@@ -204,7 +208,7 @@ def send_chaincode_request(
             *args
         ]
         LOG.info(" ".join(command))
-        LOG.info(subprocess.run(
+        result = subprocess.run(
             command,
             env={
                 **peer_env,
@@ -224,9 +228,12 @@ def send_chaincode_request(
             cwd=os.path.join(CELLO_HOME, "application-gateway"),
             check=True,
             capture_output=True,
-            text=True).stdout)
+            text=True)
+        LOG.info(result.stdout)
+        return result.stdout
     except subprocess.CalledProcessError as e:
         LOG.error(e.stderr)
+        raise ChaincodeTransactionError(e.stderr)
 
 
 def get_peers_root_certs_and_addresses_and_envs(

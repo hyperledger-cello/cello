@@ -133,7 +133,7 @@ class ChaincodeViewSet(viewsets.ViewSet):
         operation_summary="Invoke/Query a chaincode for the current organization",
         request_body=ChaincodeRequestBody(),
         responses=with_common_response(
-            {status.HTTP_204_NO_CONTENT: None}
+            {status.HTTP_200_OK: None}
         ),
     )
     @action(detail=True, methods=["PUT"])
@@ -145,7 +145,9 @@ class ChaincodeViewSet(viewsets.ViewSet):
             },
             context={"organization": request.user.organization})
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        instance = serializer.save()
+        result = getattr(instance, "result", "")
         return Response(
-            status=status.HTTP_204_NO_CONTENT,
+            status=status.HTTP_200_OK,
+            data=ok({"result": result}),
         )
