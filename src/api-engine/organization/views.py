@@ -18,7 +18,6 @@ from organization.serializers import OrganizationList, OrganizationResponse
 
 
 class OrganizationViewSet(viewsets.ViewSet):
-    """Class represents organization related operations."""
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
