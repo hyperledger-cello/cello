@@ -16,6 +16,7 @@ class OrganizationResponse(serializers.ModelSerializer):
         fields = (
             "id",
             "name",
+            "msp_id",
             "created_at"
         )
 
