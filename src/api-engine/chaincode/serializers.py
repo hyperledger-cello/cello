@@ -7,7 +7,7 @@ from rest_framework import serializers
 from chaincode.models import Chaincode
 from chaincode.service import ChaincodeAction, create_chaincode, get_chaincode, install_chaincode, \
     approve_chaincode, commit_chaincode, send_chaincode_request, metadata_exists, get_chaincode_status, \
-    get_chaincode_commit_readiness
+    get_chaincode_commit_readiness, ChaincodeTransactionError
 from channel.models import Channel
 from channel.serializers import ChannelID
 from common.serializers import ListResponseSerializer
@@ -172,11 +172,15 @@ class ChaincodeRequestBody(ChaincodeID):
         }
 
     def update(self, instance: Chaincode, validated_data: Dict[str, Any]) -> Chaincode:
-        send_chaincode_request(
-            self.context["organization"],
-            instance,
-            ChaincodeAction[validated_data["action"]],
-            validated_data["function"],
-            *validated_data["arguments"]
-        )
-        return instance
+        try:
+            result = send_chaincode_request(
+                self.context["organization"],
+                instance,
+                ChaincodeAction[validated_data["action"]],
+                validated_data["function"],
+                *validated_data["arguments"]
+            )
+            instance.result = result
+            return instance
+        except ChaincodeTransactionError as e:
+            raise serializers.ValidationError(str(e))
