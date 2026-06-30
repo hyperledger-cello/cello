@@ -17,8 +17,8 @@ class Migration(migrations.Migration):
             name='Organization',
             fields=[
                 ('id', models.UUIDField(default=common.utils.make_uuid, help_text='Organization ID', primary_key=True, serialize=False)),
-                ('name', models.CharField(help_text='Organization Name', unique=True, validators=[common.validators.validate_host])),
-                ('agent_url', models.CharField(default=None, help_text='Organization Agent URL', unique=True, validators=[common.validators.validate_url])),
+                ('name', models.CharField(help_text='Organization Name', max_length=256, unique=True, validators=[common.validators.validate_host])),
+                ('agent_url', models.CharField(default='', help_text='Organization Agent URL', max_length=2048, unique=True, validators=[common.validators.validate_url])),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
             ],
             options={

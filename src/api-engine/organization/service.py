@@ -5,9 +5,11 @@ import requests
 from organization.models import Organization
 
 
-def create_organization(org_name: str, agent_url: str) -> Organization:
+def create_organization(org_name: str, agent_url: str, msp_id: str = "") -> Organization:
     _create_organization(org_name, agent_url)
-    organization = Organization(name=org_name, agent_url=agent_url)
+    if not msp_id:
+        msp_id = "{}MSP".format(org_name.split(".", 1)[0].capitalize())
+    organization = Organization(name=org_name, agent_url=agent_url, msp_id=msp_id)
     organization.save()
     return organization
 
