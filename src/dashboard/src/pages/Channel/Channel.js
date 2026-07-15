@@ -2,7 +2,7 @@
  SPDX-License-Identifier: Apache-2.0
 */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { connect, useIntl } from 'umi';
+import { connect, useIntl, history } from 'umi';
 import { Card, Button, Modal, message, Input, Select, Form, Upload } from 'antd';
 import { PlusOutlined, UploadOutlined, DeploymentUnitOutlined } from '@ant-design/icons';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
@@ -382,6 +382,17 @@ const Channel = ({ dispatch, channel = {}, node = {}, loadingChannels, creating,
         id: 'form.table.header.operation',
         defaultMessage: 'Operation',
       }),
+      render: (text, record) => (
+        <a
+          onClick={() => history.push(`/channel/invitation?channel=${record.id}`)}
+          style={{ cursor: 'pointer' }}
+        >
+          {intl.formatMessage({
+            id: 'app.channel.table.row.invitations',
+            defaultMessage: 'Invitations',
+          })}
+        </a>
+      ),
     },
   ];
 

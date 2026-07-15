@@ -91,6 +91,12 @@ export default [
             component: './Channel/Channel',
           },
           {
+            path: '/channel/invitation',
+            name: 'invitation',
+            hideInMenu: true,
+            component: './Channel/Invitation',
+          },
+          {
             path: '/chaincode',
             name: 'chaincode',
             icon: 'chaincode',
