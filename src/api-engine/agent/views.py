@@ -16,7 +16,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from api.common import err, ok
-from agent.llm import AgentConfigError, run_agent
+from agent.llm import AgentConfigError, AgentUpstreamError, run_agent
 from agent.serializers import ChatRequestBody, ChatResponse
 from agent.tools import ToolContext
 
@@ -54,6 +54,11 @@ class ChatView(APIView):
             return Response(
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
                 data=err(f"Agent is not configured: {exc}"),
+            )
+        except AgentUpstreamError as exc:
+            return Response(
+                status=status.HTTP_502_BAD_GATEWAY,
+                data=err(f"The LLM provider could not be reached: {exc}"),
             )
 
         return Response(

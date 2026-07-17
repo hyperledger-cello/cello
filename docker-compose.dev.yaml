@@ -45,6 +45,15 @@ services:
       - DEBUG=True
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
       - FABRIC_LOGGING_SPEC=INFO
+      # AI operations agent. Unset by default: the agent stays disabled and
+      # /api/v1/agent/chat returns 503 until a key is provided. Set the base URL
+      # + model to point at any OpenAI-compatible vendor, e.g. DeepSeek:
+      #   CELLO_AGENT_LLM_BASE_URL=https://api.deepseek.com
+      #   CELLO_AGENT_LLM_MODEL=deepseek-chat
+      - CELLO_AGENT_LLM_API_KEY=${CELLO_AGENT_LLM_API_KEY:-}
+      - CELLO_AGENT_LLM_BASE_URL=${CELLO_AGENT_LLM_BASE_URL:-}
+      - CELLO_AGENT_LLM_PROVIDER=${CELLO_AGENT_LLM_PROVIDER:-openai_compatible}
+      - CELLO_AGENT_LLM_MODEL=${CELLO_AGENT_LLM_MODEL:-deepseek-chat}
     ports:
       - "8080:8080"
     volumes:
