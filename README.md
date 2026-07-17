@@ -52,26 +52,31 @@ If environment is prepared, then we can start cello service.
   $ make local
   ```
 
-* Optional: Build essential images for cello service (the docker hub image auto build haven't ready, in the future you can ignore this step.)
+  This command builds the required local images and starts the dashboard, API
+  engine, PostgreSQL database, and Fabric agent.
 
-  * Build docker images
-    ```bash
-    $ make docker
-    ```
-  * Then run services locally then
+* If you need a clean local environment, remove the local data volume and
+  restart all services:
 
-    ```bash
-    $ make start
-    ```
+  ```bash
+  $ make local-reset
+  ```
 
 * After service started up, if use docker-compose method, you can see output:
 
   ```bash
-  CONTAINER ID   IMAGE                            COMMAND                  CREATED         STATUS         PORTS                                                                                  NAMES
-  81e6459965ec   hyperledger/cello-agent-docker   "gunicorn server:app…"   4 seconds ago   Up 2 seconds   0.0.0.0:2375->2375/tcp, :::2375->2375/tcp, 0.0.0.0:5001->5001/tcp, :::5001->5001/tcp   cello.docker.agent
-  04367ab6bd5e   postgres:11.1                    "docker-entrypoint.s…"   4 seconds ago   Up 2 seconds   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp                                              cello-postgres
-  29b56a279893   hyperledger/cello-api-engine     "/bin/sh -c 'bash /e…"   4 seconds ago   Up 2 seconds   0.0.0.0:8080->8080/tcp, :::8080->8080/tcp                                              cello-api-engine
-  a272a06d8280   hyperledger/cello-dashboard      "bash -c 'nginx -g '…"   4 seconds ago   Up 2 seconds   80/tcp, 0.0.0.0:8081->8081/tcp, :::8081->8081/tcp                                      cello-dashboard
+  CONTAINER ID   IMAGE                                   COMMAND                  CREATED         STATUS         PORTS                                       NAMES
+  57df1462c7f1   cello/hyperledger-fabric-agent:local    "python manage.py r…"    4 seconds ago   Up 2 seconds   0.0.0.0:5001->8080/tcp, :::5001->8080/tcp   cello-docker-agent
+  04367ab6bd5e   postgres:12.0                           "docker-entrypoint.s…"   4 seconds ago   Up 2 seconds   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp   cello-postgres
+  29b56a279893   cello/api-engine:latest                 "/bin/sh -c 'bash /e…"   4 seconds ago   Up 2 seconds   0.0.0.0:8080->8080/tcp, :::8080->8080/tcp   cello-api-engine
+  a272a06d8280   cello/dashboard:latest                  "bash -c 'nginx -g '…"   4 seconds ago   Up 2 seconds   0.0.0.0:8081->8081/tcp, :::8081->8081/tcp   cello-dashboard
+  ```
+
+* When registering an organization from the dashboard, use the following agent
+  URL:
+
+  ```text
+  http://cello-docker-agent:8080/api/v1/
   ```
 
 * Stop cello service.<!---, same as start, need set the `DEPLOY_METHOD` variable.-->
