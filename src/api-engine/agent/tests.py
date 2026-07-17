@@ -6,9 +6,11 @@
 Nothing here touches the network or needs an API key: the LLM client is always
 mocked, and the tools' HTTP calls to Cello's REST API are mocked too. We assert
 that (a) the tool issues the right authenticated GET and parses Cello's response
-envelope, (b) the tool-calling loop drives tools then answers, and (c) the
-provider is selected from a registry rather than hardcoded.
+envelope, (b) the tool-calling loop drives tools then answers, (c) the provider
+is selected from a registry rather than hardcoded, and (d) the base URL is
+forwarded, which is what lets one provider serve many vendors.
 """
+import json
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -19,7 +21,12 @@ from rest_framework_simplejwt.tokens import AccessToken
 from organization.models import Organization
 from user.models import UserProfile
 from agent import llm, tools
-from agent.llm import AgentConfigError, AgentResult, run_agent
+from agent.llm import (
+    AgentConfigError,
+    AgentResult,
+    AgentUpstreamError,
+    run_agent,
+)
 
 
 def _ctx():
@@ -50,18 +57,30 @@ def _list_envelope(items, total=None):
     }
 
 
-def _text_block(text):
-    return SimpleNamespace(type="text", text=text)
-
-
-def _tool_use_block(name, params, block_id="tool_1"):
+def _completion(message, finish_reason="stop"):
+    """A fake chat-completions response."""
     return SimpleNamespace(
-        type="tool_use", name=name, input=params, id=block_id
+        choices=[SimpleNamespace(message=message, finish_reason=finish_reason)]
     )
 
 
-def _resp(stop_reason, content):
-    return SimpleNamespace(stop_reason=stop_reason, content=content)
+def _answer(text):
+    """An assistant turn with no tool calls."""
+    return SimpleNamespace(tool_calls=None, content=text)
+
+
+def _tool_call(name, params, call_id="call_1"):
+    """An assistant turn asking for one tool call."""
+    message = MagicMock()
+    message.content = None
+    message.tool_calls = [
+        SimpleNamespace(
+            id=call_id,
+            function=SimpleNamespace(name=name, arguments=json.dumps(params)),
+        )
+    ]
+    message.model_dump.return_value = {"role": "assistant", "tool_calls": []}
+    return message
 
 
 class ToolRegistryTests(TestCase):
@@ -109,15 +128,16 @@ class ToolRegistryTests(TestCase):
             tools.run_tool("delete_everything", {}, _ctx())
 
     def test_tool_schemas_shape(self):
-        schemas = tools.anthropic_tool_schemas()
-        names = {s["name"] for s in schemas}
+        schemas = tools.openai_tool_schemas()
+        names = {s["function"]["name"] for s in schemas}
         self.assertIn("list_nodes", names)
         for s in schemas:
-            self.assertIn("input_schema", s)
-            self.assertIn("description", s)
+            self.assertEqual(s["type"], "function")
+            self.assertIn("parameters", s["function"])
+            self.assertIn("description", s["function"])
 
 
-class RunAgentAnthropicTests(TestCase):
+class RunAgentTests(TestCase):
     @patch("agent.tools.requests.get")
     @patch("agent.llm._get_client")
     def test_tool_loop_runs_tool_then_answers(self, get_client, http_get):
@@ -125,9 +145,9 @@ class RunAgentAnthropicTests(TestCase):
             payload=_list_envelope([{"name": "peer0"}])
         )
         client = MagicMock()
-        client.messages.create.side_effect = [
-            _resp("tool_use", [_tool_use_block("list_nodes", {})]),
-            _resp("end_turn", [_text_block("You have 1 node: peer0.")]),
+        client.chat.completions.create.side_effect = [
+            _completion(_tool_call("list_nodes", {}), finish_reason="tool_calls"),
+            _completion(_answer("You have 1 node: peer0.")),
         ]
         get_client.return_value = client
 
@@ -136,19 +156,19 @@ class RunAgentAnthropicTests(TestCase):
             context=_ctx(),
         )
 
-        self.assertEqual(result.stop_reason, "end_turn")
+        self.assertEqual(result.stop_reason, "stop")
         self.assertIn("peer0", result.reply)
         self.assertEqual(len(result.tool_calls), 1)
         self.assertEqual(result.tool_calls[0].name, "list_nodes")
         self.assertTrue(result.tool_calls[0].output["ok"])
-        self.assertEqual(client.messages.create.call_count, 2)
+        self.assertEqual(client.chat.completions.create.call_count, 2)
 
     @patch("agent.llm._get_client")
     def test_direct_answer_without_tools(self, get_client):
         client = MagicMock()
-        client.messages.create.side_effect = [
-            _resp("end_turn", [_text_block("I can list nodes and channels.")]),
-        ]
+        client.chat.completions.create.return_value = _completion(
+            _answer("I can list nodes and channels.")
+        )
         get_client.return_value = client
 
         result = run_agent(
@@ -163,8 +183,8 @@ class RunAgentAnthropicTests(TestCase):
     def test_max_iterations_guard(self, get_client, http_get):
         http_get.return_value = _rest_response(payload=_list_envelope([]))
         client = MagicMock()
-        client.messages.create.return_value = _resp(
-            "tool_use", [_tool_use_block("list_nodes", {})]
+        client.chat.completions.create.return_value = _completion(
+            _tool_call("list_nodes", {}), finish_reason="tool_calls"
         )
         get_client.return_value = client
 
@@ -174,15 +194,40 @@ class RunAgentAnthropicTests(TestCase):
                 context=_ctx(),
             )
         self.assertEqual(result.stop_reason, "max_iterations")
-        self.assertEqual(client.messages.create.call_count, 3)
+        self.assertEqual(client.chat.completions.create.call_count, 3)
 
     def test_missing_api_key_raises_config_error(self):
-        with self.settings(ANTHROPIC_API_KEY=""):
+        with self.settings(CELLO_AGENT_LLM_API_KEY=""):
             with self.assertRaises(AgentConfigError):
                 run_agent(
                     messages=[{"role": "user", "content": "hi"}],
                     context=_ctx(),
                 )
+
+
+class ClientConfigTests(TestCase):
+    """The base URL is what makes the provider vendor-agnostic, so pin it."""
+
+    @patch("openai.OpenAI")
+    def test_base_url_is_forwarded_when_set(self, openai_cls):
+        with self.settings(
+            CELLO_AGENT_LLM_API_KEY="k",
+            CELLO_AGENT_LLM_BASE_URL="https://api.deepseek.com",
+        ):
+            llm._get_client()
+        self.assertEqual(
+            openai_cls.call_args.kwargs["base_url"], "https://api.deepseek.com"
+        )
+
+    @patch("openai.OpenAI")
+    def test_base_url_omitted_when_empty(self, openai_cls):
+        """An empty base URL must fall through to the SDK default, not be
+        passed as an empty string (which the client would reject)."""
+        with self.settings(
+            CELLO_AGENT_LLM_API_KEY="k", CELLO_AGENT_LLM_BASE_URL=""
+        ):
+            llm._get_client()
+        self.assertNotIn("base_url", openai_cls.call_args.kwargs)
 
 
 class ProviderSelectionTests(TestCase):
@@ -271,3 +316,18 @@ class ChatEndpointTests(APITestCase):
             format="json",
         )
         self.assertEqual(resp.status_code, 503)
+
+    @patch(
+        "agent.views.run_agent",
+        side_effect=AgentUpstreamError("Error code: 401 - invalid api key"),
+    )
+    def test_upstream_failure_returns_502_not_a_traceback(self, _):
+        """A bad key/rate limit must not surface as an unhandled 500 -- with
+        DEBUG on, Django's error page would echo settings back to the caller."""
+        resp = self.client.post(
+            "/api/v1/agent/chat",
+            {"messages": [{"role": "user", "content": "hi"}]},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 502)
+        self.assertEqual(resp.data["status"], "FAILED")

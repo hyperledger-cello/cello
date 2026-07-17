@@ -3,20 +3,24 @@
 #
 """LLM tool-calling loop for the Cello operations agent.
 
-A synchronous, non-streaming loop. The **provider is swappable**:
-``CELLO_AGENT_LLM_PROVIDER`` selects a backend from ``_PROVIDERS`` and each SDK
-is imported lazily, so only the configured provider's package must be installed.
-Anthropic is the only one implemented here -- a second provider is a follow-up
-that adds one function, which is the point of the seam. Streaming is a separate
-follow-up. The loop is deliberately small:
+A synchronous, non-streaming loop. The **provider is not fixed**:
+``CELLO_AGENT_LLM_PROVIDER`` selects a runner from ``_PROVIDERS``, and the SDK is
+imported lazily so only the configured provider's package must be installed.
+
+The bundled provider speaks the OpenAI chat-completions protocol, which most
+vendors implement. Pointing ``CELLO_AGENT_LLM_BASE_URL`` at a different endpoint
+is enough to run against DeepSeek, OpenRouter, Together, Groq or a local Ollama
+-- no code change. A vendor with its own protocol adds one ``_run_x`` function
+here plus a schema converter in ``agent.tools``; nothing else moves. Streaming is
+a follow-up.
 
     user message
       -> model (with tool schemas)
         -> while the model asks for a tool: run it, feed the result back
           -> return the final assistant text + a trace of tool calls
 
-Providers drive the **same** read-only tool registry in ``agent.tools``, which
-calls Cello's REST API as the logged-in user.
+Every provider drives the **same** read-only tool registry in ``agent.tools``,
+which calls Cello's REST API as the logged-in user.
 """
 import json
 import logging
@@ -25,7 +29,7 @@ from typing import Callable, Dict, List
 
 from django.conf import settings
 
-from agent.tools import ToolContext, anthropic_tool_schemas, run_tool
+from agent.tools import ToolContext, openai_tool_schemas, run_tool
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +48,15 @@ SYSTEM_PROMPT = (
 
 class AgentConfigError(RuntimeError):
     """Misconfiguration (e.g. missing API key) -- a 5xx, not a user error."""
+
+
+class AgentUpstreamError(RuntimeError):
+    """The LLM provider rejected or failed the call (bad key, rate limit,
+    unknown model, unreachable endpoint).
+
+    Providers raise their own SDK exceptions; each runner translates them into
+    this one so the view never imports a provider SDK to handle errors.
+    """
 
 
 @dataclass
@@ -69,20 +82,12 @@ class _Config:
 
 def _config() -> _Config:
     return _Config(
-        model=getattr(settings, "CELLO_AGENT_LLM_MODEL", "claude-sonnet-4-6"),
+        model=getattr(settings, "CELLO_AGENT_LLM_MODEL", ""),
         max_tokens=int(getattr(settings, "CELLO_AGENT_MAX_TOKENS", 1024)),
         max_iterations=int(
             getattr(settings, "CELLO_AGENT_MAX_TOOL_ITERATIONS", 8)
         ),
     )
-
-
-def _api_key(*names: str) -> str:
-    for name in names:
-        key = getattr(settings, name, "")
-        if key:
-            return key
-    return ""
 
 
 def _hit_max(trace: List[ToolCallTrace], max_iterations: int) -> AgentResult:
@@ -101,83 +106,98 @@ def _hit_max(trace: List[ToolCallTrace], max_iterations: int) -> AgentResult:
 
 
 # --------------------------------------------------------------------------
-# Anthropic provider
+# OpenAI-compatible provider. Works against any vendor implementing the
+# chat-completions protocol; the endpoint is CELLO_AGENT_LLM_BASE_URL.
 # --------------------------------------------------------------------------
 
 
 def _get_client():
-    """Build the Anthropic client, or raise AgentConfigError."""
-    api_key = _api_key("ANTHROPIC_API_KEY")
+    """Build the chat-completions client, or raise AgentConfigError."""
+    api_key = getattr(settings, "CELLO_AGENT_LLM_API_KEY", "")
     if not api_key:
         raise AgentConfigError(
-            "ANTHROPIC_API_KEY is not set; the agent cannot reach the LLM."
+            "CELLO_AGENT_LLM_API_KEY is not set; the agent cannot reach the LLM."
         )
     try:
-        import anthropic
+        import openai
     except ImportError as exc:  # pragma: no cover - dependency guard
         raise AgentConfigError(
-            "The 'anthropic' package is not installed."
+            "The 'openai' package is not installed."
         ) from exc
-    return anthropic.Anthropic(api_key=api_key)
+
+    kwargs = {"api_key": api_key}
+    # Empty base URL means "use the SDK default" (api.openai.com); any other
+    # value points at a compatible vendor (DeepSeek, OpenRouter, Ollama, ...).
+    base_url = getattr(settings, "CELLO_AGENT_LLM_BASE_URL", "")
+    if base_url:
+        kwargs["base_url"] = base_url
+    return openai.OpenAI(**kwargs)
 
 
-def _run_anthropic(messages: List[dict], context: ToolContext) -> AgentResult:
+def _run_openai_compatible(
+    messages: List[dict], context: ToolContext
+) -> AgentResult:
     client = _get_client()
     cfg = _config()
-    tools = anthropic_tool_schemas()
-    convo = list(messages)
+    tools = openai_tool_schemas()
+    convo = [{"role": "system", "content": SYSTEM_PROMPT}, *messages]
     trace: List[ToolCallTrace] = []
 
+    import openai  # _get_client already proved this imports
+
     for _ in range(cfg.max_iterations):
-        resp = client.messages.create(
-            model=cfg.model,
-            max_tokens=cfg.max_tokens,
-            system=SYSTEM_PROMPT,
-            tools=tools,
-            messages=convo,
-        )
-
-        if resp.stop_reason != "tool_use":
-            text = "".join(
-                block.text
-                for block in resp.content
-                if getattr(block, "type", None) == "text"
+        try:
+            resp = client.chat.completions.create(
+                model=cfg.model,
+                max_tokens=cfg.max_tokens,
+                tools=tools,
+                messages=convo,
             )
+        except openai.APIError as exc:
+            # Covers auth, rate limit, unknown model and connection failures.
+            logger.warning("Cello agent LLM call failed: %s", exc)
+            raise AgentUpstreamError(str(exc)) from exc
+        message = resp.choices[0].message
+        tool_calls = getattr(message, "tool_calls", None)
+
+        if not tool_calls:
             return AgentResult(
-                reply=text.strip(),
+                reply=(message.content or "").strip(),
                 tool_calls=trace,
-                stop_reason=resp.stop_reason,
+                stop_reason=resp.choices[0].finish_reason or "stop",
             )
 
-        # Record the assistant's tool-use turn verbatim, then answer each call.
-        convo.append({"role": "assistant", "content": resp.content})
-        tool_results = []
-        for block in resp.content:
-            if getattr(block, "type", None) != "tool_use":
-                continue
-            output = run_tool(block.name, block.input, context)
+        # Echo the assistant's tool-call turn, then answer each call.
+        convo.append(message.model_dump(exclude_none=True))
+        for call in tool_calls:
+            try:
+                params = json.loads(call.function.arguments or "{}")
+            except ValueError:
+                params = {}
+            output = run_tool(call.function.name, params, context)
             trace.append(
-                ToolCallTrace(name=block.name, input=block.input, output=output)
+                ToolCallTrace(
+                    name=call.function.name, input=params, output=output
+                )
             )
-            tool_results.append(
+            convo.append(
                 {
-                    "type": "tool_result",
-                    "tool_use_id": block.id,
+                    "role": "tool",
+                    "tool_call_id": call.id,
                     "content": json.dumps(output),
                 }
             )
-        convo.append({"role": "user", "content": tool_results})
 
     return _hit_max(trace, cfg.max_iterations)
 
 
 # --------------------------------------------------------------------------
-# Provider registry. Adding a provider means writing one ``_run_x`` that drives
-# the same tool registry and registering it here -- nothing else changes.
+# Provider registry. A vendor with its own protocol adds one runner here and a
+# schema converter in agent.tools -- the tool layer itself does not change.
 # --------------------------------------------------------------------------
 
 _PROVIDERS: Dict[str, Callable[[List[dict], ToolContext], AgentResult]] = {
-    "anthropic": _run_anthropic,
+    "openai_compatible": _run_openai_compatible,
 }
 
 
@@ -189,7 +209,7 @@ def run_agent(messages: List[dict], context: ToolContext) -> AgentResult:
     ``ToolContext``) carries the caller's auth header + API base and scopes every
     tool call. Returns the final assistant text and a tool-call trace.
     """
-    provider = getattr(settings, "CELLO_AGENT_LLM_PROVIDER", "anthropic")
+    provider = getattr(settings, "CELLO_AGENT_LLM_PROVIDER", "openai_compatible")
     runner = _PROVIDERS.get(provider)
     if runner is None:
         raise AgentConfigError(

@@ -66,13 +66,20 @@ def get_tools() -> List[Tool]:
     return list(_REGISTRY.values())
 
 
-def anthropic_tool_schemas() -> List[dict]:
-    """Tool definitions in the shape the Anthropic API expects."""
+def openai_tool_schemas() -> List[dict]:
+    """Tool definitions in the shape the OpenAI chat-completions API expects.
+
+    Kept next to the registry rather than inside a provider so a second provider
+    only has to add its own converter over the same ``Tool`` objects.
+    """
     return [
         {
-            "name": t.name,
-            "description": t.description,
-            "input_schema": t.input_schema,
+            "type": "function",
+            "function": {
+                "name": t.name,
+                "description": t.description,
+                "parameters": t.input_schema,
+            },
         }
         for t in _REGISTRY.values()
     ]
