@@ -1,4 +1,4 @@
-from urllib.parse import urljoin
+from common.utils import safe_urljoin
 
 import requests
 
@@ -13,5 +13,5 @@ def create_organization(org_name: str, agent_url: str) -> Organization:
 
 
 def _create_organization(org_name: str, agent_url: str):
-    requests.get(urljoin(agent_url, "health")).raise_for_status()
-    requests.post(urljoin(agent_url, "organizations"), json=dict(name=org_name)).raise_for_status()
+    requests.get(safe_urljoin(agent_url, "health")).raise_for_status()
+    requests.post(safe_urljoin(agent_url, "organizations"), json=dict(name=org_name)).raise_for_status()
