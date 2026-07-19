@@ -93,7 +93,7 @@ export default [
           {
             path: '/channel/invitation',
             name: 'invitation',
-            hideInMenu: true,
+            icon: 'mail',
             component: './Channel/Invitation',
           },
           {

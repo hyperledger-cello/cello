@@ -3,7 +3,7 @@
 */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { connect, useIntl, history } from 'umi';
-import { Card, Button, Modal, message, Input, Select, Form, Upload } from 'antd';
+import { Card, Button, Modal, message, Input, Select, Form, Upload, Alert } from 'antd';
 import { PlusOutlined, UploadOutlined, DeploymentUnitOutlined } from '@ant-design/icons';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import StandardTable from '@/components/StandardTable';
@@ -186,6 +186,12 @@ const UpdateChannel = props => {
       onOk={onSubmit}
       onCancel={() => handleModalVisible(false)}
     >
+      <Alert
+        message="[Deprecated] Please use the new Invitations workflow to add organizations."
+        type="warning"
+        showIcon
+        style={{ marginBottom: 16 }}
+      />
       <Form onFinish={onFinish} form={form} preserve={false}>
         <FormItem
           {...formItemLayout}
