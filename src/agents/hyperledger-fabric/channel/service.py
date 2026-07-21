@@ -677,9 +677,7 @@ def sign_config_update(channel_name, artifact_bytes):
     os.makedirs(channel_dir, exist_ok=True)
 
     input_pb = os.path.join(channel_dir, "sign_input.pb")
-    output_pb = os.path.join(channel_dir, "sign_output.pb")
-
-    temp_files = [input_pb, output_pb]
+    temp_files = [input_pb]
 
     try:
         crypto_config = _read_crypto_config()
@@ -715,12 +713,11 @@ def sign_config_update(channel_name, artifact_bytes):
                 os.path.join(FABRIC_TOOL, "peer"),
                 "channel", "signconfigtx",
                 "-f", input_pb,
-                "--output", output_pb,
             ],
             check=True, env=peer_env,
         )
 
-        with open(output_pb, "rb") as f:
+        with open(input_pb, "rb") as f:
             return f.read()
 
     finally:

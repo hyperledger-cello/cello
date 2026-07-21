@@ -13,7 +13,6 @@ export default {
   UserName: {
     props: {
       size: 'large',
-      id: 'userName',
       prefix: <UserOutlined className={styles.prefixIcon} />,
       placeholder: 'admin',
     },
@@ -29,7 +28,6 @@ export default {
       size: 'large',
       prefix: <LockOutlined className={styles.prefixIcon} />,
       type: 'password',
-      id: 'password',
       placeholder: '888888',
     },
     rules: [
@@ -72,7 +70,6 @@ export default {
   OrgName: {
     props: {
       size: 'large',
-      id: 'orgName',
       prefix: <TeamOutlined className={styles.prefixIcon} />,
       placeholder: 'org1',
     },
@@ -86,7 +83,6 @@ export default {
   Email: {
     props: {
       size: 'large',
-      id: 'email',
       prefix: <MailOutlined className={styles.prefixIcon} />,
       placeholder: 'admin',
     },
@@ -100,7 +96,6 @@ export default {
   AgentUrl: {
     props: {
       size: 'large',
-      id: 'agentUrl',
       prefix: <LinkOutlined className={styles.prefixIcon} />,
       placeholder: 'http://example.com',
     },

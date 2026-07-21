@@ -22,9 +22,9 @@ jest.mock('@/hooks', () => ({
     refreshList: () => {},
   }),
 }));
-jest.mock('./forms/CreateInvitationForm', () => () => null);
+jest.mock('../../pages/Channel/forms/CreateInvitationForm', () => () => null);
 
-const { badgeStatusMap, computeRecordFlags } = require('./Invitation');
+const { badgeStatusMap, computeRecordFlags } = require('../../pages/Channel/Invitation');
 
 describe('badgeStatusMap', () => {
   it('maps DRAFT to default', () => expect(badgeStatusMap.DRAFT).toBe('default'));
@@ -37,7 +37,7 @@ describe('badgeStatusMap', () => {
 });
 
 describe('computeRecordFlags', () => {
-  const ctxBase = { currentOrgId: 'orgMe', isAdmin: true, isChannelMember: true };
+  const ctxBase = { currentOrgId: 'orgMe', isChannelMember: true };
   const recordBase = overrides => ({
     id: 'inv1',
     status: 'DRAFT',
@@ -47,44 +47,44 @@ describe('computeRecordFlags', () => {
     ...overrides,
   });
 
-  it('admin of member can sign DRAFT', () => {
+  it('channel member can sign DRAFT', () => {
     expect(computeRecordFlags(recordBase({ status: 'DRAFT' }), ctxBase).canSign).toBe(true);
   });
 
-  it('admin of member can sign SIGNING', () => {
+  it('channel member can sign SIGNING', () => {
     expect(computeRecordFlags(recordBase({ status: 'SIGNING' }), ctxBase).canSign).toBe(true);
   });
 
-  it('member admin cannot sign READY', () => {
+  it('channel member cannot sign READY', () => {
     expect(computeRecordFlags(recordBase({ status: 'READY' }), ctxBase).canSign).toBe(false);
   });
 
-  it('non-admin member cannot sign even in DRAFT', () => {
-    expect(computeRecordFlags(recordBase({}), { ...ctxBase, isAdmin: false }).canSign).toBe(false);
-  });
-
-  it('non-member admin cannot sign', () => {
+  it('non-member cannot sign', () => {
     expect(computeRecordFlags(recordBase({}), { ...ctxBase, isChannelMember: false }).canSign).toBe(
       false
     );
   });
 
-  it('creator admin can cancel DRAFT/SIGNING/READY/FAILED', () => {
+  it('channel member can cancel DRAFT/SIGNING/READY/FAILED', () => {
     ['DRAFT', 'SIGNING', 'READY', 'FAILED'].forEach(s =>
       expect(computeRecordFlags(recordBase({ status: s }), ctxBase).canCancel).toBe(true)
     );
   });
 
-  it('creator admin cannot cancel ACCEPTED/REJECTED/CANCELED', () => {
+  it('channel member cannot cancel ACCEPTED/REJECTED/CANCELED', () => {
     ['ACCEPTED', 'REJECTED', 'CANCELED'].forEach(s =>
       expect(computeRecordFlags(recordBase({ status: s }), ctxBase).canCancel).toBe(false)
     );
   });
 
-  it('non-creator admin cannot cancel', () => {
+  it('pending invitee can cancel when READY', () => {
+    const record = recordBase({
+      status: 'READY',
+      invitees: [{ organization: { id: 'orgMe' }, status: 'PENDING' }],
+    });
     expect(
-      computeRecordFlags(recordBase({ creator_organization: { id: 'other' } }), ctxBase).canCancel
-    ).toBe(false);
+      computeRecordFlags(record, { currentOrgId: 'orgMe', isChannelMember: false }).canCancel
+    ).toBe(true);
   });
 
   it('pending invitee can accept/reject only when READY', () => {
@@ -93,8 +93,7 @@ describe('computeRecordFlags', () => {
       invitees: [{ organization: { id: 'orgMe' }, status: 'PENDING' }],
     });
     const flags = computeRecordFlags(record, {
-      ...ctxBase,
-      isAdmin: false,
+      currentOrgId: 'orgMe',
       isChannelMember: false,
     });
     expect(flags.canAccept).toBe(true);
@@ -127,7 +126,6 @@ describe('computeRecordFlags', () => {
     });
     const flags = computeRecordFlags(record, {
       currentOrgId: 'bystander',
-      isAdmin: true,
       isChannelMember: false,
     });
     expect(flags.canSign).toBe(false);

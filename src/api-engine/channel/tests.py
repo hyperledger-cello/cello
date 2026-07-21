@@ -67,7 +67,7 @@ class ChannelInvitationTestCase(TestCase):
 
         self.assertEqual(invitation.status, ChannelInvitation.Status.DRAFT)
         self.assertEqual(invitation.artifact_hash, "")
-        self.assertEqual(invitation.required_signatures, 0)
+        self.assertEqual(invitation.required_signatures, 1)
 
     def test_invitee_is_unique_per_invitation(self):
         invitation = self.create_invitation()
@@ -198,6 +198,62 @@ class ChannelInvitationTestCase(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertIn("organization_ids", serializer.errors)
 
+    def test_create_serializer_rejects_missing_org_selector(self):
+        serializer = ChannelInvitationCreateBody(
+            data={},
+            context={
+                "channel": self.channel,
+                "organization": self.member_org,
+            },
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("non_field_errors", serializer.errors)
+
+    def test_create_serializer_rejects_both_org_selectors(self):
+        serializer = ChannelInvitationCreateBody(
+            data={
+                "organization_ids": [self.invited_org.id],
+                "organization_names": [self.invited_org.name],
+            },
+            context={
+                "channel": self.channel,
+                "organization": self.member_org,
+            },
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("non_field_errors", serializer.errors)
+
+    def test_create_serializer_rejects_unknown_organization_name(self):
+        serializer = ChannelInvitationCreateBody(
+            data={"organization_names": ["missing.example.com"]},
+            context={
+                "channel": self.channel,
+                "organization": self.member_org,
+            },
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("organization_names", serializer.errors)
+
+    def test_create_serializer_rejects_duplicate_organization_names(self):
+        serializer = ChannelInvitationCreateBody(
+            data={
+                "organization_names": [
+                    self.invited_org.name,
+                    self.invited_org.name,
+                ]
+            },
+            context={
+                "channel": self.channel,
+                "organization": self.member_org,
+            },
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("organization_names", serializer.errors)
+
     def test_create_serializer_rejects_too_many_required_signatures(self):
         serializer = ChannelInvitationCreateBody(
             data={
@@ -229,7 +285,59 @@ class ChannelInvitationTestCase(TestCase):
         self.assertTrue(serializer.is_valid(), serializer.errors)
         invitation = serializer.save()
 
+        # 2 members → majority is 2
         self.assertEqual(invitation.required_signatures, 2)
+
+    @patch("channel.serializers.create_invitation_artifact")
+    def test_create_serializer_defaults_majority_with_three_members(
+        self, mock_create_artifact
+    ):
+        mock_create_artifact.return_value = (b"artifact", "a" * 64)
+        third_member = Organization.objects.create(
+            name="third.example.com",
+            agent_url="http://third-agent.example.com",
+            msp_id="ThirdMSP",
+        )
+        self.channel.organizations.add(third_member)
+
+        serializer = ChannelInvitationCreateBody(
+            data={"organization_names": [self.invited_org.name]},
+            context={
+                "channel": self.channel,
+                "organization": self.member_org,
+            },
+        )
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        invitation = serializer.save()
+
+        # 3 members → majority is 2
+        self.assertEqual(invitation.required_signatures, 2)
+
+    @patch("channel.serializers.create_invitation_artifact")
+    def test_create_serializer_creates_invitation_by_organization_names(
+        self, mock_create_artifact
+    ):
+        mock_create_artifact.return_value = (b"artifact", "a" * 64)
+        serializer = ChannelInvitationCreateBody(
+            data={
+                "organization_names": [self.invited_org.name],
+                "required_signatures": 1,
+            },
+            context={
+                "channel": self.channel,
+                "organization": self.member_org,
+            },
+        )
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        invitation = serializer.save()
+
+        self.assertEqual(invitation.invitees.count(), 1)
+        self.assertEqual(
+            str(invitation.invitees.get().organization.pk),
+            str(self.invited_org.pk),
+        )
 
     @patch("channel.serializers.create_invitation_artifact")
     def test_create_serializer_creates_invitation_and_invitees(
@@ -403,16 +511,19 @@ class ChannelInvitationEndpointTests(TestCase):
         self.assertEqual(invitation.artifact_hash, "a" * 64)
         self.assertTrue(invitation.artifact)
 
-    def test_non_admin_cannot_create(self):
+    @patch("channel.serializers.create_invitation_artifact")
+    def test_member_user_creates_invitation_by_name(self, mock_create_artifact):
+        mock_create_artifact.return_value = (b"artifact", "a" * 64)
         self._auth(self.user_token)
 
         resp = self.client.post(
             self._url("invitations"),
-            {"organization_ids": [self.invited_org.id]},
+            {"organization_names": [self.invited_org.name]},
             format="json",
         )
 
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(ChannelInvitation.objects.count(), 1)
 
     def test_non_member_cannot_create(self):
         self._auth(self.other_token)
@@ -498,7 +609,7 @@ class ChannelInvitationEndpointTests(TestCase):
             invitation.status, ChannelInvitation.Status.CANCELED,
         )
 
-    def test_non_admin_member_cannot_cancel(self):
+    def test_non_admin_member_can_cancel(self):
         invitation = self.create_invitation()
         self._auth(self.user_token)
 
@@ -507,7 +618,11 @@ class ChannelInvitationEndpointTests(TestCase):
             format="json",
         )
 
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        invitation.refresh_from_db()
+        self.assertEqual(
+            invitation.status, ChannelInvitation.Status.CANCELED,
+        )
 
     def test_unrelated_org_cannot_cancel(self):
         invitation = self.create_invitation()
@@ -648,6 +763,23 @@ class ChannelInvitationEndpointTests(TestCase):
 
     @patch("channel.serializers.create_invitation_artifact")
     @patch("channel.serializers.sign_invitation_artifact")
+    def test_member_user_can_sign(self, mock_sign, mock_create):
+        mock_create.return_value = (b"artifact", "a" * 64)
+        mock_sign.return_value = b"signed-artifact"
+        self._auth(self.admin_token)
+        invitation = self._create_draft_invitation()
+        self._auth(self.user_token)
+
+        resp = self.client.post(
+            self._url(f"invitations/{invitation.id}/sign"),
+            format="json",
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(ChannelInvitationSignature.objects.count(), 1)
+
+    @patch("channel.serializers.create_invitation_artifact")
+    @patch("channel.serializers.sign_invitation_artifact")
     def test_sign_moves_draft_to_signing(self, mock_sign, mock_create):
         mock_create.return_value = (b"artifact", "a" * 64)
         mock_sign.return_value = b"signed-artifact"
@@ -679,20 +811,6 @@ class ChannelInvitationEndpointTests(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         invitation.refresh_from_db()
         self.assertEqual(invitation.status, ChannelInvitation.Status.READY)
-
-    @patch("channel.serializers.create_invitation_artifact")
-    def test_non_admin_cannot_sign(self, mock_create):
-        mock_create.return_value = (b"artifact", "a" * 64)
-        self._auth(self.admin_token)
-        invitation = self._create_draft_invitation()
-        self._auth(self.user_token)
-
-        resp = self.client.post(
-            self._url(f"invitations/{invitation.id}/sign"),
-            format="json",
-        )
-
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
     @patch("channel.serializers.create_invitation_artifact")
     def test_non_member_cannot_sign(self, mock_create):
@@ -764,7 +882,7 @@ class ChannelInvitationEndpointTests(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         invitation.refresh_from_db()
         self.assertEqual(invitation.status, ChannelInvitation.Status.FAILED)
-        self.assertIn("Agent unreachable", invitation.error_message)
+        self.assertEqual(invitation.error_message, "Signing operation failed.")
 
     def _create_ready_invitation(self, required_signatures=1):
         invitation = ChannelInvitation.objects.create(
@@ -843,6 +961,7 @@ class ChannelInvitationEndpointTests(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         invitation.refresh_from_db()
         self.assertEqual(invitation.status, ChannelInvitation.Status.FAILED)
+        self.assertEqual(invitation.error_message, "Accept operation failed.")
         invited_org_ids = [str(pk) for pk in self.channel.organizations.values_list("pk", flat=True)]
         self.assertNotIn(str(self.invited_org.pk), invited_org_ids)
 

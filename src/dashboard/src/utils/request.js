@@ -4,19 +4,51 @@ import { history, formatMessage } from 'umi';
 import { stringify } from 'qs';
 
 /**
+ * Build an error result that callers (dva effects) can inspect.
+ * Every path through errorHandler returns this shape so that
+ * `response` in saga effects is never undefined.
+ */
+const makeErrorResult = (data, msg) => ({
+  _error: true,
+  ...(data || {}),
+  _errorMsg: msg || '',
+});
+
+/**
+ * Extract a human-readable description from Django error response data.
+ * For 400 validation errors Django sends: { "field_name": ["Error msg"], "code": 20001, "detail": "..." }
+ * We surface the field-level messages rather than the generic "detail".
+ */
+const extractErrorDescription = (data, status) => {
+  if (!data) return '';
+
+  if (status === 400) {
+    const fieldErrors = Object.entries(data)
+      .filter(([key]) => !['code', 'detail', 'msg', '_error', '_errorMsg'].includes(key))
+      .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+      .join('\n');
+    if (fieldErrors) return fieldErrors;
+  }
+
+  const raw = data.detail || data.msg || '';
+  if (typeof raw === 'string') return raw;
+  if (typeof raw === 'object') return JSON.stringify(raw);
+  return String(raw);
+};
+
+/**
  * Error handler
  */
 const errorHandler = error => {
   const { response, data } = error;
 
   if (!response) {
-    notification.error({
-      message: formatMessage({
-        id: 'error.network',
-        defaultMessage: 'Network Error',
-      }),
+    const msg = formatMessage({
+      id: 'error.network',
+      defaultMessage: 'Network Error',
     });
-    return;
+    notification.error({ message: msg });
+    return makeErrorResult(data, msg);
   }
 
   const { status, url } = response;
@@ -26,40 +58,37 @@ const errorHandler = error => {
     const api = url.split('/').pop();
 
     if (api === 'login') {
-      notification.error({
-        message: formatMessage({
-          id: 'error.login.invalidCredentials',
-          defaultMessage: 'Invalid username or password.',
-        }),
+      const msg = formatMessage({
+        id: 'error.login.invalidCredentials',
+        defaultMessage: 'Invalid username or password.',
       });
-      return;
+      notification.error({ message: msg });
+      return makeErrorResult(data, msg);
     }
 
-    notification.error({
-      message: formatMessage({
-        id: 'error.login.expired',
-        defaultMessage: 'Not logged in or session expired. Please log in again.',
-      }),
+    const msg = formatMessage({
+      id: 'error.login.expired',
+      defaultMessage: 'Not logged in or session expired. Please log in again.',
     });
+    notification.error({ message: msg });
     history.replace({
       pathname: '/user/login',
       search: stringify({
         redirect: window.location.href,
       }),
     });
-    return;
+    return makeErrorResult(data, msg);
   }
 
   if (status === 409) {
     const api = url.split('/').pop();
     if (api === 'register') {
-      notification.error({
-        message: formatMessage({
-          id: 'error.register.duplicate',
-          defaultMessage: 'Email address or organization name already exists.',
-        }),
+      const msg = formatMessage({
+        id: 'error.register.duplicate',
+        defaultMessage: 'Email address or organization name already exists.',
       });
-      return;
+      notification.error({ message: msg });
+      return makeErrorResult(data, msg);
     }
   }
 
@@ -69,37 +98,32 @@ const errorHandler = error => {
     defaultMessage: `Request error (${status})`,
   });
 
-  const detailMessage =
-    data?.detail ||
-    data?.msg ||
+  const description =
+    extractErrorDescription(data, status) ||
     formatMessage({
       id: 'error.request.generic',
       defaultMessage: 'An error occurred while processing your request.',
     });
 
-  const safeDetailMessage = (obj => {
-    if (typeof obj === 'string') {
-      return obj;
-    }
-    if (typeof obj === 'object') {
-      return JSON.stringify(obj);
-    }
-    return String(obj);
-  })(detailMessage);
-
   notification.error({
     message: errorMessage,
-    description: safeDetailMessage,
+    description,
   });
 
-  // Handle navigation for specific error codes
-  if (status === 403) {
-    history.push('/exception/403');
-  } else if (status >= 500 && status <= 504) {
-    history.push('/exception/500');
-  } else if (status >= 404 && status < 422) {
-    history.push('/exception/404');
+  // Handle navigation for specific error codes,
+  // but NOT for auth endpoints — keep the user on the login/register page.
+  const isAuthEndpoint = url.includes('/register') || url.includes('/login');
+  if (!isAuthEndpoint) {
+    if (status === 403) {
+      history.push('/exception/403');
+    } else if (status >= 500 && status <= 504) {
+      history.push('/exception/500');
+    } else if (status >= 404 && status < 422) {
+      history.push('/exception/404');
+    }
   }
+
+  return makeErrorResult(data, description);
 };
 
 const request = extend({

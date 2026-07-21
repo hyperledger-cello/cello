@@ -13,6 +13,7 @@ from channel.serializers import (
 
 
 class ChannelViewSet(viewsets.ViewSet):
+
     @extend_schema(
         request=ChannelSerializer,
         responses={201: ChannelSerializer}

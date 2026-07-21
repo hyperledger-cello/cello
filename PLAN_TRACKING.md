@@ -24,9 +24,9 @@
 | 2 — API Models | `feat/channel-invitation-workflow-part-2` | ✅ Done | ✅ Awaiting merge | 13 model/serializer tests | Models, migration, serializers, visibility |
 | 3 — API Endpoints | `feat/channel-invitation-workflow-part-3` | ✅ Done | ✅ | 14 endpoint tests | List/create/retrieve/cancel. 34/34 total with PR2. Stacked on part-2 |
 | 4 — Agent Artifact Gen | `feat/channel-invitation-workflow-part-4` | ✅ Done | ❌ | 7 tests | `POST /channels/{name}/invitations/definition` |
-| 5 — Signing Workflow | — | ⬜ Pending | — | — | API engine sign + agent sign |
-| 6 — Accept/Reject & Join | — | ⬜ Pending | — | — | Accept/reject/join endpoints |
-| 7 — Dashboard UI | — | ⬜ Pending | — | — | New Invitation.js page |
+| 5 — Signing Workflow | `feat/channel-invitation-workflow-part-5` | ✅ Done | ✅ | 8 tests | API engine sign + agent sign |
+| 6 — Accept/Reject & Join | `feat/channel-invitation-workflow-part-6` | ✅ Done | ✅ | 10 tests | Accept/reject/join endpoints |
+| 7 — Dashboard UI | `feat/channel-invitation-workflow-ui` | ✅ Done | ✅ | — | New Invitation.js page |
 | 8 — Operations Docs | — | ⬜ Pending | — | — | Workflow docs for operators |
 
 ## Decisions Made (to confirm with Maintainers)

@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 from typing import Optional, Dict, Any, List
-from common.utils import safe_urljoin
+from urllib.parse import urljoin
 from zipfile import ZipFile
 
 import docker
@@ -24,11 +24,18 @@ def get_node(node_id: str) -> Optional[Node]:
         return None
 
 
+def _get_agent_base(agent_url: str) -> str:
+    """Normalize agent URL to base + /api/v1/"""
+    if agent_url.rstrip('/').endswith('/api/v1'):
+        agent_url = agent_url.rstrip('/')[:-7]
+    return urljoin(agent_url, "api/v1/")
+
+
 def get_node_status(organization: Organization, node: Node) -> str:
-    agent_url = organization.agent_url
-    requests.get(safe_urljoin(agent_url, "health")).raise_for_status()
+    base = _get_agent_base(organization.agent_url)
+    requests.get(urljoin(base, "health")).raise_for_status()
     return requests.get(
-        safe_urljoin(agent_url, "nodes/status"),
+        urljoin(base, "nodes/status"),
         params=dict(type=node.type, name=node.name)).json()["status"]
 
 
@@ -41,9 +48,9 @@ def organization_orderer_exists(organization: Organization) -> bool:
 
 
 def create(organization: Organization, node_type: Node.Type, node_name: str) -> Node:
-    agent_url = organization.agent_url
-    requests.get(safe_urljoin(agent_url, "health")).raise_for_status()
-    response = requests.post(safe_urljoin(agent_url, "nodes"), json=dict(type=node_type, name=node_name))
+    base = _get_agent_base(organization.agent_url)
+    requests.get(urljoin(base, "health")).raise_for_status()
+    response = requests.post(urljoin(base, "nodes"), json=dict(type=node_type, name=node_name))
     response.raise_for_status()
 
     node = Node(

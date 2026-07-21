@@ -42,10 +42,8 @@ class ChannelViewSet(viewsets.ViewSet):
             pk=invitation_pk,
         )
 
-    def _can_admin(self, org, channel):
-        return self.request.user.is_admin and channel.organizations.filter(
-            pk=org.pk
-        ).exists()
+    def _is_channel_member(self, org, channel):
+        return channel.organizations.filter(pk=org.pk).exists()
 
     def _is_invitee(self, org, invitation):
         return ChannelInvitationInvitee.objects.filter(
@@ -125,6 +123,11 @@ class ChannelViewSet(viewsets.ViewSet):
             )
 
         elif request.method == "POST":
+            if not request.user.is_admin:
+                return Response(
+                    status=status.HTTP_403_FORBIDDEN,
+                    data=err("Only organization administrators can create invitations."),
+                )
             serializer = ChannelInvitationCreateBody(
                 data=request.data,
                 context={
@@ -133,11 +136,6 @@ class ChannelViewSet(viewsets.ViewSet):
                 },
             )
             serializer.is_valid(raise_exception=True)
-            if not request.user.is_admin:
-                return Response(
-                    status=status.HTTP_403_FORBIDDEN,
-                    data=err("Admin role required."),
-                )
             try:
                 invitation = serializer.save()
             except Exception as e:
@@ -162,6 +160,11 @@ class ChannelViewSet(viewsets.ViewSet):
         ),
     )
     def sign_invitation(self, request, pk=None, invitation_pk=None):
+        if not request.user.is_admin:
+            return Response(
+                status=status.HTTP_403_FORBIDDEN,
+                data=err("Only organization administrators can sign invitations."),
+            )
         channel = self._get_channel(pk)
         org = request.user.organization
 
@@ -174,16 +177,10 @@ class ChannelViewSet(viewsets.ViewSet):
                 data=err("Not found."),
             )
 
-        if not channel.organizations.filter(pk=org.pk).exists():
+        if not self._is_channel_member(org, channel):
             return Response(
                 status=status.HTTP_404_NOT_FOUND,
                 data=err("Not found."),
-            )
-
-        if not self._can_admin(org, channel):
-            return Response(
-                status=status.HTTP_403_FORBIDDEN,
-                data=err("Admin role required."),
             )
 
         serializer = ChannelInvitationSignSerializer(
@@ -201,7 +198,7 @@ class ChannelViewSet(viewsets.ViewSet):
             invitation.refresh_from_db()
             return Response(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                data=ok(ChannelInvitationResponse(invitation).data),
+                data=err(invitation.error_message or "Signing failed."),
             )
 
         return Response(
@@ -221,6 +218,11 @@ class ChannelViewSet(viewsets.ViewSet):
         ),
     )
     def accept_invitation(self, request, pk=None, invitation_pk=None):
+        if not request.user.is_admin:
+            return Response(
+                status=status.HTTP_403_FORBIDDEN,
+                data=err("Only organization administrators can accept invitations."),
+            )
         channel = self._get_channel(pk)
         org = request.user.organization
 
@@ -258,7 +260,7 @@ class ChannelViewSet(viewsets.ViewSet):
             invitation.refresh_from_db()
             return Response(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                data=ok(ChannelInvitationResponse(invitation).data),
+                data=err(invitation.error_message or "Accept operation failed."),
             )
 
         return Response(
@@ -278,6 +280,11 @@ class ChannelViewSet(viewsets.ViewSet):
         ),
     )
     def reject_invitation(self, request, pk=None, invitation_pk=None):
+        if not request.user.is_admin:
+            return Response(
+                status=status.HTTP_403_FORBIDDEN,
+                data=err("Only organization administrators can reject invitations."),
+            )
         channel = self._get_channel(pk)
         org = request.user.organization
 
@@ -350,6 +357,11 @@ class ChannelViewSet(viewsets.ViewSet):
         ),
     )
     def cancel_invitation(self, request, pk=None, invitation_pk=None):
+        if not request.user.is_admin:
+            return Response(
+                status=status.HTTP_403_FORBIDDEN,
+                data=err("Only organization administrators can cancel invitations."),
+            )
         channel = self._get_channel(pk)
 
         invitation = ChannelInvitation.objects.filter(
@@ -362,20 +374,21 @@ class ChannelViewSet(viewsets.ViewSet):
             )
 
         org = request.user.organization
-        is_member = channel.organizations.filter(pk=org.pk).exists()
+        is_member = self._is_channel_member(org, channel)
         is_invited = self._is_invited(org, invitation)
         can_cancel_as_invitee = self._is_invitee(org, invitation)
 
-        if not is_member and not is_invited:
-            return Response(
-                status=status.HTTP_404_NOT_FOUND,
-                data=err("Not found."),
-            )
-
-        if not self._can_admin(org, channel) and not can_cancel_as_invitee:
+        if is_member or can_cancel_as_invitee:
+            pass
+        elif is_invited:
             return Response(
                 status=status.HTTP_403_FORBIDDEN,
                 data=err("Permission denied."),
+            )
+        else:
+            return Response(
+                status=status.HTTP_404_NOT_FOUND,
+                data=err("Not found."),
             )
 
         serializer = ChannelInvitationCancelSerializer(
@@ -383,9 +396,7 @@ class ChannelViewSet(viewsets.ViewSet):
             context={"invitation": invitation},
         )
         serializer.is_valid(raise_exception=True)
-
-        invitation.status = ChannelInvitation.Status.CANCELED
-        invitation.save()
+        serializer.save()
 
         return Response(
             status=status.HTTP_200_OK,

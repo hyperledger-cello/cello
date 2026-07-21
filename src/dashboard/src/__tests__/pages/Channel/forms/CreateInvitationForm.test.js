@@ -1,7 +1,10 @@
 /*
  SPDX-License-Identifier: Apache-2.0
  */
-import { validateOrganizations, normalizeRequiredSignatures } from './CreateInvitationForm';
+import {
+  validateOrganizations,
+  normalizeRequiredSignatures,
+} from '../../../../pages/Channel/forms/CreateInvitationForm';
 
 describe('validateOrganizations', () => {
   it('rejects empty array', () => {

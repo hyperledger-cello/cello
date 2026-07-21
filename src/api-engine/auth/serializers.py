@@ -39,10 +39,7 @@ class RegisterBody(serializers.Serializer):
 
     @staticmethod
     def validate_agent_url(agent_url: str) -> str:
-        if Organization.objects.filter(agent_url=agent_url).exists():
-            raise serializers.ValidationError("Agent already exists!")
         validate_url(agent_url)
-
         return agent_url
 
     def validate_msp_id(self, msp_id: str) -> str:

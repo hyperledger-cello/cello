@@ -57,10 +57,10 @@ export default {
   'app.channel.invitation.action.errorInfo': '错误',
   'app.channel.invitation.form.create.header.title': '邀请组织',
   'app.channel.invitation.form.create.organizations': '组织',
-  'app.channel.invitation.form.create.organizationsPlaceholder': '请选择要邀请的组织',
-  'app.channel.invitation.form.create.required.organizations': '请至少选择一个组织',
+  'app.channel.invitation.form.create.organizationsPlaceholder': '输入或选择要邀请的组织名称',
+  'app.channel.invitation.form.create.required.organizations': '请至少输入一个组织名称',
   'app.channel.invitation.form.create.requiredSignatures': '所需签名数',
-  'app.channel.invitation.form.create.requiredSignaturesExtra': '默认为当前通道全部成员',
+  'app.channel.invitation.form.create.requiredSignaturesExtra': '默认为当前通道成员的多数',
   'app.channel.invitation.form.create.success': '创建邀请成功',
   'app.channel.invitation.form.create.fail': '创建邀请失败',
 };

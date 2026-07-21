@@ -88,13 +88,18 @@ export default [
             path: '/channel',
             name: 'channel',
             icon: 'channel',
-            component: './Channel/Channel',
-          },
-          {
-            path: '/channel/invitation',
-            name: 'invitation',
-            icon: 'mail',
-            component: './Channel/Invitation',
+            routes: [
+              {
+                path: '/channel',
+                component: './Channel/Channel',
+              },
+              {
+                path: '/channel/invitation',
+                name: 'invitation',
+                icon: 'mail',
+                component: './Channel/Invitation',
+              },
+            ],
           },
           {
             path: '/chaincode',

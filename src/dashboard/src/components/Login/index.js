@@ -82,7 +82,7 @@ class Login extends Component {
   };
 
   render() {
-    const { className, children, form } = this.props;
+    const { className, children, form, name } = this.props;
     const { type, tabs } = this.state;
     const TabChildren = [];
     const otherChildren = [];
@@ -100,7 +100,12 @@ class Login extends Component {
     return (
       <LoginContext.Provider value={this.getContext()}>
         <div className={classNames(className, styles.login)}>
-          <Form form={form} onFinish={this.handleSubmit} onFinishFailed={this.onFinishFailed}>
+          <Form
+            name={name}
+            form={form}
+            onFinish={this.handleSubmit}
+            onFinishFailed={this.onFinishFailed}
+          >
             {tabs.length ? (
               <React.Fragment>
                 <Tabs

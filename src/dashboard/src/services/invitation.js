@@ -35,7 +35,8 @@ export const getInvitation = ({ channelId, invitationId }) =>
  * Create a channel invitation.
  * @param {Object} params
  * @param {string} params.channelId - Channel UUID
- * @param {string[]} params.organization_ids - Invited organization UUIDs
+ * @param {string[]} [params.organization_names] - Invited organization names
+ * @param {string[]} [params.organization_ids] - Invited organization UUIDs (compat)
  * @param {number} [params.required_signatures] - Required signature count
  * @returns {Promise} API response
  */

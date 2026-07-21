@@ -11,11 +11,11 @@ const FormItem = Form.Item;
 /**
  * Validate the organizations selection: must have at least one entry.
  * Pure function — exported for unit testing.
- * @param {string[]} organization_ids
+ * @param {string[]} organizationNames
  * @returns {boolean} true if valid
  */
-export const validateOrganizations = organizationIds =>
-  Array.isArray(organizationIds) && organizationIds.length > 0;
+export const validateOrganizations = organizationNames =>
+  Array.isArray(organizationNames) && organizationNames.length > 0;
 
 /**
  * Normalize the required_signatures input: must be a positive integer
@@ -90,7 +90,7 @@ const CreateInvitationForm = props => {
         .filter(org => !memberOrgIds.includes(org.id))
         .map(org => ({
           label: org.name,
-          value: org.id,
+          value: org.name,
         }));
       setOrganizations(options);
     }
@@ -126,7 +126,7 @@ const CreateInvitationForm = props => {
     handleCreate(
       {
         channelId,
-        organization_ids: values.organization_ids,
+        organization_names: values.organization_names,
         required_signatures: values.required_signatures,
       },
       createCallback
@@ -164,24 +164,26 @@ const CreateInvitationForm = props => {
             id: 'app.channel.invitation.form.create.organizations',
             defaultMessage: 'Organizations',
           })}
-          name="organization_ids"
+          name="organization_names"
           rules={[
             {
               required: true,
               message: intl.formatMessage({
                 id: 'app.channel.invitation.form.create.required.organizations',
-                defaultMessage: 'Please select at least one organization',
+                defaultMessage: 'Please enter at least one organization name',
               }),
             },
           ]}
         >
           <Select
             mode="multiple"
+            showSearch
             tagRender={tagRender}
             options={organizations}
+            optionFilterProp="label"
             placeholder={intl.formatMessage({
               id: 'app.channel.invitation.form.create.organizationsPlaceholder',
-              defaultMessage: 'Select organizations to invite',
+              defaultMessage: 'Type or select organization names to invite',
             })}
           />
         </FormItem>
@@ -194,7 +196,7 @@ const CreateInvitationForm = props => {
           name="required_signatures"
           extra={intl.formatMessage({
             id: 'app.channel.invitation.form.create.requiredSignaturesExtra',
-            defaultMessage: 'Defaults to all current channel members',
+            defaultMessage: 'Defaults to a majority of current channel members',
           })}
         >
           <InputNumber min={1} precision={0} step={1} style={{ width: '100%' }} />

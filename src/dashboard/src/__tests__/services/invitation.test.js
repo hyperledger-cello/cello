@@ -5,7 +5,7 @@ import { stringify } from 'qs';
 
 const mockCustomRequest = jest.fn();
 
-jest.mock('../utils/serviceFactory', () => ({
+jest.mock('../../utils/serviceFactory', () => ({
   customRequest: mockCustomRequest,
 }));
 
@@ -17,7 +17,7 @@ const {
   acceptInvitation,
   rejectInvitation,
   cancelInvitation,
-} = require('./invitation');
+} = require('../../services/invitation');
 
 describe('invitation service', () => {
   beforeEach(() => {
@@ -45,12 +45,15 @@ describe('invitation service', () => {
   it('createInvitation issues a POST with body data', () => {
     createInvitation({
       channelId: 'c4',
-      organization_ids: ['a', 'b'],
+      organization_names: ['org.a.example.com', 'org.b.example.com'],
       required_signatures: 2,
     });
     expect(mockCustomRequest).toHaveBeenCalledWith('/api/v1/channels/c4/invitations', {
       method: 'POST',
-      data: { organization_ids: ['a', 'b'], required_signatures: 2 },
+      data: {
+        organization_names: ['org.a.example.com', 'org.b.example.com'],
+        required_signatures: 2,
+      },
     });
   });
 

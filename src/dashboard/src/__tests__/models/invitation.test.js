@@ -5,7 +5,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { call, put, select } from 'redux-saga/effects';
 
-import model from './invitation';
+import model from '../../models/invitation';
 
 const { effects, reducers } = model;
 const CTX = { call, put, select };
@@ -56,7 +56,11 @@ describe('invitation model', () => {
 
   it('createInvitation yields call(createInvitationService, payload) then callback', () => {
     const callback = jest.fn();
-    const payload = { channelId: 'c3', organization_ids: ['o1'], required_signatures: 1 };
+    const payload = {
+      channelId: 'c3',
+      organization_names: ['org.a.example.com'],
+      required_signatures: 1,
+    };
     const saga = effects.createInvitation({ payload, callback }, CTX);
 
     const callStep = saga.next();

@@ -8,11 +8,12 @@ import { PlusOutlined, DeploymentUnitOutlined } from '@ant-design/icons';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import StandardTable from '@/components/StandardTable';
 import { useTableManagement } from '@/hooks';
-import { getAuthority } from '@/utils/authority';
 import CreateInvitationForm from './forms/CreateInvitationForm';
 import styles from './styles.less';
 
 const { Option } = Select;
+
+const CANCELABLE_STATUSES = ['DRAFT', 'SIGNING', 'READY', 'FAILED'];
 
 /**
  * Map invitation status to antd Badge status for display.
@@ -33,20 +34,20 @@ export const badgeStatusMap = {
  * Pure function — extracted from the component for unit testing.
  *
  * @param {Object} record - Invitation record (from API)
- * @param {Object} ctx - { currentOrgId, isAdmin, isChannelMember }
+ * @param {Object} ctx - { currentOrgId, isChannelMember }
  * @returns {Object} { canSign, canCancel, canAccept, canReject }
  */
 export const computeRecordFlags = (record, ctx) => {
-  const { currentOrgId, isAdmin, isChannelMember } = ctx;
+  const { currentOrgId, isChannelMember } = ctx;
   const invitees = record.invitees || [];
   const isInviteePending = invitees.some(
     inv => inv.organization && inv.organization.id === currentOrgId && inv.status === 'PENDING'
   );
-  const isCreator = record.creator_organization && record.creator_organization.id === currentOrgId;
   const status = record.status;
+  const cancelable = CANCELABLE_STATUSES.includes(status);
   return {
-    canSign: isAdmin && isChannelMember && (status === 'DRAFT' || status === 'SIGNING'),
-    canCancel: isAdmin && isCreator && ['DRAFT', 'SIGNING', 'READY', 'FAILED'].includes(status),
+    canSign: isChannelMember && (status === 'DRAFT' || status === 'SIGNING'),
+    canCancel: cancelable && (isChannelMember || isInviteePending),
     canAccept: isInviteePending && status === 'READY',
     canReject: isInviteePending && status === 'READY',
   };
@@ -109,8 +110,6 @@ const Invitation = ({
   }, [channelId, refreshList]);
 
   const currentOrgId = currentUser && currentUser.organization ? currentUser.organization.id : null;
-  const userRole = getAuthority() ? getAuthority()[0] : null;
-  const isAdmin = userRole === 'admin' || userRole === 'administrator';
 
   // Look up channel by id
   const selectedChannel = useMemo(() => channels.find(c => c.id === channelId) || {}, [
@@ -128,7 +127,7 @@ const Invitation = ({
     memberOrgIds,
   ]);
 
-  const canInvite = isAdmin && isChannelMember;
+  const canInvite = isChannelMember;
 
   const handleModalVisible = useCallback(visible => {
     setModalVisible(!!visible);
@@ -232,10 +231,9 @@ const Invitation = ({
     record =>
       computeRecordFlags(record, {
         currentOrgId,
-        isAdmin,
         isChannelMember,
       }),
-    [currentOrgId, isAdmin, isChannelMember]
+    [currentOrgId, isChannelMember]
   );
 
   const columns = [
@@ -279,7 +277,17 @@ const Invitation = ({
       render: (text, record) => {
         const signed = (record.signatures || []).length;
         const required = record.required_signatures || 0;
-        return `${signed}/${required}`;
+        if (signed === 0) {
+          return `${signed}/${required}`;
+        }
+        const signerNames = record.signatures.map(s => s.organization.name).join(', ');
+        return (
+          <Tooltip title={signerNames}>
+            <span>
+              {signed}/{required}
+            </span>
+          </Tooltip>
+        );
       },
     },
     {
@@ -289,7 +297,17 @@ const Invitation = ({
       }),
       render: (text, record) => {
         const invitees = record.invitees || [];
-        return invitees.length;
+        if (invitees.length === 0) {
+          return 0;
+        }
+        const inviteeInfo = invitees
+          .map(inv => `${inv.organization.name} (${inv.status.toLowerCase()})`)
+          .join(', ');
+        return (
+          <Tooltip title={inviteeInfo}>
+            <span>{invitees.length}</span>
+          </Tooltip>
+        );
       },
     },
     {

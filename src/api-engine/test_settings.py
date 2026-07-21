@@ -1,3 +1,5 @@
+import tempfile
+
 from api_engine.settings import *  # noqa: F403
 
 DATABASES = {
@@ -6,3 +8,5 @@ DATABASES = {
         "NAME": ":memory:",
     }
 }
+
+MEDIA_ROOT = tempfile.mkdtemp(prefix="cello_test_media_")

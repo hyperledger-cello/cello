@@ -57,12 +57,13 @@ export default {
   'app.channel.invitation.action.errorInfo': 'Error',
   'app.channel.invitation.form.create.header.title': 'Invite Organizations',
   'app.channel.invitation.form.create.organizations': 'Organizations',
-  'app.channel.invitation.form.create.organizationsPlaceholder': 'Select organizations to invite',
+  'app.channel.invitation.form.create.organizationsPlaceholder':
+    'Type or select organization names to invite',
   'app.channel.invitation.form.create.required.organizations':
-    'Please select at least one organization',
+    'Please enter at least one organization name',
   'app.channel.invitation.form.create.requiredSignatures': 'Required Signatures',
   'app.channel.invitation.form.create.requiredSignaturesExtra':
-    'Defaults to all current channel members',
+    'Defaults to a majority of current channel members',
   'app.channel.invitation.form.create.success': 'Create invitation succeed',
   'app.channel.invitation.form.create.fail': 'Create invitation failed',
 };

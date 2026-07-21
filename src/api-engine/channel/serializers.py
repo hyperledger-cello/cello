@@ -118,6 +118,12 @@ class ChannelInvitationList(ListResponseSerializer):
 class ChannelInvitationCreateBody(serializers.Serializer):
     organization_ids = serializers.ListField(
         child=serializers.UUIDField(),
+        required=False,
+        allow_empty=False,
+    )
+    organization_names = serializers.ListField(
+        child=serializers.CharField(max_length=256),
+        required=False,
         allow_empty=False,
     )
     required_signatures = serializers.IntegerField(
@@ -126,10 +132,23 @@ class ChannelInvitationCreateBody(serializers.Serializer):
     )
 
     def validate_organization_ids(self, value):
-        if len(set(value)) != len(value):
-            raise serializers.ValidationError(
-                "Duplicated organizations are not allowed."
-            )
+        seen = {}
+        for oid in value:
+            if oid in seen:
+                raise serializers.ValidationError(
+                    "Duplicated organizations are not allowed."
+                )
+            seen[oid] = True
+        return value
+
+    def validate_organization_names(self, value):
+        seen = {}
+        for name in value:
+            if name in seen:
+                raise serializers.ValidationError(
+                    "Duplicated organizations are not allowed."
+                )
+            seen[name] = True
         return value
 
     def validate(self, attrs):
@@ -141,32 +160,56 @@ class ChannelInvitationCreateBody(serializers.Serializer):
                 "Not a channel member."
             )
 
-        org_ids = set(attrs["organization_ids"])
-        existing = {
-            o.id: o.name
-            for o in Organization.objects.filter(pk__in=org_ids)
-        }
-        missing = [str(oid) for oid in org_ids if oid not in existing]
-        if missing:
-            raise serializers.ValidationError({
-                "organization_ids": [
-                    f"Organization does not exist: {oid}" for oid in missing
-                ]
-            })
+        org_ids = attrs.get("organization_ids")
+        org_names = attrs.get("organization_names")
+        if bool(org_ids) == bool(org_names):
+            raise serializers.ValidationError(
+                "Provide organization_ids or organization_names."
+            )
+
+        if org_names:
+            field_key = "organization_names"
+            names = list(dict.fromkeys(org_names))
+            existing_by_name = {
+                o.name: o
+                for o in Organization.objects.filter(name__in=names)
+            }
+            missing = [n for n in names if n not in existing_by_name]
+            if missing:
+                raise serializers.ValidationError({
+                    field_key: [
+                        f"Organization does not exist: {n}" for n in missing
+                    ]
+                })
+            orgs = [existing_by_name[n] for n in names]
+        else:
+            field_key = "organization_ids"
+            org_ids = list(dict.fromkeys(org_ids))
+            existing = {
+                o.id: o
+                for o in Organization.objects.filter(pk__in=org_ids)
+            }
+            missing = [str(oid) for oid in org_ids if oid not in existing]
+            if missing:
+                raise serializers.ValidationError({
+                    field_key: [
+                        f"Organization does not exist: {oid}" for oid in missing
+                    ]
+                })
+            orgs = [existing[oid] for oid in org_ids]
 
         member_ids = set(channel.organizations.values_list("id", flat=True))
-        already_members = [
-            existing[oid] for oid in org_ids if oid in member_ids
-        ]
+        already_members = [o.name for o in orgs if o.id in member_ids]
         if already_members:
             raise serializers.ValidationError({
-                "organization_ids": [
+                field_key: [
                     f"Already a member: {name}" for name in already_members
                 ]
             })
 
+        org_pks = [o.pk for o in orgs]
         active_invitees = ChannelInvitationInvitee.objects.filter(
-            organization__in=org_ids,
+            organization__in=org_pks,
             status=ChannelInvitationInvitee.Status.PENDING,
             invitation__channel=channel,
             invitation__status__in=(
@@ -182,21 +225,20 @@ class ChannelInvitationCreateBody(serializers.Serializer):
             )
 
         member_count = channel.organizations.count()
-        required = attrs.get("required_signatures", member_count)
+        required = attrs.get("required_signatures", (member_count // 2) + 1)
         if required > member_count:
             raise serializers.ValidationError({
                 "required_signatures": "Cannot exceed member count."
             })
 
-        attrs["organizations"] = Organization.objects.filter(
-            pk__in=org_ids
-        )
+        attrs["organizations"] = orgs
         attrs["required_signatures"] = required
         return attrs
 
     def create(self, validated_data):
         orgs = validated_data.pop("organizations")
-        validated_data.pop("organization_ids")
+        validated_data.pop("organization_ids", None)
+        validated_data.pop("organization_names", None)
         channel = self.context["channel"]
         creator = self.context["organization"]
         artifact_bytes, artifact_hash = create_invitation_artifact(
@@ -239,6 +281,12 @@ class ChannelInvitationCancelSerializer(serializers.Serializer):
 
         return attrs
 
+    def create(self, validated_data):
+        invitation = self.context["invitation"]
+        invitation.status = ChannelInvitation.Status.CANCELED
+        invitation.save(update_fields=["status"])
+        return invitation
+
 
 class ChannelInvitationAcceptSerializer(serializers.Serializer):
     def validate(self, attrs):
@@ -273,9 +321,11 @@ class ChannelInvitationAcceptSerializer(serializers.Serializer):
             with open(invitation.artifact.path, "rb") as f:
                 artifact_bytes = f.read()
 
-            accept_invitation(org.agent_url, channel.name, artifact_bytes)
-
             with transaction.atomic():
+                invitation = ChannelInvitation.objects.select_for_update().get(
+                    pk=invitation.pk
+                )
+                accept_invitation(org.agent_url, channel.name, artifact_bytes)
                 channel.organizations.add(org)
                 invitee.status = ChannelInvitationInvitee.Status.ACCEPTED
                 invitee.responded_at = timezone.now()
@@ -289,10 +339,12 @@ class ChannelInvitationAcceptSerializer(serializers.Serializer):
                     invitation.status = ChannelInvitation.Status.ACCEPTED
                     invitation.save(update_fields=["status"])
 
-        except Exception as e:
-            invitation.status = ChannelInvitation.Status.FAILED
-            invitation.error_message = str(e)
-            invitation.save(update_fields=["status", "error_message"])
+        except Exception:
+            invitation.refresh_from_db()
+            if invitation.status != ChannelInvitation.Status.FAILED:
+                invitation.status = ChannelInvitation.Status.FAILED
+                invitation.error_message = "Accept operation failed."
+                invitation.save(update_fields=["status", "error_message"])
             raise
 
         return invitation
@@ -370,15 +422,18 @@ class ChannelInvitationSignSerializer(serializers.Serializer):
             signed_bytes = sign_invitation_artifact(
                 agent_url, channel.name, artifact_bytes
             )
-        except Exception as e:
+        except Exception:
             invitation.status = ChannelInvitation.Status.FAILED
-            invitation.error_message = str(e)
+            invitation.error_message = "Signing operation failed."
             invitation.save(update_fields=["status", "error_message"])
             raise
 
         new_hash = hashlib.sha256(signed_bytes).hexdigest()
 
         with transaction.atomic():
+            invitation = ChannelInvitation.objects.select_for_update().get(
+                pk=invitation.pk
+            )
             invitation.artifact.save(
                 f"channel_update_{channel.name}.bin",
                 ContentFile(signed_bytes),
