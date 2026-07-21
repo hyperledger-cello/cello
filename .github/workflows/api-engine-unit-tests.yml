@@ -1,0 +1,38 @@
+name: API Engine Unit Tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      # Build and start only the database and the API engine. The AI agent's
+      # unit tests mock the LLM and Cello's REST API, so no external services
+      # or secrets are needed -- but Django's test runner still creates a test
+      # database, so Postgres must be reachable.
+      - name: Start DB and API Engine
+        run: docker compose -f docker-compose.dev.yaml up -d --build cello-postgres cello-api-engine
+
+      - name: Wait for Postgres
+        run: |
+          for i in $(seq 1 30); do
+            if docker exec cello-postgres pg_isready -U postgres >/dev/null 2>&1; then
+              echo "Postgres is ready"; exit 0
+            fi
+            echo "Waiting for Postgres ($i/30)..."; sleep 2
+          done
+          echo "Postgres did not become ready in time"; exit 1
+
+      - name: Run api-engine unit tests
+        run: docker exec cello-api-engine python manage.py test agent
+
+      - name: Stop DB and API Engine
+        if: always()
+        run: docker compose -f docker-compose.dev.yaml down -v

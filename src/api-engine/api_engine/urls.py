@@ -27,6 +27,7 @@ from rest_framework_simplejwt.views import (
 )
 from django.conf.urls.static import static
 from api_engine.settings import DEBUG, WEBROOT
+from agent.views import ChatView
 from auth.views import RegisterViewSet, CelloTokenObtainPairView, CelloTokenVerifyView
 from chaincode.views import ChaincodeViewSet
 from channel.views import ChannelViewSet
@@ -63,6 +64,7 @@ urlpatterns = [path(WEBROOT, include(router.urls + [
     ),
     path("login/refresh", TokenRefreshView.as_view(), name="token_refresh"),
     path("token-verify", CelloTokenVerifyView.as_view(), name="token_verify"),
+    path("agent/chat", ChatView.as_view(), name="agent_chat"),
     path("docs", schema_view.with_ui("swagger", cache_timeout=0), name="docs"),
     path("redoc", schema_view.with_ui("redoc", cache_timeout=0), name="redoc"),
 ]))]

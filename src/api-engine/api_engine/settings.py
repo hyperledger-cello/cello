@@ -54,8 +54,37 @@ INSTALLED_APPS = [
     "organization.apps.OrganizationConfig",
     "node.apps.NodeConfig",
     "channel.apps.ChannelConfig",
-    "chaincode.apps.ChaincodeConfig"
+    "chaincode.apps.ChaincodeConfig",
+    "agent.apps.AgentConfig"
 ]
+
+# --------------------------------------------------------------------------
+# AI operations agent (read-only chat). All values overridable via env so no
+# secret is ever hardcoded. The provider is selected by name from the registry
+# in agent/llm.py; the agent is disabled until an API key is set.
+#
+# The default provider speaks the OpenAI chat-completions protocol, which most
+# vendors implement. Point CELLO_AGENT_LLM_BASE_URL at any of them -- DeepSeek,
+# OpenRouter, Together, Groq, a local Ollama -- and set the matching model, e.g.
+#   CELLO_AGENT_LLM_BASE_URL=https://api.deepseek.com
+#   CELLO_AGENT_LLM_MODEL=deepseek-chat
+# Leave the base URL empty to use the SDK's default (api.openai.com).
+# --------------------------------------------------------------------------
+CELLO_AGENT_LLM_PROVIDER = os.environ.get(
+    "CELLO_AGENT_LLM_PROVIDER", "openai_compatible"
+)
+CELLO_AGENT_LLM_MODEL = os.environ.get("CELLO_AGENT_LLM_MODEL", "deepseek-chat")
+CELLO_AGENT_LLM_BASE_URL = os.environ.get("CELLO_AGENT_LLM_BASE_URL", "")
+CELLO_AGENT_LLM_API_KEY = os.environ.get("CELLO_AGENT_LLM_API_KEY", "")
+CELLO_AGENT_MAX_TOKENS = int(os.environ.get("CELLO_AGENT_MAX_TOKENS", "1024"))
+CELLO_AGENT_MAX_TOOL_ITERATIONS = int(
+    os.environ.get("CELLO_AGENT_MAX_TOOL_ITERATIONS", "8")
+)
+# Cello REST API root the agent's tools call (over loopback by default). The
+# agent forwards the caller's JWT to these endpoints, so it acts as the user.
+CELLO_AGENT_API_BASE = os.environ.get(
+    "CELLO_AGENT_API_BASE", "http://localhost:8080/api/v1"
+)
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
