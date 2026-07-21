@@ -1,3 +1,7 @@
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema

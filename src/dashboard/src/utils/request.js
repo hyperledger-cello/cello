@@ -1,3 +1,6 @@
+/*
+ SPDX-License-Identifier: Apache-2.0
+ */
 import { extend } from 'umi-request';
 import { notification } from 'antd';
 import { history, formatMessage } from 'umi';
