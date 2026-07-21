@@ -1,7 +1,6 @@
 /*
  SPDX-License-Identifier: Apache-2.0
  */
-// redux-saga is a transitive dependency of dva — available at runtime
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { call, put, select } from 'redux-saga/effects';
 
@@ -16,7 +15,6 @@ describe('invitation model', () => {
   it('has correct namespace and state shape', () => {
     expect(model.namespace).toBe('invitation');
     expect(model.state.invitations).toEqual([]);
-    expect(model.state.currentInvitation).toEqual({});
     expect(model.state.pagination).toBeDefined();
   });
 
@@ -24,14 +22,12 @@ describe('invitation model', () => {
     const initial = model.state;
     const next = reducers.save(initial, { payload: { invitations: [{ id: 'x' }] } });
     expect(next.invitations).toEqual([{ id: 'x' }]);
-    expect(next.currentInvitation).toEqual({});
   });
 
   it('reducer clear resets state to initial', () => {
     const initial = model.state;
     const next = reducers.clear(initial);
     expect(next.invitations).toEqual([]);
-    expect(next.currentInvitation).toEqual({});
   });
 
   it('listInvitation yields call(listInvitationService, payload) then select then put then callback', () => {

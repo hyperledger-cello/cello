@@ -25,7 +25,6 @@ def get_node(node_id: str) -> Optional[Node]:
 
 
 def _get_agent_base(agent_url: str) -> str:
-    """Normalize agent URL to base + /api/v1/"""
     if agent_url.rstrip('/').endswith('/api/v1'):
         agent_url = agent_url.rstrip('/')[:-7]
     return urljoin(agent_url, "api/v1/")
@@ -76,7 +75,6 @@ def _generate_node_config(organization_name: str, node_type: Node.Type, node_dom
         _generate_peer_config(organization_name, node_domain_name)
     elif node_type == Node.Type.ORDERER:
         _generate_orderer_config(organization_name, node_domain_name)
-    # throw exception here
     return None
 
 

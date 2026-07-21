@@ -3,7 +3,6 @@
  */
 import {
   listInvitation,
-  getInvitation,
   createInvitation,
   signInvitation,
   acceptInvitation,
@@ -17,7 +16,6 @@ export default createModel({
 
   state: {
     invitations: [],
-    currentInvitation: {},
   },
 
   effects: {
@@ -26,11 +24,6 @@ export default createModel({
       namespace: 'invitation',
       dataKey: 'invitations',
       getTotalFromResponse: response => response.data.total,
-    }),
-
-    getInvitation: createSimpleEffect(getInvitation, {
-      saveKey: 'currentInvitation',
-      includePayloadInCallback: false,
     }),
 
     createInvitation: createSimpleEffect(createInvitation, {

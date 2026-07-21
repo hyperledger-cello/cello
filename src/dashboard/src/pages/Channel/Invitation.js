@@ -15,9 +15,6 @@ const { Option } = Select;
 
 const CANCELABLE_STATUSES = ['DRAFT', 'SIGNING', 'READY', 'FAILED'];
 
-/**
- * Map invitation status to antd Badge status for display.
- */
 export const badgeStatusMap = {
   DRAFT: 'default',
   SIGNING: 'processing',
@@ -28,15 +25,6 @@ export const badgeStatusMap = {
   CANCELED: 'default',
 };
 
-/**
- * Compute the per-record action permission flags for the current user.
- *
- * Pure function — extracted from the component for unit testing.
- *
- * @param {Object} record - Invitation record (from API)
- * @param {Object} ctx - { currentOrgId, isChannelMember }
- * @returns {Object} { canSign, canCancel, canAccept, canReject }
- */
 export const computeRecordFlags = (record, ctx) => {
   const { currentOrgId, isChannelMember } = ctx;
   const invitees = record.invitees || [];
@@ -76,24 +64,20 @@ const Invitation = ({
   const [operatingId, setOperatingId] = useState(null);
   const [operationType, setOperationType] = useState(null);
 
-  // Read ?channel=<id> from query string on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
     const q = params.get('channel');
     if (q) setChannelId(q);
   }, []);
 
-  // Fetch channels + currentUser + organizations on mount
   useEffect(() => {
     dispatch({ type: 'channel/listChannel' });
     dispatch({ type: 'user/fetchCurrent' });
-    dispatch({ type: 'organization/listOrganization' });
     return () => {
       dispatch({ type: 'invitation/clear' });
     };
   }, [dispatch]);
 
-  // Fetch invitations when channelId changes
   useEffect(() => {
     if (channelId) {
       dispatch({
@@ -111,13 +95,11 @@ const Invitation = ({
 
   const currentOrgId = currentUser && currentUser.organization ? currentUser.organization.id : null;
 
-  // Look up channel by id
   const selectedChannel = useMemo(() => channels.find(c => c.id === channelId) || {}, [
     channels,
     channelId,
   ]);
 
-  // Channel member org ids (for picker exclusion + permission gating)
   const memberOrgIds = useMemo(() => (selectedChannel.organizations || []).map(o => o.id), [
     selectedChannel,
   ]);
@@ -226,7 +208,6 @@ const Invitation = ({
     [runAction]
   );
 
-  // Compute current-organization permission flags per invitation record
   const recordFlags = useCallback(
     record =>
       computeRecordFlags(record, {

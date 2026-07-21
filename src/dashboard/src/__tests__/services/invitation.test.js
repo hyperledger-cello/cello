@@ -11,7 +11,6 @@ jest.mock('../../utils/serviceFactory', () => ({
 
 const {
   listInvitation,
-  getInvitation,
   createInvitation,
   signInvitation,
   acceptInvitation,
@@ -35,11 +34,6 @@ describe('invitation service', () => {
   it('listInvitation omits undefined payload keys from the query string', () => {
     listInvitation({ channelId: 'c2' });
     expect(mockCustomRequest).toHaveBeenCalledWith('/api/v1/channels/c2/invitations?');
-  });
-
-  it('getInvitation builds a GET URL with channel and invitation id', () => {
-    getInvitation({ channelId: 'c3', invitationId: 'i3' });
-    expect(mockCustomRequest).toHaveBeenCalledWith('/api/v1/channels/c3/invitations/i3');
   });
 
   it('createInvitation issues a POST with body data', () => {

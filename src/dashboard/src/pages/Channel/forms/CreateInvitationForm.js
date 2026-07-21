@@ -8,35 +8,6 @@ import { listOrganization } from '@/services/organization';
 
 const FormItem = Form.Item;
 
-/**
- * Validate the organizations selection: must have at least one entry.
- * Pure function — exported for unit testing.
- * @param {string[]} organizationNames
- * @returns {boolean} true if valid
- */
-export const validateOrganizations = organizationNames =>
-  Array.isArray(organizationNames) && organizationNames.length > 0;
-
-/**
- * Normalize the required_signatures input: must be a positive integer
- * (or undefined to defer to the backend default).
- * Pure function — exported for unit testing.
- * @param {number|undefined} value
- * @param {number} [max] - Upper bound (channel member count), if known
- * @returns {number|undefined} normalized value or undefined
- */
-export const normalizeRequiredSignatures = (value, max) => {
-  if (value === undefined || value === null || value === '') return undefined;
-  const n = typeof value === 'number' ? value : Number(value);
-  if (!Number.isInteger(n)) return undefined;
-  if (n < 1) return undefined;
-  if (max !== undefined && max !== null && n > max) return undefined;
-  return n;
-};
-
-/**
- * Multi-select tag render (matches ChainCode UploadForm style).
- */
 const tagRender = props => {
   const { label, closable, onClose } = props;
   const onPreventMouseDown = event => {
@@ -56,18 +27,6 @@ const tagRender = props => {
   );
 };
 
-/**
- * Create-invitation modal.
- *
- * Props:
- * - modalVisible: boolean
- * - handleCreate: (values, callback) => void
- * - handleModalVisible: (visible) => void
- * - fetchInvitations: () => void  (refresh list after success)
- * - creating: boolean  (loading state from dva)
- * - channelId: string  (currently selected channel)
- * - memberOrgIds: string[]  (UUIDs already in the channel — hidden from picker)
- */
 const CreateInvitationForm = props => {
   const [form] = Form.useForm();
   const intl = useIntl();

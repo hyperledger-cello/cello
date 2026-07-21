@@ -1,7 +1,7 @@
 /*
  SPDX-License-Identifier: Apache-2.0
  */
-import { listChannel, createChannel, getNodeConfig, updateChannelConfig } from '@/services/channel';
+import { listChannel, createChannel } from '@/services/channel';
 import { listNode } from '@/services/node';
 import { createModel, createListEffect, createSimpleEffect } from '@/utils/modelFactory';
 
@@ -10,7 +10,6 @@ export default createModel({
 
   state: {
     channels: [],
-    currentChannel: {},
     nodeCounts: { peer: 0, orderer: 0 },
     loadingNodeCounts: false,
   },
@@ -23,10 +22,6 @@ export default createModel({
     }),
 
     createChannel: createSimpleEffect(createChannel, {
-      includePayloadInCallback: false,
-    }),
-
-    getNodeConfig: createSimpleEffect(getNodeConfig, {
       includePayloadInCallback: false,
     }),
 
@@ -56,14 +51,6 @@ export default createModel({
           type: 'updateState',
           payload: { channels: response.data.list || response.data || [] },
         });
-      }
-    },
-
-    // Custom effect for updateChannel with special parameter structure
-    *updateChannel({ id, payload, callback }, { call }) {
-      const response = yield call(updateChannelConfig, id, payload);
-      if (callback) {
-        callback(response);
       }
     },
   },

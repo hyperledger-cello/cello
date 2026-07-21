@@ -3,22 +3,12 @@ import { notification } from 'antd';
 import { history, formatMessage } from 'umi';
 import { stringify } from 'qs';
 
-/**
- * Build an error result that callers (dva effects) can inspect.
- * Every path through errorHandler returns this shape so that
- * `response` in saga effects is never undefined.
- */
 const makeErrorResult = (data, msg) => ({
   _error: true,
   ...(data || {}),
   _errorMsg: msg || '',
 });
 
-/**
- * Extract a human-readable description from Django error response data.
- * For 400 validation errors Django sends: { "field_name": ["Error msg"], "code": 20001, "detail": "..." }
- * We surface the field-level messages rather than the generic "detail".
- */
 const extractErrorDescription = (data, status) => {
   if (!data) return '';
 
@@ -36,9 +26,6 @@ const extractErrorDescription = (data, status) => {
   return String(raw);
 };
 
-/**
- * Error handler
- */
 const errorHandler = error => {
   const { response, data } = error;
 
@@ -53,7 +40,6 @@ const errorHandler = error => {
 
   const { status, url } = response;
 
-  // Handle specific error cases
   if (status === 401) {
     const api = url.split('/').pop();
 
@@ -92,7 +78,6 @@ const errorHandler = error => {
     }
   }
 
-  // Generic error handling
   const errorMessage = formatMessage({
     id: `error.request.${status}`,
     defaultMessage: `Request error (${status})`,
@@ -110,8 +95,6 @@ const errorHandler = error => {
     description,
   });
 
-  // Handle navigation for specific error codes,
-  // but NOT for auth endpoints — keep the user on the login/register page.
   const isAuthEndpoint = url.includes('/register') || url.includes('/login');
   if (!isAuthEndpoint) {
     if (status === 403) {
