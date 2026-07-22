@@ -20,7 +20,7 @@ from user.models import UserProfile
 class ChannelInvitationIntegrationTestCase(TestCase):
     """
     End-to-End integration tests for the Channel Invitation Workflow.
-    These tests DO NOT mock the agent service calls. They require a real, 
+    These tests DO NOT mock the agent service calls. They require a real,
     running Hyperledger Fabric agent container.
     """
     def setUp(self):
@@ -55,7 +55,7 @@ class ChannelInvitationIntegrationTestCase(TestCase):
             organization=self.org1,
             role=UserProfile.Role.ADMIN,
         )
-        
+
         self.org2_admin = UserProfile.objects.create_user(
             username="admin2",
             email="admin2@test.cello.org",
@@ -91,7 +91,7 @@ class ChannelInvitationIntegrationTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 201, f"Failed to create invitation: {response.data}")
         invitation_id = response.data["data"]["id"]
-        
+
         invitation = ChannelInvitation.objects.get(id=invitation_id)
         self.assertEqual(invitation.status, ChannelInvitation.Status.DRAFT)
         self.assertTrue(bool(invitation.artifact))
@@ -101,7 +101,7 @@ class ChannelInvitationIntegrationTestCase(TestCase):
             f"/api/v1/channels/{self.channel.id}/invitations/{invitation_id}/sign"
         )
         self.assertEqual(response.status_code, 200, f"Failed to sign invitation: {response.data}")
-        
+
         invitation.refresh_from_db()
         self.assertEqual(invitation.status, ChannelInvitation.Status.SIGNING)
         self.assertEqual(invitation.signatures.count(), 1)
@@ -126,6 +126,6 @@ class ChannelInvitationIntegrationTestCase(TestCase):
 
         invitation.refresh_from_db()
         self.assertEqual(invitation.status, ChannelInvitation.Status.ACCEPTED)
-        
+
         # Verify Org3 is now a member of the channel
         self.assertTrue(self.channel.organizations.filter(id=self.org3.id).exists())

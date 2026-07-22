@@ -32,6 +32,6 @@ jobs:
         working-directory: src/dashboard
         run: |
           yarn install --frozen-lockfile
-  
+
       - name: Check code
         run: make check
