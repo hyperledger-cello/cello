@@ -36,6 +36,7 @@ endif
 
 #Set the source of PIP in docker agent image
 PIP=pip.conf.bak
+YARN ?= corepack yarn
 
 # changelog specific version tags
 PREV_VERSION?=0.9.0
@@ -146,7 +147,7 @@ check: ##@Code Check code format
 	@$(MAKE) license
 	find ./docs -type f -name "*.md" -exec egrep -l " +$$" {} \;
 	cd src/api-engine && tox && cd ${ROOT_PATH}
-	cd src/dashboard && yarn lint && cd ${ROOT_PATH}
+	cd src/dashboard && $(YARN) lint && cd ${ROOT_PATH}
 
 deep-clean: ##@Clean Stop services, clean docker images and remove mounted local storage.
 	make clean-images
