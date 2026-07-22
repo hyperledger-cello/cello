@@ -1,3 +1,7 @@
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 from django.db import models
 from django.db.models import Q
 
@@ -71,6 +75,7 @@ class ChannelInvitation(models.Model):
         choices=Status.choices,
         default=Status.DRAFT,
         max_length=32,
+        db_index=True,
     )
     artifact = models.FileField(
         help_text="Update Artifact",
@@ -86,7 +91,7 @@ class ChannelInvitation(models.Model):
     )
     required_signatures = models.PositiveSmallIntegerField(
         help_text="Required Signatures",
-        default=0,
+        default=1,
     )
     error_message = models.TextField(
         help_text="Error Message",
@@ -134,6 +139,7 @@ class ChannelInvitationInvitee(models.Model):
         choices=Status.choices,
         default=Status.PENDING,
         max_length=32,
+        db_index=True,
     )
     responded_at = models.DateTimeField(
         null=True,

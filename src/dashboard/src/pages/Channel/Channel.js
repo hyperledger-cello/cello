@@ -1,22 +1,34 @@
 /*
  SPDX-License-Identifier: Apache-2.0
-*/
+ */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { connect, useIntl } from 'umi';
-import { Card, Button, Modal, message, Input, Select, Form, Upload } from 'antd';
-import { PlusOutlined, UploadOutlined, DeploymentUnitOutlined } from '@ant-design/icons';
+import { connect, useIntl, history } from 'umi';
+import { Card, Button, Modal, message, Input, Form, Alert } from 'antd';
+import { PlusOutlined, DeploymentUnitOutlined } from '@ant-design/icons';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import StandardTable from '@/components/StandardTable';
 import { useTableManagement } from '@/hooks';
 import styles from './styles.less';
 
 const FormItem = Form.Item;
-const { Option } = Select;
 
 const CreateChannel = props => {
   const [form] = Form.useForm();
   const intl = useIntl();
-  const { modalVisible, handleCreate, handleModalVisible, creating, fetchChannels } = props;
+  const {
+    modalVisible,
+    handleCreate,
+    handleModalVisible,
+    creating,
+    fetchChannels,
+    nodeCounts,
+    loadingNodeCounts,
+  } = props;
+
+  const hasPeer = nodeCounts.peer > 0;
+  const hasOrderer = nodeCounts.orderer > 0;
+  const canCreate = hasPeer && hasOrderer;
+  const showWarning = !canCreate && !loadingNodeCounts;
 
   const createCallback = response => {
     if (response.status.toLowerCase() !== 'successful') {
@@ -72,6 +84,43 @@ const CreateChannel = props => {
       onCancel={() => handleModalVisible(false)}
     >
       <Form onFinish={onFinish} form={form} preserve={false}>
+        {showWarning && (
+          <Alert
+            message={intl.formatMessage({
+              id: 'app.channel.form.create.warning.title',
+              defaultMessage: 'Cannot create channel',
+            })}
+            description={
+              <div>
+                <p>
+                  {intl.formatMessage({
+                    id: 'app.channel.form.create.warning.desc',
+                    defaultMessage:
+                      'Your organization needs at least 1 Peer and 1 Orderer before creating a channel.',
+                  })}
+                </p>
+                <p>
+                  {intl.formatMessage(
+                    {
+                      id: 'app.channel.form.create.warning.current',
+                      defaultMessage: 'Current: {peer} Peer(s), {orderer} Orderer(s)',
+                    },
+                    { peer: nodeCounts.peer, orderer: nodeCounts.orderer }
+                  )}
+                </p>
+                <Button type="link" onClick={() => history.push('/node/new')}>
+                  {intl.formatMessage({
+                    id: 'app.channel.form.create.warning.action',
+                    defaultMessage: 'Create Nodes Now →',
+                  })}
+                </Button>
+              </div>
+            }
+            type="warning"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+        )}
         <FormItem
           {...formItemLayout}
           label={intl.formatMessage({
@@ -93,8 +142,9 @@ const CreateChannel = props => {
           <Input
             placeholder={intl.formatMessage({
               id: 'app.channel.form.create.name',
-              defaultMessage: 'Name',
+              defaultMessage: canCreate ? 'Name' : 'Create nodes first',
             })}
+            disabled={!canCreate}
           />
         </FormItem>
       </Form>
@@ -102,172 +152,16 @@ const CreateChannel = props => {
   );
 };
 
-const UpdateChannel = props => {
-  const [form] = Form.useForm();
-  const intl = useIntl();
-  const {
-    updateModalVisible,
-    handleUpdate,
-    handleModalVisible,
-    updating,
-    fetchChannels,
-    channelData,
-    newFile,
-    setFile,
-  } = props;
-
-  const updateCallback = response => {
-    if (response.status === 'successful') {
-      message.success(
-        intl.formatMessage({
-          id: 'app.channel.form.update.success',
-          defaultMessage: 'Update channel succeed',
-        })
-      );
-      form.resetFields();
-      handleModalVisible();
-      fetchChannels();
-    }
-  };
-
-  const onSubmit = () => {
-    form.submit();
-  };
-
-  const onFinish = values => {
-    handleUpdate(channelData.id, values, updateCallback);
-  };
-
-  const normFile = e => {
-    if (Array.isArray(e)) {
-      return e;
-    }
-    return newFile;
-  };
-
-  const uploadProps = {
-    onRemove: () => {
-      setFile(null);
-    },
-    beforeUpload: file => {
-      setFile(file);
-      return false;
-    },
-  };
-
-  const orgTypes = ['Application', 'Orderer'];
-  const orgTypeOptions = orgTypes.map(item => (
-    <Option value={item} key={item}>
-      <span>{item}</span>
-    </Option>
-  ));
-
-  const formItemLayout = {
-    labelCol: {
-      xs: { span: 24 },
-      sm: { span: 7 },
-    },
-    wrapperCol: {
-      xs: { span: 24 },
-      sm: { span: 12 },
-      md: { span: 10 },
-    },
-  };
-
-  return (
-    <Modal
-      destroyOnClose
-      title={intl.formatMessage({
-        id: 'app.channel.form.update.header.title',
-        defaultMessage: 'Update Channel',
-      })}
-      confirmLoading={updating}
-      open={updateModalVisible}
-      onOk={onSubmit}
-      onCancel={() => handleModalVisible(false)}
-    >
-      <Form onFinish={onFinish} form={form} preserve={false}>
-        <FormItem
-          {...formItemLayout}
-          label={intl.formatMessage({
-            id: 'app.channel.form.update.mspId',
-            defaultMessage: 'MSP ID',
-          })}
-          name="msp_id"
-          initialValue=""
-          rules={[
-            {
-              required: true,
-              message: intl.formatMessage({
-                id: 'app.channel.form.update.checkMSPId',
-                defaultMessage: 'Please enter the MSP id',
-              }),
-            },
-          ]}
-        >
-          <Input
-            placeholder={intl.formatMessage({
-              id: 'app.channel.form.update.mspId',
-              defaultMessage: 'MSP id',
-            })}
-          />
-        </FormItem>
-        <FormItem
-          {...formItemLayout}
-          label={intl.formatMessage({
-            id: 'app.channel.form.update.orgType',
-            defaultMessage: 'Org Type',
-          })}
-          name="org_type"
-          rules={[
-            {
-              required: true,
-              message: intl.formatMessage({
-                id: 'app.channel.form.update.required.orgType',
-                defaultMessage: 'Please select Org type.',
-              }),
-            },
-          ]}
-        >
-          <Select>{orgTypeOptions}</Select>
-        </FormItem>
-        <FormItem
-          {...formItemLayout}
-          label={intl.formatMessage({
-            id: 'app.channel.form.update.file',
-            defaultMessage: 'Channel config file',
-          })}
-          name="data"
-          getValueFromEvent={normFile}
-          rules={[
-            {
-              required: true,
-              message: intl.formatMessage({
-                id: 'app.channel.form.update.fileSelect',
-                defaultMessage: 'Please select the channel config file',
-              }),
-            },
-          ]}
-        >
-          <Upload {...uploadProps}>
-            <Button disabled={!!newFile}>
-              <UploadOutlined />
-              {intl.formatMessage({
-                id: 'app.channel.form.update.fileSelect',
-                defaultMessage: 'Please select the channel config file',
-              })}
-            </Button>
-          </Upload>
-        </FormItem>
-      </Form>
-    </Modal>
-  );
-};
-
-const Channel = ({ dispatch, channel = {}, node = {}, loadingChannels, creating, updating }) => {
+const Channel = ({
+  dispatch,
+  channel = {},
+  loadingChannels,
+  creating,
+  nodeCounts,
+  loadingNodeCounts,
+}) => {
   const intl = useIntl();
   const { channels = [], pagination = {} } = channel;
-  const { nodes = {} } = node;
 
   const { selectedRows, handleSelectRows, handleTableChange, refreshList } = useTableManagement({
     dispatch,
@@ -275,13 +169,9 @@ const Channel = ({ dispatch, channel = {}, node = {}, loadingChannels, creating,
   });
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [updateModalVisible, setUpdateModalVisible] = useState(false);
-  const [channelData, setChannelData] = useState({});
-  const [newFile, setFile] = useState(null);
 
   useEffect(() => {
-    dispatch({ type: 'channel/listChannel' });
-    dispatch({ type: 'node/listNode' });
+    dispatch({ type: 'channel/listChannelWithNodes' });
     return () => {
       dispatch({ type: 'channel/clear' });
     };
@@ -289,16 +179,10 @@ const Channel = ({ dispatch, channel = {}, node = {}, loadingChannels, creating,
 
   const fetchChannels = useCallback(() => {
     refreshList();
-    dispatch({ type: 'node/listNode' });
-  }, [dispatch, refreshList]);
+  }, [refreshList]);
 
   const handleModalVisible = useCallback(visible => {
     setModalVisible(!!visible);
-  }, []);
-
-  const handleUpdateModalVisible = useCallback((visible, record) => {
-    setUpdateModalVisible(!!visible);
-    setChannelData(record || {});
   }, []);
 
   const onCreateChannel = useCallback(() => {
@@ -316,22 +200,6 @@ const Channel = ({ dispatch, channel = {}, node = {}, loadingChannels, creating,
     [dispatch]
   );
 
-  const handleUpdate = useCallback(
-    (id, values, callback) => {
-      const formData = new FormData();
-      Object.keys(values).forEach(key => {
-        formData.append(key, values[key]);
-      });
-      dispatch({
-        type: 'channel/updateChannel',
-        id,
-        payload: formData,
-        callback,
-      });
-    },
-    [dispatch]
-  );
-
   const formProps = useMemo(
     () => ({
       modalVisible,
@@ -340,32 +208,18 @@ const Channel = ({ dispatch, channel = {}, node = {}, loadingChannels, creating,
       fetchChannels,
       creating,
       intl,
-      nodes,
-    }),
-    [modalVisible, handleCreate, handleModalVisible, fetchChannels, creating, intl, nodes]
-  );
-
-  const updateFormProps = useMemo(
-    () => ({
-      updateModalVisible,
-      handleUpdate,
-      handleModalVisible: handleUpdateModalVisible,
-      fetchChannels,
-      updating,
-      channelData,
-      newFile,
-      setFile,
-      intl,
+      nodeCounts,
+      loadingNodeCounts,
     }),
     [
-      updateModalVisible,
-      handleUpdate,
-      handleUpdateModalVisible,
+      modalVisible,
+      handleCreate,
+      handleModalVisible,
       fetchChannels,
-      updating,
-      channelData,
-      newFile,
+      creating,
       intl,
+      nodeCounts,
+      loadingNodeCounts,
     ]
   );
 
@@ -382,6 +236,17 @@ const Channel = ({ dispatch, channel = {}, node = {}, loadingChannels, creating,
         id: 'form.table.header.operation',
         defaultMessage: 'Operation',
       }),
+      render: (text, record) => (
+        <a
+          onClick={() => history.push(`/channel/invitation?channel=${record.id}`)}
+          style={{ cursor: 'pointer' }}
+        >
+          {intl.formatMessage({
+            id: 'app.channel.table.row.invitations',
+            defaultMessage: 'Invitations',
+          })}
+        </a>
+      ),
     },
   ];
 
@@ -420,15 +285,14 @@ const Channel = ({ dispatch, channel = {}, node = {}, loadingChannels, creating,
         </div>
       </Card>
       <CreateChannel {...formProps} />
-      <UpdateChannel {...updateFormProps} />
     </PageHeaderWrapper>
   );
 };
 
-export default connect(({ channel, node, loading }) => ({
+export default connect(({ channel, loading }) => ({
   channel,
-  node,
+  nodeCounts: channel.nodeCounts,
+  loadingNodeCounts: channel.loadingNodeCounts,
   loadingChannels: loading.effects['channel/listChannel'],
   creating: loading.effects['channel/createChannel'],
-  updating: loading.effects['channel/updateChannel'],
 }))(Channel);

@@ -51,13 +51,54 @@ export default {
     },
 
     *register({ payload }, { call, put }) {
-      const response = yield call(register, payload);
-      const isSuccessful = response.status.toLowerCase() === 'successful';
+      let response;
+      try {
+        response = yield call(register, payload);
+      } catch (error) {
+        response = error.data || error;
+      }
+
+      const isSuccessful =
+        response && response.status && response.status.toLowerCase() === 'successful';
+
+      if (!isSuccessful) {
+        const responseErrorMsg = response && response._errorMsg; // eslint-disable-line no-underscore-dangle
+        let errorMsg =
+          response && (responseErrorMsg || response.msg || response.detail || response.message);
+
+        if (response && typeof response === 'object' && !responseErrorMsg && !response.msg) {
+          const fieldErrors = Object.entries(response)
+            .filter(([key]) => !['code', 'detail', 'msg', 'status'].includes(key))
+            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+            .join(' | ');
+          if (fieldErrors) {
+            errorMsg = fieldErrors;
+          }
+        }
+
+        yield put({
+          type: 'changeRegisterStatus',
+          payload: {
+            success: false,
+            msg: errorMsg || 'Registration failed. Please check the form and try again.',
+          },
+        });
+        return;
+      }
+
       yield put({
         type: 'changeRegisterStatus',
         payload: {
-          success: isSuccessful,
-          msg: isSuccessful ? 'Register successfully!' : response.msg,
+          success: true,
+          msg: 'Register successfully!',
+        },
+      });
+      yield put({
+        type: 'login',
+        payload: {
+          email: payload.email,
+          password: payload.password,
+          type: 'account',
         },
       });
     },

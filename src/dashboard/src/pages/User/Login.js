@@ -73,7 +73,7 @@ class LoginPage extends Component {
         key: '1',
         label: intl.formatMessage({ id: 'app.login.login' }),
         children: (
-          <Login defaultActiveKey={type} onSubmit={this.handleSubmit}>
+          <Login name="login_form" defaultActiveKey={type} onSubmit={this.handleSubmit}>
             {login.status === 'error' &&
               login.type === 'account' &&
               !submitting &&
@@ -123,7 +123,7 @@ class LoginPage extends Component {
         key: '2',
         label: intl.formatMessage({ id: 'app.register.register' }),
         children: (
-          <Login defaultActiveKey={type} onSubmit={this.registerSubmit}>
+          <Login name="register_form" defaultActiveKey={type} onSubmit={this.registerSubmit}>
             {!registering &&
               registerMsg !== '' &&
               this.renderMessage({ type: success ? 'success' : 'error', message: registerMsg })}

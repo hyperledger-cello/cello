@@ -40,9 +40,7 @@ export default {
   },
 
   chainWebpack: webpackPlugin,
-  mock: {
-    exclude: ['mock/**/_*.js', 'mock/_*/**/*.js'],
-  },
+  mock: false,
   hash: true,
   history: {
     type: 'hash',

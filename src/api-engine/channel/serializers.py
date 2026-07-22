@@ -1,6 +1,13 @@
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+import hashlib
 from typing import Dict, Any
 
+from django.core.files.base import ContentFile
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import serializers
 
 from channel.models import (
@@ -9,7 +16,7 @@ from channel.models import (
     ChannelInvitationInvitee,
     ChannelInvitationSignature,
 )
-from channel.service import create
+from channel.service import create, create_invitation_artifact, sign_invitation_artifact, accept_invitation
 from common.serializers import ListResponseSerializer
 from node.service import organization_orderer_exists, organization_peer_exists
 from organization.models import Organization
@@ -115,6 +122,12 @@ class ChannelInvitationList(ListResponseSerializer):
 class ChannelInvitationCreateBody(serializers.Serializer):
     organization_ids = serializers.ListField(
         child=serializers.UUIDField(),
+        required=False,
+        allow_empty=False,
+    )
+    organization_names = serializers.ListField(
+        child=serializers.CharField(max_length=256),
+        required=False,
         allow_empty=False,
     )
     required_signatures = serializers.IntegerField(
@@ -123,10 +136,23 @@ class ChannelInvitationCreateBody(serializers.Serializer):
     )
 
     def validate_organization_ids(self, value):
-        if len(set(value)) != len(value):
-            raise serializers.ValidationError(
-                "Duplicated organizations are not allowed."
-            )
+        seen = {}
+        for oid in value:
+            if oid in seen:
+                raise serializers.ValidationError(
+                    "Duplicated organizations are not allowed."
+                )
+            seen[oid] = True
+        return value
+
+    def validate_organization_names(self, value):
+        seen = {}
+        for name in value:
+            if name in seen:
+                raise serializers.ValidationError(
+                    "Duplicated organizations are not allowed."
+                )
+            seen[name] = True
         return value
 
     def validate(self, attrs):
@@ -138,55 +164,299 @@ class ChannelInvitationCreateBody(serializers.Serializer):
                 "Not a channel member."
             )
 
-        org_ids = set(attrs["organization_ids"])
-        existing = {
-            o.id: o.name
-            for o in Organization.objects.filter(pk__in=org_ids)
-        }
-        missing = [str(oid) for oid in org_ids if oid not in existing]
-        if missing:
-            raise serializers.ValidationError({
-                "organization_ids": [
-                    f"Organization does not exist: {oid}" for oid in missing
-                ]
-            })
+        org_ids = attrs.get("organization_ids")
+        org_names = attrs.get("organization_names")
+        if bool(org_ids) == bool(org_names):
+            raise serializers.ValidationError(
+                "Provide organization_ids or organization_names."
+            )
+
+        if org_names:
+            field_key = "organization_names"
+            names = list(dict.fromkeys(org_names))
+            existing_by_name = {
+                o.name: o
+                for o in Organization.objects.filter(name__in=names)
+            }
+            missing = [n for n in names if n not in existing_by_name]
+            if missing:
+                raise serializers.ValidationError({
+                    field_key: [
+                        f"Organization does not exist: {n}" for n in missing
+                    ]
+                })
+            orgs = [existing_by_name[n] for n in names]
+        else:
+            field_key = "organization_ids"
+            org_ids = list(dict.fromkeys(org_ids))
+            existing = {
+                o.id: o
+                for o in Organization.objects.filter(pk__in=org_ids)
+            }
+            missing = [str(oid) for oid in org_ids if oid not in existing]
+            if missing:
+                raise serializers.ValidationError({
+                    field_key: [
+                        f"Organization does not exist: {oid}" for oid in missing
+                    ]
+                })
+            orgs = [existing[oid] for oid in org_ids]
 
         member_ids = set(channel.organizations.values_list("id", flat=True))
-        already_members = [
-            existing[oid] for oid in org_ids if oid in member_ids
-        ]
+        already_members = [o.name for o in orgs if o.id in member_ids]
         if already_members:
             raise serializers.ValidationError({
-                "organization_ids": [
+                field_key: [
                     f"Already a member: {name}" for name in already_members
                 ]
             })
 
+        org_pks = [o.pk for o in orgs]
+        active_invitees = ChannelInvitationInvitee.objects.filter(
+            organization__in=org_pks,
+            status=ChannelInvitationInvitee.Status.PENDING,
+            invitation__channel=channel,
+            invitation__status__in=(
+                ChannelInvitation.Status.DRAFT,
+                ChannelInvitation.Status.SIGNING,
+                ChannelInvitation.Status.READY,
+            ),
+        )
+        if active_invitees.exists():
+            raise serializers.ValidationError(
+                "An active invitation already exists for one or more "
+                "of the specified organizations."
+            )
+
         member_count = channel.organizations.count()
-        required = attrs.get("required_signatures", member_count)
+        required = attrs.get("required_signatures", (member_count // 2) + 1)
         if required > member_count:
             raise serializers.ValidationError({
                 "required_signatures": "Cannot exceed member count."
             })
 
-        attrs["organizations"] = Organization.objects.filter(
-            pk__in=org_ids
-        )
+        attrs["organizations"] = orgs
         attrs["required_signatures"] = required
         return attrs
 
     def create(self, validated_data):
         orgs = validated_data.pop("organizations")
-        validated_data.pop("organization_ids")
+        validated_data.pop("organization_ids", None)
+        validated_data.pop("organization_names", None)
+        channel = self.context["channel"]
+        creator = self.context["organization"]
+        artifact_bytes, artifact_hash = create_invitation_artifact(
+            agent_url=creator.agent_url,
+            channel_name=channel.name,
+            msp_ids=[o.msp_id for o in orgs],
+        )
         with transaction.atomic():
             invitation = ChannelInvitation.objects.create(
-                channel=self.context["channel"],
-                creator_organization=self.context["organization"],
+                channel=channel,
+                creator_organization=creator,
                 required_signatures=validated_data["required_signatures"],
+                artifact_hash=artifact_hash,
+            )
+            invitation.artifact.save(
+                f"channel_update_{channel.name}.bin",
+                ContentFile(artifact_bytes),
             )
             ChannelInvitationInvitee.objects.bulk_create([
                 ChannelInvitationInvitee(
                     invitation=invitation, organization=o
                 ) for o in orgs
             ])
+        return invitation
+
+
+class ChannelInvitationCancelSerializer(serializers.Serializer):
+    def validate(self, attrs):
+        invitation = self.context["invitation"]
+
+        if invitation.status not in (
+            ChannelInvitation.Status.DRAFT,
+            ChannelInvitation.Status.SIGNING,
+            ChannelInvitation.Status.FAILED,
+            ChannelInvitation.Status.READY,
+        ):
+            raise serializers.ValidationError(
+                "Only DRAFT, SIGNING, FAILED, or READY invitations can be canceled."
+            )
+
+        return attrs
+
+    def create(self, validated_data):
+        invitation = self.context["invitation"]
+        invitation.status = ChannelInvitation.Status.CANCELED
+        invitation.save(update_fields=["status"])
+        return invitation
+
+
+class ChannelInvitationAcceptSerializer(serializers.Serializer):
+    def validate(self, attrs):
+        invitation = self.context["invitation"]
+        org = self.context["organization"]
+
+        if invitation.status != ChannelInvitation.Status.READY:
+            raise serializers.ValidationError(
+                "Only READY invitations can be accepted."
+            )
+
+        invitee = ChannelInvitationInvitee.objects.filter(
+            invitation=invitation,
+            organization=org,
+            status=ChannelInvitationInvitee.Status.PENDING,
+        ).first()
+        if not invitee:
+            raise serializers.ValidationError(
+                "This organization is not a pending invitee for this invitation."
+            )
+
+        attrs["invitee"] = invitee
+        return attrs
+
+    def create(self, validated_data):
+        invitation = self.context["invitation"]
+        org = self.context["organization"]
+        invitee = validated_data["invitee"]
+        channel = invitation.channel
+
+        try:
+            with open(invitation.artifact.path, "rb") as f:
+                artifact_bytes = f.read()
+
+            with transaction.atomic():
+                invitation = ChannelInvitation.objects.select_for_update().get(
+                    pk=invitation.pk
+                )
+                accept_invitation(org.agent_url, channel.name, artifact_bytes)
+                channel.organizations.add(org)
+                invitee.status = ChannelInvitationInvitee.Status.ACCEPTED
+                invitee.responded_at = timezone.now()
+                invitee.save(update_fields=["status", "responded_at"])
+
+                all_done = not ChannelInvitationInvitee.objects.filter(
+                    invitation=invitation,
+                    status=ChannelInvitationInvitee.Status.PENDING,
+                ).exists()
+                if all_done:
+                    invitation.status = ChannelInvitation.Status.ACCEPTED
+                    invitation.save(update_fields=["status"])
+
+        except Exception:
+            invitation.refresh_from_db()
+            if invitation.status != ChannelInvitation.Status.FAILED:
+                invitation.status = ChannelInvitation.Status.FAILED
+                invitation.error_message = "Accept operation failed."
+                invitation.save(update_fields=["status", "error_message"])
+            raise
+
+        return invitation
+
+
+class ChannelInvitationRejectSerializer(serializers.Serializer):
+    def validate(self, attrs):
+        invitation = self.context["invitation"]
+        org = self.context["organization"]
+
+        if invitation.status != ChannelInvitation.Status.READY:
+            raise serializers.ValidationError(
+                "Only READY invitations can be rejected."
+            )
+
+        invitee = ChannelInvitationInvitee.objects.filter(
+            invitation=invitation,
+            organization=org,
+            status=ChannelInvitationInvitee.Status.PENDING,
+        ).first()
+        if not invitee:
+            raise serializers.ValidationError(
+                "This organization is not a pending invitee for this invitation."
+            )
+
+        attrs["invitee"] = invitee
+        return attrs
+
+    def create(self, validated_data):
+        invitee = validated_data["invitee"]
+        invitee.status = ChannelInvitationInvitee.Status.REJECTED
+        invitee.responded_at = timezone.now()
+        invitee.save(update_fields=["status", "responded_at"])
+        return self.context["invitation"]
+
+
+class ChannelInvitationSignSerializer(serializers.Serializer):
+    def validate(self, attrs):
+        invitation = self.context["invitation"]
+        org = self.context["organization"]
+
+        if invitation.status not in (
+            ChannelInvitation.Status.DRAFT,
+            ChannelInvitation.Status.SIGNING,
+        ):
+            raise serializers.ValidationError(
+                "Only DRAFT or SIGNING invitations can be signed."
+            )
+
+        channel = invitation.channel
+        if not channel.organizations.filter(pk=org.pk).exists():
+            raise serializers.ValidationError(
+                "Only channel members can sign."
+            )
+
+        if ChannelInvitationSignature.objects.filter(
+            invitation=invitation, organization=org
+        ).exists():
+            raise serializers.ValidationError(
+                "This organization has already signed."
+            )
+
+        return attrs
+
+    def create(self, validated_data):
+        invitation = self.context["invitation"]
+        org = self.context["organization"]
+        channel = invitation.channel
+        agent_url = org.agent_url
+
+        try:
+            with open(invitation.artifact.path, "rb") as f:
+                artifact_bytes = f.read()
+
+            signed_bytes = sign_invitation_artifact(
+                agent_url, channel.name, artifact_bytes
+            )
+        except Exception:
+            invitation.status = ChannelInvitation.Status.FAILED
+            invitation.error_message = "Signing operation failed."
+            invitation.save(update_fields=["status", "error_message"])
+            raise
+
+        new_hash = hashlib.sha256(signed_bytes).hexdigest()
+
+        with transaction.atomic():
+            invitation = ChannelInvitation.objects.select_for_update().get(
+                pk=invitation.pk
+            )
+            invitation.artifact.save(
+                f"channel_update_{channel.name}.bin",
+                ContentFile(signed_bytes),
+            )
+            invitation.artifact_hash = new_hash
+
+            if invitation.status == ChannelInvitation.Status.DRAFT:
+                invitation.status = ChannelInvitation.Status.SIGNING
+
+            sig_count = invitation.signatures.count() + 1
+            if sig_count >= invitation.required_signatures:
+                invitation.status = ChannelInvitation.Status.READY
+
+            invitation.save(update_fields=["artifact_hash", "status"])
+
+            ChannelInvitationSignature.objects.create(
+                invitation=invitation,
+                organization=org,
+                artifact_hash=new_hash,
+            )
+
         return invitation

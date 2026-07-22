@@ -11,10 +11,10 @@
 version: '3.2'
 services:
   cello-dashboard:
-    image: hyperledger/cello-dashboard
+    image: cello/dashboard:latest
     container_name: cello-dashboard
     ports:
-      - "${DASHBOARD_SERVICE_PORT}:8081"
+      - "${DASHBOARD_SERVICE_PORT:-8081}:8081"
     networks:
       - cello-net
     depends_on:
@@ -38,7 +38,7 @@ services:
 
   # api engine service of cello 
   cello-api-engine:
-    image: hyperledger/cello-api-engine
+    image: cello/api-engine:latest
     container_name: cello-api-engine
     restart: unless-stopped
     stdin_open: true
@@ -55,6 +55,7 @@ services:
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
       - FABRIC_LOGGING_SPEC=INFO
       - API_ENGINE_ADMIN_EMAIL=admin@cello.com
+      - AGENT_AUTH_TOKEN=cello-dev-token
     ports:
       - "8080:8080"
     volumes:
@@ -66,7 +67,7 @@ services:
 
   # cello docker agent may deploy to an individual server. This cofig only serves development purpose.
   cello-docker-agent:
-    image: hyperledger/cello-agent-docker
+    image: cello/hyperledger-fabric-agent:local
     container_name: cello-docker-agent
     hostname: cello.docker.agent
     restart: always
@@ -75,6 +76,7 @@ services:
       - "5001:5001"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - agent-data:/cello
     environment:
       - DOCKER_URL=unix://var/run/docker.sock
       - STORAGE_PATH=${CELLO_STORAGE_PATH:-/opt/cello}/hyperledger
@@ -90,3 +92,4 @@ volumes:
   cello-postgres:
   cello-dashboard:
   cello-docker-agent:
+  agent-data:

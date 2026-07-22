@@ -67,7 +67,7 @@ export function createListEffect({ service, namespace, dataKey, getTotalFromResp
     const current = payload?.page || pagination.current;
 
     // Support custom total extraction (e.g., response.data.total vs response.total)
-    const total = getTotalFromResponse ? getTotalFromResponse(response) : response.total;
+    const total = getTotalFromResponse ? getTotalFromResponse(response) : response.data?.total;
 
     yield put({
       type: 'save',
