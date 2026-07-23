@@ -88,7 +88,9 @@ class ChaincodeCreateBody(serializers.ModelSerializer):
         )
         extra_kwargs = {
             "sequence": {
-                "validators": [MinValueValidator(1)]
+                "validators": [MinValueValidator(1)],
+                "required": False,
+                "default": 1
             },
             "init_required": {"required": False},
             "signature_policy": {"required": False},
