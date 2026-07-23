@@ -13,7 +13,7 @@ In brief, if you want to contribute, create or find some [GitHub Issues](https:/
 
 ## Questions and discussions
 
-* [Wikipage](https://wiki.hyperledger.org/projects/cello): Lots of information and documentation about the project, e.g., meeting schedule, design doc.
+* [Wikipage](http://web.archive.org/web/20180917120357/https://wiki.hyperledger.org/projects/cello): Lots of information and documentation about the project, e.g., meeting schedule, design doc.
 * [Mail List](mailto:cello@lists.lfdecentralizedtrust.org): General technical topics with Cello project.
 
 ## Code Commit Steps
