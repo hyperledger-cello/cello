@@ -6,7 +6,7 @@ import subprocess
 import tarfile
 import threading
 from typing import Optional, List, Any, Dict, Tuple
-from urllib.parse import urljoin
+from common.utils import safe_urljoin
 
 import requests
 from django.db import transaction
@@ -30,9 +30,9 @@ def get_chaincode(pk: str) -> Optional[Chaincode]:
 
 def get_chaincode_status(organization: Organization, chaincode: Chaincode) -> str:
     agent_url = organization.agent_url
-    requests.get(urljoin(agent_url, "health")).raise_for_status()
+    requests.get(safe_urljoin(agent_url, "health")).raise_for_status()
     response = requests.get(
-        urljoin(agent_url, "chaincodes/status"),
+        safe_urljoin(agent_url, "chaincodes/status"),
         params=dict(
             name=chaincode.name,
             package_id=chaincode.package_id,
@@ -46,9 +46,9 @@ def get_chaincode_status(organization: Organization, chaincode: Chaincode) -> st
 
 def get_chaincode_commit_readiness(organization: Organization, chaincode: Chaincode) -> str:
     agent_url = organization.agent_url
-    requests.get(urljoin(agent_url, "health")).raise_for_status()
+    requests.get(safe_urljoin(agent_url, "health")).raise_for_status()
     response = requests.get(
-        urljoin(agent_url, "chaincodes/commit/readiness"),
+        safe_urljoin(agent_url, "chaincodes/commit/readiness"),
         params=dict(
             name=chaincode.name,
             version=chaincode.version,
@@ -73,9 +73,9 @@ def create_chaincode(
         init_required: bool = False,
         signature_policy: str = None) -> Chaincode:
     agent_url = organization.agent_url
-    requests.get(urljoin(agent_url, "health")).raise_for_status()
+    requests.get(safe_urljoin(agent_url, "health")).raise_for_status()
     response = requests.post(
-        urljoin(agent_url, "chaincodes"),
+        safe_urljoin(agent_url, "chaincodes"),
         data=dict(
             name=name,
             version=version,
@@ -123,9 +123,9 @@ def metadata_exists(file) -> bool:
 
 def install_chaincode(organization: Organization, chaincode: Chaincode) -> None:
     agent_url = organization.agent_url
-    requests.get(urljoin(agent_url, "health")).raise_for_status()
+    requests.get(safe_urljoin(agent_url, "health")).raise_for_status()
     requests.put(
-        urljoin(agent_url, "chaincodes/install"),
+        safe_urljoin(agent_url, "chaincodes/install"),
         data=dict(
             name=chaincode.name,
             version=chaincode.version,
@@ -142,9 +142,9 @@ def approve_chaincode(
         organization: Organization,
         chaincode: Chaincode) -> None:
     agent_url = organization.agent_url
-    requests.get(urljoin(agent_url, "health")).raise_for_status()
+    requests.get(safe_urljoin(agent_url, "health")).raise_for_status()
     requests.put(
-        urljoin(agent_url, "chaincodes/approve"),
+        safe_urljoin(agent_url, "chaincodes/approve"),
         json=dict(
             name=chaincode.name,
             version=chaincode.version,
@@ -161,9 +161,9 @@ def commit_chaincode(
         organization: Organization,
         chaincode: Chaincode) -> None:
     agent_url = organization.agent_url
-    requests.get(urljoin(agent_url, "health")).raise_for_status()
+    requests.get(safe_urljoin(agent_url, "health")).raise_for_status()
     requests.put(
-        urljoin(agent_url, "chaincodes/commit"),
+        safe_urljoin(agent_url, "chaincodes/commit"),
         json=dict(
             name=chaincode.name,
             version=chaincode.version,
