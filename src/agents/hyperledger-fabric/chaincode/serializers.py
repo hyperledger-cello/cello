@@ -58,7 +58,7 @@ class ChaincodeResponseSerializer(serializers.Serializer):
 class ChaincodeCreationSerializer(serializers.Serializer):
     name = serializers.CharField(help_text="Chaincode Name")
     version = serializers.CharField(help_text="Chaincode Version")
-    sequence = serializers.IntegerField(help_text="Chaincode Sequence")
+    sequence = serializers.IntegerField(help_text="Chaincode Sequence", required=False, default=1)
     channel_name = serializers.CharField(help_text="Chaincode Channel Name")
     file = serializers.FileField(help_text="Chaincode File")
     init_required = serializers.BooleanField(help_text="Chaincode Required Initialization")
