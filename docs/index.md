@@ -32,7 +32,7 @@ Using Cello, blockchain developers can:
 
 ## Contribute to the Project
 * [How to Contribute](contributing.md)
-* [Code Style Guide](https://black.readthedocs.io/en/stable/the_black_code_style.html)
+* [Code Style Guide](http://web.archive.org/web/20210413152114/https://black.readthedocs.io/en/stable/the_black_code_style.html)
 
 ## Design Documentation
 * [Architecture Design](design/arch.md)
