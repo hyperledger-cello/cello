@@ -31,7 +31,7 @@ jobs:
       - name: Install Nodejs dependencies
         working-directory: src/dashboard
         run: |
-          yarn install --frozen-lockfile
-  
+          corepack yarn install --frozen-lockfile
+
       - name: Check code
         run: make check
