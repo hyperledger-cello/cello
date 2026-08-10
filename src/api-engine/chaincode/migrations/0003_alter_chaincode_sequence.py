@@ -20,4 +20,14 @@ class Migration(migrations.Migration):
                 validators=[MinValueValidator(1)],
             ),
         ),
+        migrations.AlterField(
+            model_name='chaincode',
+            name='signature_policy',
+            field=models.CharField(
+                blank=True,
+                help_text='Chaincode Signature Policy',
+                max_length=1024,
+                null=True,
+            ),
+        ),
     ]
