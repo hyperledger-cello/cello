@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
                 ('label', models.CharField(help_text='Chaincode Label', max_length=128)),
                 ('language', models.CharField(help_text='Chaincode Language', max_length=128)),
                 ('init_required', models.BooleanField(default=False, help_text='Whether Chaincode Initialization Required')),
-                ('signature_policy', models.CharField(blank=True, help_text='Chaincode Signature Policy', null=True)),
+                ('signature_policy', models.CharField(blank=True, help_text='Chaincode Signature Policy', max_length=1024, null=True)),
                 ('description', models.CharField(blank=True, help_text='Chaincode Description', max_length=128, null=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True, help_text='Chaincode Creation Timestamp')),
             ],

@@ -182,6 +182,7 @@ const UploadForm = props => {
           {...formItemLayout}
           label="sequence"
           name="sequence"
+          initialValue={1}
           rules={[
             {
               required: true,

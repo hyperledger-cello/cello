@@ -75,8 +75,12 @@ class EnumWithDisplayMeta(EnumMeta):
 
         if display_strings is not None and inspect.isclass(display_strings):
             del attrs["DisplayStrings"]
-            if hasattr(attrs, "_member_names"):
-                attrs._member_names.remove("DisplayStrings")
+            member_names = getattr(attrs, "_member_names", None)
+            if member_names is not None and "DisplayStrings" in member_names:
+                try:
+                    member_names.remove("DisplayStrings")
+                except (AttributeError, TypeError):
+                    pass
 
         obj = super().__new__(mcs, name, bases, attrs)
         for m in obj:

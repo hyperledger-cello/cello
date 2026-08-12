@@ -29,7 +29,7 @@ from django.conf.urls.static import static
 from api_engine.settings import DEBUG, WEBROOT
 from auth.views import RegisterViewSet, CelloTokenObtainPairView, CelloTokenVerifyView
 from chaincode.views import ChaincodeViewSet
-from channel.views import ChannelViewSet
+from channel.views import ChannelViewSet, InvitationViewSet
 from node.views import NodeViewSet
 from organization.views import OrganizationViewSet
 from user.views import UserViewSet
@@ -55,6 +55,7 @@ router.register("users", UserViewSet, basename="user")
 router.register("nodes", NodeViewSet, basename="node")
 router.register("register", RegisterViewSet, basename="register")
 router.register("channels", ChannelViewSet, basename="channel")
+router.register("invitations", InvitationViewSet, basename="invitation")
 router.register("chaincodes", ChaincodeViewSet, basename="chaincode")
 
 urlpatterns = [path(WEBROOT, include(router.urls + [

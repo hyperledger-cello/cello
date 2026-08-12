@@ -14,11 +14,15 @@ from api.utils.common import with_common_response
 from common.responses import err
 from common.serializers import PageQuerySerializer
 from organization.models import Organization
-from organization.serializers import OrganizationList, OrganizationResponse
+from organization.serializers import (
+    OrganizationList,
+    OrganizationResponse,
+    OrganizationCreateBody,
+    OrganizationUpdateBody,
+)
 
 
 class OrganizationViewSet(viewsets.ViewSet):
-    """Class represents organization related operations."""
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
@@ -59,6 +63,58 @@ class OrganizationViewSet(viewsets.ViewSet):
                     many=True
                 ).data
             }).data)
+        )
+
+    @swagger_auto_schema(
+        operation_summary="Create Organization",
+        request_body=OrganizationCreateBody,
+        responses=with_common_response(
+            {status.HTTP_201_CREATED: make_response_serializer(OrganizationResponse)}
+        ),
+    )
+    def create(self, request):
+        if not request.user.is_admin:
+            return Response(
+                status=status.HTTP_403_FORBIDDEN,
+                data=err("Admin role required."),
+            )
+        serializer = OrganizationCreateBody(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        org = serializer.save()
+        return Response(
+            status=status.HTTP_201_CREATED,
+            data=ok(OrganizationResponse(org).data),
+        )
+
+    @swagger_auto_schema(
+        operation_summary="Update Organization",
+        request_body=OrganizationUpdateBody,
+        responses=with_common_response(
+            {status.HTTP_200_OK: make_response_serializer(OrganizationResponse)}
+        ),
+    )
+    def update(self, request, pk=None):
+        if not request.user.is_admin:
+            return Response(
+                status=status.HTTP_403_FORBIDDEN,
+                data=err("Admin role required."),
+            )
+        try:
+            org = Organization.objects.get(pk=pk)
+        except Organization.DoesNotExist:
+            return Response(
+                status=status.HTTP_404_NOT_FOUND,
+                data=err("Organization not found"),
+            )
+        serializer = OrganizationUpdateBody(
+            data=request.data,
+            context={"organization": org},
+        )
+        serializer.is_valid(raise_exception=True)
+        org = serializer.save()
+        return Response(
+            status=status.HTTP_200_OK,
+            data=ok(OrganizationResponse(org).data),
         )
 
     @swagger_auto_schema(

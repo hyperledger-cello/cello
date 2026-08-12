@@ -48,6 +48,7 @@ class Chaincode(models.Model):
     sequence = models.IntegerField(
         help_text="Chaincode Sequence",
         validators=[MinValueValidator(1)],
+        default=1,
     )
     label = models.CharField(
         help_text="Chaincode Label",
@@ -75,6 +76,7 @@ class Chaincode(models.Model):
     )
     signature_policy = models.CharField(
         help_text="Chaincode Signature Policy",
+        max_length=1024,
         null=True,
         blank=True,
     )
