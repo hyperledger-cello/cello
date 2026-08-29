@@ -3,8 +3,8 @@
 */
 import { useEffect } from 'react';
 import { connect, useIntl } from 'umi';
-import { Card, Form, Modal, Input, message } from 'antd';
-import { TeamOutlined } from '@ant-design/icons';
+import { Card, Form, Modal, Input, Button, message } from 'antd';
+import { PlusOutlined, TeamOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import StandardTable from '@/components/StandardTable';
@@ -51,6 +51,8 @@ const CreateUpdateForm = ({
         onFinish={onFinish}
         initialValues={{
           name: method === 'create' ? '' : organization.name,
+          agent_url: method === 'create' ? '' : organization.agent_url,
+          msp_id: method === 'create' ? '' : organization.msp_id,
         }}
       >
         <FormItem
@@ -76,6 +78,42 @@ const CreateUpdateForm = ({
             placeholder={intl.formatMessage({
               id: 'form.input.placeholder',
               defaultMessage: 'Please input',
+            })}
+          />
+        </FormItem>
+        <FormItem
+          labelCol={{ span: 5 }}
+          wrapperCol={{ span: 15 }}
+          label={intl.formatMessage({
+            id: 'app.organization.form.agent_url.label',
+            defaultMessage: 'Agent URL',
+          })}
+          name="agent_url"
+          extra={intl.formatMessage({
+            id: 'app.organization.form.agent_url.extra',
+            defaultMessage: 'Leave as default for local development',
+          })}
+        >
+          <Input
+            placeholder={intl.formatMessage({
+              id: 'app.organization.form.agent_url.placeholder',
+              defaultMessage: 'http://cello-docker-agent:8080/api/v1/',
+            })}
+          />
+        </FormItem>
+        <FormItem
+          labelCol={{ span: 5 }}
+          wrapperCol={{ span: 15 }}
+          label={intl.formatMessage({
+            id: 'app.organization.form.msp_id.label',
+            defaultMessage: 'MSP ID',
+          })}
+          name="msp_id"
+        >
+          <Input
+            placeholder={intl.formatMessage({
+              id: 'app.organization.form.msp_id.placeholder',
+              defaultMessage: 'Auto-generated if blank',
             })}
           />
         </FormItem>
@@ -118,45 +156,37 @@ const Organization = ({
   // Callbacks for create/update/delete
   const createCallback = data => {
     const { name } = data.payload;
-    if (data.id) {
+    const responseData = data.data;
+    if (responseData && responseData.id) {
       message.success(
         intl.formatMessage(
           {
             id: 'app.organization.create.success',
             defaultMessage: 'Create organization {name} success',
           },
-          { name, id: data.id }
+          { name, id: responseData.id }
         )
       );
       closeModal();
       refreshList();
     } else {
+      const msg = data.msg || '';
       message.error(
-        intl.formatMessage(
+        `${intl.formatMessage(
           {
             id: 'app.organization.create.fail',
             defaultMessage: 'Create organization {name} failed',
           },
           { name }
-        )
+        )}${msg ? `: ${msg}` : ''}`
       );
     }
   };
 
   const updateCallback = data => {
-    const { code, payload } = data;
-    const { name } = payload;
-    if (code) {
-      message.error(
-        intl.formatMessage(
-          {
-            id: 'app.organization.update.fail',
-            defaultMessage: 'Update organization {name} failed',
-          },
-          { name }
-        )
-      );
-    } else {
+    const { name } = data.payload;
+    const responseData = data.data;
+    if (responseData && responseData.id) {
       message.success(
         intl.formatMessage(
           {
@@ -168,6 +198,16 @@ const Organization = ({
       );
       closeModal();
       refreshList();
+    } else {
+      message.error(
+        intl.formatMessage(
+          {
+            id: 'app.organization.update.fail',
+            defaultMessage: 'Update organization {name} failed',
+          },
+          { name }
+        )
+      );
     }
   };
 
@@ -241,6 +281,12 @@ const Organization = ({
     >
       <Card bordered={false}>
         <div className={styles.tableList}>
+          <div className={styles.tableListOperator}>
+            <Button type="primary" onClick={() => handleModalVisible(true, 'create')}>
+              <PlusOutlined />
+              {intl.formatMessage({ id: 'form.button.new', defaultMessage: 'New' })}
+            </Button>
+          </div>
           <StandardTable
             selectedRows={selectedRows}
             loading={loadingOrganizations}

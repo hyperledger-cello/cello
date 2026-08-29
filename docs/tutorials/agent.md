@@ -52,5 +52,5 @@ See you then👋!
 
     to set up a *Hyperledger Cello* **server and agent** in the same place as quick as possible.
 
-    However, in order to give you a deeper understanding of how everything works, 
+    However, in order to give you a deeper understanding of how everything works,
     we instead walked through the entire setup step-by-step in this tutorial.
