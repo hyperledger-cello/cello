@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from node.enums import NodeType
-from node.service import create_node, get_node_status
+from node.service import create_node, get_node_logs, get_node_status
 
 
 class NodeRequestSerializer(serializers.Serializer):
@@ -38,4 +38,26 @@ class NodeStatusRequestSerializer(serializers.Serializer):
     def create(self, validated_data) -> NodeStatusSerializer:
         status = get_node_status(validated_data["type"], validated_data["name"])
         return NodeStatusSerializer(dict(status=status))
+
+
+class NodeLogsResponseSerializer(serializers.Serializer):
+    logs = serializers.CharField(help_text="Node logs (last N lines)")
+
+
+class NodeLogsRequestSerializer(serializers.Serializer):
+    type = serializers.ChoiceField(
+        help_text="Node Type",
+        choices=[(node_type.name, node_type.name) for node_type in NodeType])
+    name = serializers.CharField(help_text="Node Name")
+    tail = serializers.IntegerField(
+        help_text="Number of log lines to return",
+        required=False,
+        default=200,
+        min_value=1,
+        max_value=1000,
+    )
+
+    def create(self, validated_data) -> NodeLogsResponseSerializer:
+        logs = get_node_logs(validated_data["type"], validated_data["name"], validated_data.get("tail", 200))
+        return NodeLogsResponseSerializer(dict(logs=logs))
 

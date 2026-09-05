@@ -27,6 +27,18 @@ def get_node_status(node_type: str, name: str) -> str:
             crypto_config["PeerOrgs" if node_type == NodeType.PEER.name else "OrdererOrgs"][0]["Domain"])).status
 
 
+def get_node_logs(node_type: str, name: str, tail: int = 200) -> str:
+    with open(CRYPTO_CONFIG, "r", encoding="utf-8") as f:
+        crypto_config = yaml.safe_load(f)
+    domain = crypto_config["PeerOrgs" if node_type == NodeType.PEER.name else "OrdererOrgs"][0]["Domain"]
+    container_name = f"{name}.{domain}"
+    container = docker_client.containers.get(container_name)
+    raw = container.logs(tail=tail, timestamps=False)
+    if isinstance(raw, bytes):
+        return raw.decode("utf-8", errors="replace")
+    return str(raw)
+
+
 def create_node(node_type: str, name: str) -> bytes:
     return _create_node(NodeType.PEER if node_type == NodeType.PEER.name else NodeType.ORDERER, name)
 
