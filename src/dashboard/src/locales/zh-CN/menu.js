@@ -17,6 +17,7 @@ export default {
   'menu.newNetwork': '新建网络',
   'menu.channel': '通道管理',
   'menu.chaincode': '链码管理',
+  'menu.copilot': '智能助手',
   'menu.exception': '异常页',
   'menu.exception.not-permission': '403',
   'menu.exception.not-find': '404',

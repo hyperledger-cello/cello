@@ -14,6 +14,7 @@ import {
   BookOutlined,
   GithubOutlined,
   ApiOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { Link, useIntl } from 'umi';
 import { urlToList } from '../_utils/pathTools';
@@ -30,6 +31,7 @@ const menus = {
   chaincode: <FunctionOutlined />,
   user: <UserOutlined />,
   agent: <DesktopOutlined />,
+  message: <MessageOutlined />,
   docs: <BookOutlined />,
   github: <GithubOutlined />,
   api: <ApiOutlined />,

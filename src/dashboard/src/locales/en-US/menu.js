@@ -17,6 +17,7 @@ export default {
   'menu.newNetwork': 'New Network',
   'menu.channel': 'Channel',
   'menu.chaincode': 'Chaincode',
+  'menu.copilot': 'Copilot',
   'menu.exception': 'Exception',
   'menu.exception.not-permission': '403',
   'menu.exception.not-find': '404',
