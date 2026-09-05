@@ -54,8 +54,39 @@ INSTALLED_APPS = [
     "organization.apps.OrganizationConfig",
     "node.apps.NodeConfig",
     "channel.apps.ChannelConfig",
-    "chaincode.apps.ChaincodeConfig"
+    "chaincode.apps.ChaincodeConfig",
+    "copilot.apps.CopilotConfig"
 ]
+
+# --------------------------------------------------------------------------
+# Cello copilot (read-only chat). Every value comes from the environment, so no
+# key is ever committed. The copilot stays off until CELLO_COPILOT_LLM_API_KEY
+# and CELLO_COPILOT_LLM_MODEL are both set; until then the endpoint answers 503.
+#
+# The default provider speaks the OpenAI chat-completions protocol, which most
+# vendors implement, so the base URL and the model choose the vendor together.
+# For DeepSeek:
+#   CELLO_COPILOT_LLM_BASE_URL=https://api.deepseek.com
+#   CELLO_COPILOT_LLM_MODEL=deepseek-chat
+# Leaving the base URL empty falls back to the SDK default (api.openai.com), in
+# which case the model has to be an OpenAI one. There is no default model for
+# that reason: the right value depends on where the base URL points.
+# --------------------------------------------------------------------------
+CELLO_COPILOT_LLM_PROVIDER = os.environ.get(
+    "CELLO_COPILOT_LLM_PROVIDER", "openai_compatible"
+)
+CELLO_COPILOT_LLM_MODEL = os.environ.get("CELLO_COPILOT_LLM_MODEL", "")
+CELLO_COPILOT_LLM_BASE_URL = os.environ.get("CELLO_COPILOT_LLM_BASE_URL", "")
+CELLO_COPILOT_LLM_API_KEY = os.environ.get("CELLO_COPILOT_LLM_API_KEY", "")
+CELLO_COPILOT_MAX_TOKENS = int(os.environ.get("CELLO_COPILOT_MAX_TOKENS", "1024"))
+CELLO_COPILOT_MAX_TOOL_ITERATIONS = int(
+    os.environ.get("CELLO_COPILOT_MAX_TOOL_ITERATIONS", "8")
+)
+# The REST API root the copilot's tools call, over loopback by default. The
+# caller's JWT is forwarded to it, so the copilot acts as the logged-in user.
+CELLO_COPILOT_API_BASE = os.environ.get(
+    "CELLO_COPILOT_API_BASE", "http://localhost:8080/api/v1"
+)
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
