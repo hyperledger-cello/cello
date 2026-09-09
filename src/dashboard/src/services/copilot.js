@@ -23,7 +23,7 @@ export const streamChat = async ({
   const headers = {
     'Content-Type': 'application/json',
   };
-  if (token) headers.Authorization = `Bearer ${token}`;
+  if (token) headers.Authorization = `JWT ${token}`;
 
   const response = await fetch(COPILOT_CHAT_URL, {
     method: 'POST',
