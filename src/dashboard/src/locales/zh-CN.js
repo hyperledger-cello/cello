@@ -17,6 +17,7 @@ import Network from './zh-CN/Network';
 import Channel from './zh-CN/Channel';
 import ChainCode from './zh-CN/Chaincode';
 import Overview from './zh-CN/Overview';
+import Copilot from './zh-CN/Copilot';
 
 export default {
   'navBar.lang': '语言',
@@ -66,4 +67,5 @@ export default {
   ...Channel,
   ...ChainCode,
   ...Overview,
+  ...Copilot,
 };

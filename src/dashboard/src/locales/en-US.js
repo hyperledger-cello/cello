@@ -17,6 +17,7 @@ import Network from './en-US/Network';
 import Channel from './en-US/Channel';
 import ChainCode from './en-US/Chaincode';
 import Overview from './en-US/Overview';
+import Copilot from './en-US/Copilot';
 
 export default {
   'navBar.lang': 'Languages',
@@ -66,4 +67,5 @@ export default {
   ...Channel,
   ...ChainCode,
   ...Overview,
+  ...Copilot,
 };
