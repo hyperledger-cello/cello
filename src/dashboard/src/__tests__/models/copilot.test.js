@@ -63,7 +63,7 @@ describe('copilot model', () => {
     expect(saga.next().done).toBe(true);
   });
 
-  it('sendMessagehappy path: user bubble, empty assistant, stream, done', () => {
+  it('sendMessage happy path: user bubble, empty assistant, stream, done', () => {
     const callback = jest.fn();
     const saga = effects.sendMessage({ payload: 'list nodes', callback }, CTX);
 

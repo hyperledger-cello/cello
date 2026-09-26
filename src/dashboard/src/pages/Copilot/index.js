@@ -28,8 +28,8 @@ const Copilot = ({ dispatch, copilot = {} }) => {
     dispatch({
       type: 'copilot/sendMessage',
       payload: text,
-      callback: () => setText(''),
     });
+    setText('');
   };
 
   const handleKeyDown = e => {

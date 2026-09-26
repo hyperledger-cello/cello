@@ -8,7 +8,7 @@ export const COPILOT_CHAT_URL = '/api/v1/copilot/chat';
 const getToken = () => window.localStorage.getItem('cello-token') || '';
 
 // Uses raw fetch instead of customRequest/umi-request because the SSE endpoint
-// is a POST with a Bearer token — umi-request wraps XHR and cannot return a
+// is a POST with a JWT token — umi-request wraps XHR and cannot return a
 // ReadableStream. Token is read from localStorage to match the rest of the dashboard.
 export const streamChat = async ({
   messages,
