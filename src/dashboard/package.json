@@ -59,7 +59,7 @@
     "antd": "^4.2.5",
     "bizcharts": "3.5.3",
     "bizcharts-plugin-slider": "^2.1.1-beta.1",
-    "body-parser": "^2.2.2",
+    "body-parser": "^2.3.0",
     "cello-paginator": "^1.0.1",
     "classnames": "^2.2.6",
     "enquire-js": "^0.2.1",
