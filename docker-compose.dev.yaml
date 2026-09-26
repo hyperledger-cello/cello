@@ -45,6 +45,15 @@ services:
       - DEBUG=True
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
       - FABRIC_LOGGING_SPEC=INFO
+      # Cello copilot. Unset by default, so /api/v1/copilot/chat answers 503
+      # until a key and a model are provided. The base URL and the model pick
+      # the vendor together, for example DeepSeek:
+      #   CELLO_COPILOT_LLM_BASE_URL=https://api.deepseek.com
+      #   CELLO_COPILOT_LLM_MODEL=deepseek-chat
+      - CELLO_COPILOT_LLM_API_KEY=${CELLO_COPILOT_LLM_API_KEY:-}
+      - CELLO_COPILOT_LLM_BASE_URL=${CELLO_COPILOT_LLM_BASE_URL:-}
+      - CELLO_COPILOT_LLM_MODEL=${CELLO_COPILOT_LLM_MODEL:-}
+      - CELLO_COPILOT_LLM_PROVIDER=${CELLO_COPILOT_LLM_PROVIDER:-openai_compatible}
     ports:
       - "8080:8080"
     volumes:
