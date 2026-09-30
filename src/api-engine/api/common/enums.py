@@ -78,7 +78,11 @@ class EnumWithDisplayMeta(EnumMeta):
             member_names = getattr(attrs, "_member_names", None)
             if member_names is not None and "DisplayStrings" in member_names:
                 try:
-                    member_names.remove("DisplayStrings")
+                    if isinstance(member_names, dict):
+                        # Python 3.11+: _member_names is a dict, not a list
+                        member_names.pop("DisplayStrings", None)
+                    else:
+                        member_names.remove("DisplayStrings")
                 except (AttributeError, TypeError):
                     pass
 
