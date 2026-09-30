@@ -106,6 +106,27 @@ def _tool_turn(name, params, call_id="call_1"):
     ]
 
 
+def _multi_tool_turn(name, count):
+    """One round asking for several tools at once, which providers do.
+
+    Each call gets its own delta index, the way the SDK reports parallel calls.
+    """
+    chunks = []
+    for i in range(count):
+        chunks.append(
+            _chunk(
+                tool_calls=[
+                    _call_delta(index=i, call_id="call_%s" % i, name=name)
+                ]
+            )
+        )
+        chunks.append(
+            _chunk(tool_calls=[_call_delta(index=i, arguments="{}")])
+        )
+    chunks.append(_chunk(finish_reason="tool_calls"))
+    return chunks
+
+
 def _stub_client(*turns):
     stub = MagicMock()
     stub.chat.completions.create.side_effect = list(turns)
@@ -254,6 +275,49 @@ class StreamAgentTests(TestCase):
                 )
         self.assertEqual(events[-1].data["stop_reason"], "max_iterations")
         self.assertEqual(stub.chat.completions.create.call_count, 3)
+
+    @patch("copilot.client.requests.get")
+    def test_total_tool_call_cap_ends_the_turn(self, get):
+        """max_iterations counts rounds. A round can ask for any number of
+        tools, so the rounds cap alone does not bound the work done."""
+        get.return_value = _rest_response(payload=_list_envelope([]))
+        stub = MagicMock()
+        stub.chat.completions.create.side_effect = (
+            lambda **kwargs: iter(_multi_tool_turn("list_nodes", 3))
+        )
+        with self.settings(
+            CELLO_COPILOT_MAX_TOOL_CALLS=4,
+            CELLO_COPILOT_MAX_TOOL_ITERATIONS=8,
+            **SETTINGS
+        ):
+            with patch("copilot.llm._get_client", return_value=stub):
+                events = list(
+                    stream_agent([{"role": "user", "content": "loop"}], _ctx())
+                )
+
+        done = events[-1]
+        self.assertEqual(done.data["stop_reason"], "max_tool_calls")
+        # The cap is the number executed, not the number attempted.
+        self.assertEqual(len(done.data["tool_calls"]), 4)
+        self.assertEqual(
+            len([e for e in events if e.name == "tool_result"]), 4
+        )
+        # Stopped inside the second round, so the rounds cap never applied.
+        self.assertEqual(stub.chat.completions.create.call_count, 2)
+
+    @patch("copilot.client.requests.get")
+    def test_a_turn_under_the_cap_is_untouched(self, get):
+        get.return_value = _rest_response(payload=_list_envelope([]))
+        stub = _stub_client(
+            _multi_tool_turn("list_nodes", 3), _text_turn("Nothing running.")
+        )
+        with self.settings(CELLO_COPILOT_MAX_TOOL_CALLS=4, **SETTINGS):
+            with patch("copilot.llm._get_client", return_value=stub):
+                events = list(
+                    stream_agent([{"role": "user", "content": "hi"}], _ctx())
+                )
+        self.assertEqual(events[-1].data["stop_reason"], "stop")
+        self.assertEqual(len(events[-1].data["tool_calls"]), 3)
 
     def test_unexpected_finish_reason_is_normalized(self):
         events = self._events(_text_turn("hi", finish_reason="content_filter"))
