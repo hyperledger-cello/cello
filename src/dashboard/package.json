@@ -69,7 +69,7 @@
     "lodash": "^4.18.1",
     "lodash-decorators": "^6.0.1",
     "memoize-one": "^5.0.0",
-    "moment": "^2.24.0",
+    "moment": "^2.31.0",
     "merge-umi-mock-data": "^1.0.0",
     "numeral": "^2.0.6",
     "nzh": "^1.0.4",
