@@ -2,7 +2,7 @@ async-timeout==5.0.1
 chardet==3.0.4
 coreapi==2.3.3
 cryptography==50.0.0
-Django==5.2.16
+Django==5.2.17
 django-allauth==65.14.1
 django-cors-headers==3.5.0
 django-extensions==3.2.3
