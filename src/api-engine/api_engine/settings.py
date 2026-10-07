@@ -102,6 +102,9 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Required by django-allauth >= 0.56; it raises ImproperlyConfigured
+    # at startup when this is missing.
+    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = "api_engine.urls"

@@ -19,12 +19,16 @@ jaraco.collections==5.1.0
 kubernetes==11.0.0
 pathtools==0.1.2
 platformdirs==4.2.2
-psycopg2-binary==2.8.4
+# 2.8.4 ships no cp311 wheels and cannot build from source in the
+# runtime image; 2.9.5 is the first release with cp311 wheels.
+psycopg2-binary==2.9.5
 pyparsing==2.4.7
 ruamel.yaml==0.16.12
 swagger-spec-validator==2.5.0
 tomli==2.0.1
-pygraphviz==1.5
+# 1.5 ships no wheels and cannot compile on 3.11; 2.0 is the first
+# stable release with cp311 wheels.
+pygraphviz==2.0
 uWSGI==2.0.22
 requests==2.33.0
 # >=1.55.3 required: earlier releases pass proxies= to httpx.Client, which
