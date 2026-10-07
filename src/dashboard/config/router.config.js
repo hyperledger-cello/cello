@@ -108,6 +108,12 @@ export default [
             component: './ChainCode/ChainCode',
           },
           {
+            path: '/copilot',
+            name: 'copilot',
+            icon: 'message',
+            component: './Copilot/index',
+          },
+          {
             path: '/userManagement',
             name: 'userManagement',
             icon: 'user',

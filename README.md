@@ -67,7 +67,7 @@ If environment is prepared, then we can start cello service.
   ```bash
   CONTAINER ID   IMAGE                                   COMMAND                  CREATED         STATUS         PORTS                                       NAMES
   57df1462c7f1   cello/hyperledger-fabric-agent:local    "python manage.py r…"    4 seconds ago   Up 2 seconds   0.0.0.0:5001->8080/tcp, :::5001->8080/tcp   cello-docker-agent
-  04367ab6bd5e   postgres:12.0                           "docker-entrypoint.s…"   4 seconds ago   Up 2 seconds   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp   cello-postgres
+  04367ab6bd5e   postgres:16.14                          "docker-entrypoint.s…"   4 seconds ago   Up 2 seconds   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp   cello-postgres
   29b56a279893   cello/api-engine:latest                 "/bin/sh -c 'bash /e…"   4 seconds ago   Up 2 seconds   0.0.0.0:8080->8080/tcp, :::8080->8080/tcp   cello-api-engine
   a272a06d8280   cello/dashboard:latest                  "bash -c 'nginx -g '…"   4 seconds ago   Up 2 seconds   0.0.0.0:8081->8081/tcp, :::8081->8081/tcp   cello-dashboard
   ```
@@ -100,6 +100,147 @@ If environment is prepared, then we can start cello service.
 * Visit Cello dashboard at `localhost:8081`
 
 * Check [troubleshoot](https://github.com/hyperledger/cello/blob/main/docs/setup/server.md#3-troubleshoot) section if you get any question.
+
+### PostgreSQL 12 → 16 Migration
+
+#### Important
+
+PostgreSQL major-version data directories cannot be directly reused between PG12 and PG16 due to internal storage format changes. Before performing the upgrade:
+* Preserve the existing PG12 data directory or Docker volume so rollback remains possible.
+* Create a separate PG16 volume or storage directory rather than overwriting existing PG12 storage.
+* Perform a full backup of all databases and PostgreSQL globals/roles using `pg_dumpall`.
+* Check PostgreSQL extensions used by the application and verify database driver (`psycopg2-binary`) compatibility.
+* Validate the restored database and application functionality before removing old PG12 data.
+
+#### Development environment
+
+For setups using `docker-compose.dev.yaml` with the named volume `cello-postgres`:
+
+1. **Back up PG12 databases and globals:**
+   ```bash
+   docker exec -t cello-postgres pg_dumpall -U postgres > cello_pg12_backup.sql
+   ```
+
+2. **Stop the development environment:**
+   ```bash
+   docker compose -f docker-compose.dev.yaml down
+   ```
+
+3. **Preserve the existing PG12 volume for rollback:**
+   ```bash
+   docker volume create cello-postgres-pg12-backup
+   docker run --rm -v cello-postgres:/from -v cello-postgres-pg12-backup:/to alpine sh -c "cp -av /from/. /to/"
+   ```
+
+4. **Recreate the volume and start the updated PG16 database container:**
+   ```bash
+   docker volume rm cello-postgres
+   docker compose -f docker-compose.dev.yaml up -d cello-postgres
+   ```
+
+5. **Restore the database backup into the PG16 container:**
+   ```bash
+   docker exec -i cello-postgres psql -U postgres < cello_pg12_backup.sql
+   ```
+
+6. **Start all development services:**
+   ```bash
+   docker compose -f docker-compose.dev.yaml up -d
+   ```
+
+#### Deployment using /opt/cello/pgdata
+
+For deployments using `bootup/docker-compose-files/docker-compose.dev.yml`, `docker-compose.server.dev.yml`, or `docker-compose-dev.yml` with host path `${CELLO_STORAGE_PATH:-/opt/cello}/pgdata`:
+
+1. **Back up PG12 databases and globals:**
+   ```bash
+   docker exec -t cello-postgres pg_dumpall -U postgres > cello_pg12_backup.sql
+   ```
+
+2. **Stop running services:**
+   ```bash
+   docker compose -f bootup/docker-compose-files/docker-compose.dev.yml down
+   ```
+
+3. **Preserve existing PG12 storage directory:**
+   ```bash
+   sudo mv /opt/cello/pgdata /opt/cello/pgdata_v12_backup
+   sudo mkdir -p /opt/cello/pgdata
+   ```
+
+4. **Start the upgraded PG16 database container:**
+   ```bash
+   docker compose -f bootup/docker-compose-files/docker-compose.dev.yml up -d cello-postgres
+   ```
+
+5. **Restore the database backup:**
+   ```bash
+   docker exec -i cello-postgres psql -U postgres < cello_pg12_backup.sql
+   ```
+
+6. **Start all services:**
+   ```bash
+   docker compose -f bootup/docker-compose-files/docker-compose.dev.yml up -d
+   ```
+
+#### Deployment using /opt/cello/postgres
+
+For server deployments using `bootup/docker-compose-files/docker-compose.yml` with host path `/opt/cello/postgres`:
+
+1. **Back up PG12 databases and globals:**
+   ```bash
+   docker exec -t cello-postgres-server pg_dumpall -U ${POSTGRES_USER:-postgres} > cello_pg12_backup.sql
+   ```
+
+2. **Stop running services:**
+   ```bash
+   docker compose -f bootup/docker-compose-files/docker-compose.yml down
+   ```
+
+3. **Preserve existing PG12 storage directory:**
+   ```bash
+   sudo mv /opt/cello/postgres /opt/cello/postgres_v12_backup
+   sudo mkdir -p /opt/cello/postgres
+   ```
+
+4. **Start the upgraded PG16 database container:**
+   ```bash
+   docker compose -f bootup/docker-compose-files/docker-compose.yml up -d postgres-server
+   ```
+
+5. **Restore the database backup:**
+   ```bash
+   docker exec -i cello-postgres-server psql -U ${POSTGRES_USER:-postgres} < cello_pg12_backup.sql
+   ```
+
+6. **Start all services:**
+   ```bash
+   docker compose -f bootup/docker-compose-files/docker-compose.yml up -d
+   ```
+
+#### Validation
+
+1. Verify PostgreSQL version inside the container:
+   ```bash
+   docker exec -it cello-postgres psql -U postgres -c "SELECT version();"
+   ```
+2. Verify Django API Engine logs for successful migrations and database connectivity:
+   ```bash
+   docker logs cello-api-engine
+   ```
+3. Run API integration tests:
+   ```bash
+   make check-api
+   ```
+
+#### Rollback
+
+If issues arise during verification:
+1. Stop the PG16 environment (`docker compose down`).
+2. Revert the PostgreSQL image reference to `postgres:12.0`.
+3. Restore the preserved PG12 storage directory (`/opt/cello/pgdata_v12_backup` -> `/opt/cello/pgdata` or `/opt/cello/postgres_v12_backup` -> `/opt/cello/postgres`) or named volume (`cello-postgres-pg12-backup`).
+4. Restart services.
+5. Only remove old PG12 storage after the PG16 environment is fully verified.
 
 ## Main Features
 

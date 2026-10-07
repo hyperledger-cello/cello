@@ -22,9 +22,9 @@ jest.mock('@/hooks', () => ({
     refreshList: () => {},
   }),
 }));
-jest.mock('../../pages/Channel/forms/CreateInvitationForm', () => () => null);
+jest.mock('@/pages/Channel/forms/CreateInvitationForm', () => () => null);
 
-const { badgeStatusMap, computeRecordFlags } = require('../../pages/Channel/Invitation');
+const { badgeStatusMap, computeRecordFlags } = require('@/pages/Channel/Invitation');
 
 describe('badgeStatusMap', () => {
   it('maps DRAFT to default', () => expect(badgeStatusMap.DRAFT).toBe('default'));

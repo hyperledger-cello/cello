@@ -22,7 +22,7 @@ services:
 
   # pg database
   cello-postgres:
-    image: postgres:12.0
+    image: postgres:16.14
     container_name: cello-postgres
     restart: unless-stopped
     environment:

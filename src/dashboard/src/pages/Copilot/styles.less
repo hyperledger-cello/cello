@@ -1,0 +1,77 @@
+@import '~antd/lib/style/themes/default.less';
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 260px);
+  min-height: 480px;
+}
+
+.messages {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+}
+
+.emptyTitle {
+  margin-bottom: @margin-sm;
+  font-weight: 500;
+  font-size: @font-size-lg;
+}
+
+.emptyHint {
+  color: @text-color-secondary;
+}
+
+.row {
+  display: flex;
+  margin-bottom: 16px;
+
+  &.user {
+    justify-content: flex-end;
+  }
+}
+
+.bubble {
+  max-width: 70%;
+  padding: 10px 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: @background-color-light;
+  border-radius: 8px;
+
+  &.user {
+    color: #fff;
+    background: @primary-color;
+  }
+
+  &.error {
+    color: #fff;
+    background: @error-color;
+  }
+}
+
+.thinking {
+  margin-left: 8px;
+  color: @text-color-secondary;
+}
+
+.inputRow {
+  display: flex;
+  align-items: flex-end;
+  padding: 16px;
+  border-top: 1px solid @border-color-split;
+
+  textarea {
+    margin-right: 12px;
+  }
+}
