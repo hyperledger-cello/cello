@@ -1,4 +1,4 @@
-FROM python:3.8
+FROM python:3.11
 
 # Install software
 RUN apt-get update\
