@@ -32,5 +32,6 @@ pygraphviz==2.0
 uWSGI==2.0.22
 requests==2.33.0
 # >=1.55.3 required: earlier releases pass proxies= to httpx.Client, which
-# httpx 0.28 removed, so constructing a client raises TypeError.
-openai==1.99.9
+# httpx 0.28 removed, so constructing a client raises TypeError. Capped below
+# 2.0 because a major bump can change the client surface.
+openai>=1.55.3,<2

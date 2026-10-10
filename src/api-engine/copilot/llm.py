@@ -49,7 +49,14 @@ SYSTEM_PROMPT = (
 # else a provider reports is normalized to "stop" so clients can switch on a
 # closed set. "length" means the model was cut off by max_tokens.
 STOP_REASONS = frozenset(
-    ["stop", "end_turn", "length", "max_iterations", "error"]
+    [
+        "stop",
+        "end_turn",
+        "length",
+        "max_iterations",
+        "max_tool_calls",
+        "error",
+    ]
 )
 
 
@@ -93,6 +100,7 @@ class _Config:
     model: str
     max_tokens: int
     max_iterations: int
+    max_tool_calls: int
 
 
 def _config() -> _Config:
@@ -108,6 +116,9 @@ def _config() -> _Config:
         max_tokens=int(getattr(settings, "CELLO_COPILOT_MAX_TOKENS", 1024)),
         max_iterations=int(
             getattr(settings, "CELLO_COPILOT_MAX_TOOL_ITERATIONS", 8)
+        ),
+        max_tool_calls=int(
+            getattr(settings, "CELLO_COPILOT_MAX_TOOL_CALLS", 16)
         ),
     )
 
@@ -243,6 +254,27 @@ def _stream_openai_compatible(
             }
         )
         for call in calls:
+            # max_iterations bounds the number of model rounds. One round can
+            # ask for any number of tools, so it does not bound the work. This
+            # counts the calls themselves. Checked before running so the cap is
+            # the number executed, and the turn ends here: the tool replies for
+            # the rest of this round are never appended, and the provider is
+            # never called again, so the conversation stays consistent.
+            if len(trace) >= cfg.max_tool_calls:
+                logger.warning(
+                    "Cello copilot hit max tool calls (%s) without finishing",
+                    cfg.max_tool_calls,
+                )
+                yield Event(
+                    "done",
+                    _done_payload(
+                        "That needed more lookups than I'm allowed to make in "
+                        "one turn. Please narrow the question and try again.",
+                        trace,
+                        "max_tool_calls",
+                    ),
+                )
+                return
             try:
                 params = json.loads(call["arguments"] or "{}")
             except ValueError:
