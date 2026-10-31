@@ -30,7 +30,7 @@ jobs:
           echo "Postgres did not become ready in time"; exit 1
 
       - name: Run api-engine unit tests
-        run: docker exec cello-api-engine python manage.py test copilot
+        run: docker exec cello-api-engine python manage.py test
 
       - name: Stop DB and API Engine
         if: always()
