@@ -55,7 +55,9 @@ INSTALLED_APPS = [
     "node.apps.NodeConfig",
     "channel.apps.ChannelConfig",
     "chaincode.apps.ChaincodeConfig",
-    "copilot.apps.CopilotConfig"
+    "copilot.apps.CopilotConfig",
+    "apikey.apps.ApikeyConfig",
+
 ]
 
 # --------------------------------------------------------------------------
@@ -190,6 +192,8 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "api.utils.custom_exception_handler",
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "apikey.authentication.APIKeyAuthentication",
+
     ),
 }
 
