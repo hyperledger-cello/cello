@@ -53,6 +53,7 @@ nav:
   - Concepts: concepts.md
   - Design:
       - Architecture: design/arch.md
+      - Channel Invitation Workflow: design/channel_invitation_workflow.md
   - Tutorials:
       - "Lesson 0: Introduction": tutorials/introduction.md
       - "Lesson 1: Prerequisites": tutorials/prerequisites.md
