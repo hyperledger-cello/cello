@@ -25,6 +25,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
+from apikey.views import ApiKeyViewSet
 from django.conf.urls.static import static
 from api_engine.settings import DEBUG, WEBROOT
 from copilot.views import ChatView
@@ -58,7 +59,7 @@ router.register("register", RegisterViewSet, basename="register")
 router.register("channels", ChannelViewSet, basename="channel")
 router.register("invitations", InvitationViewSet, basename="invitation")
 router.register("chaincodes", ChaincodeViewSet, basename="chaincode")
-
+router.register("api-keys", ApiKeyViewSet, basename="api-key")
 urlpatterns = [path(WEBROOT, include(router.urls + [
     path(
         "login", CelloTokenObtainPairView.as_view(), name="token_obtain_pair"
