@@ -55,7 +55,9 @@ INSTALLED_APPS = [
     "node.apps.NodeConfig",
     "channel.apps.ChannelConfig",
     "chaincode.apps.ChaincodeConfig",
-    "copilot.apps.CopilotConfig"
+    "copilot.apps.CopilotConfig",
+    "apikey.apps.ApikeyConfig",
+
 ]
 
 # --------------------------------------------------------------------------
@@ -81,6 +83,11 @@ CELLO_COPILOT_LLM_API_KEY = os.environ.get("CELLO_COPILOT_LLM_API_KEY", "")
 CELLO_COPILOT_MAX_TOKENS = int(os.environ.get("CELLO_COPILOT_MAX_TOKENS", "1024"))
 CELLO_COPILOT_MAX_TOOL_ITERATIONS = int(
     os.environ.get("CELLO_COPILOT_MAX_TOOL_ITERATIONS", "8")
+)
+# Rounds are not the same as work: one round can ask for any number of tools.
+# This bounds the total calls in a single turn.
+CELLO_COPILOT_MAX_TOOL_CALLS = int(
+    os.environ.get("CELLO_COPILOT_MAX_TOOL_CALLS", "16")
 )
 # The REST API root the copilot's tools call, over loopback by default. The
 # caller's JWT is forwarded to it, so the copilot acts as the logged-in user.
@@ -185,6 +192,8 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "api.utils.custom_exception_handler",
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "apikey.authentication.APIKeyAuthentication",
+
     ),
 }
 
