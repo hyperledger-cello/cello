@@ -5,6 +5,8 @@
 import logging
 from typing import Optional
 
+from django.shortcuts import get_object_or_404
+
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -15,7 +17,6 @@ from rest_framework.permissions import IsAuthenticated
 from api.common import ok
 from api.common.response import make_response_serializer
 
-from api.exceptions import CustomError
 from common.serializers import PageQuerySerializer
 from user.serializers import (
     UserCreateBody,
@@ -77,10 +78,12 @@ class UserViewSet(viewsets.ViewSet):
         )
     )
     def destroy(self, request: Request, pk: Optional[str] = None) -> Response:
-        try:
-            UserProfile.objects.get(organzation=request.user.organization, id=pk).delete()
-        except Exception as e:
-            raise CustomError(detail=str(e))
+        user = get_object_or_404(
+            UserProfile,
+            organization=request.user.organization,
+            id=pk,
+        )
+        user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @swagger_auto_schema(
