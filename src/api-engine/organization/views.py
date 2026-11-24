@@ -9,7 +9,6 @@ from rest_framework.response import Response
 
 from api.common import ok
 from api.common.response import make_response_serializer
-from api.exceptions import CustomError
 from api.utils.common import with_common_response
 from common.responses import err
 from common.serializers import PageQuerySerializer
@@ -124,8 +123,17 @@ class OrganizationViewSet(viewsets.ViewSet):
         )
     )
     def destroy(self, request: Request, pk: Optional[str] = None) -> Response:
+        if not request.user.is_admin:
+            return Response(
+                status=status.HTTP_403_FORBIDDEN,
+                data=err("Admin role required."),
+            )
         try:
-            Organization.objects.get(id=pk).delete()
-        except Exception as e:
-            raise CustomError(detail=str(e))
+            organization = Organization.objects.get(id=pk)
+        except Organization.DoesNotExist:
+            return Response(
+                status=status.HTTP_404_NOT_FOUND,
+                data=err("Organization not found"),
+            )
+        organization.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
