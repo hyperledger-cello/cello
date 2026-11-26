@@ -1,3 +1,6 @@
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 from enum import Enum, auto
 import json
 import logging
@@ -25,7 +28,10 @@ peer_command = os.path.join(FABRIC_TOOL, "peer")
 
 
 def get_chaincode(pk: str) -> Optional[Chaincode]:
-    return Chaincode.objects.get(id=pk)
+    try:
+        return Chaincode.objects.get(id=pk)
+    except Chaincode.DoesNotExist:
+        return None
 
 
 def get_chaincode_status(organization: Organization, chaincode: Chaincode) -> str:

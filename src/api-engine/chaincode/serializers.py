@@ -1,8 +1,12 @@
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 import tarfile
 from typing import Dict, Any
 
 from django.core.validators import MinValueValidator
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 
 from chaincode.models import Chaincode
 from chaincode.service import ChaincodeAction, create_chaincode, get_chaincode, install_chaincode, \
@@ -27,6 +31,14 @@ class ChaincodeID(serializers.ModelSerializer):
         chaincode = get_chaincode(attrs["id"])
         if chaincode is None:
             raise serializers.ValidationError("Chaincode with id {} does not exist.".format(attrs["id"]))
+        organization = self.context.get("organization")
+        if (
+            organization is not None
+            and not chaincode.channel.organizations.filter(pk=organization.pk).exists()
+        ):
+            raise PermissionDenied(
+                "Your organization does not belong to this chaincode's channel."
+            )
         self.instance = chaincode
         return attrs
 

@@ -1,6 +1,10 @@
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -138,10 +142,12 @@ class ChaincodeViewSet(viewsets.ViewSet):
     )
     @action(detail=True, methods=["PUT"])
     def transact(self, request, pk=None):
+        if not isinstance(request.data, dict):
+            raise ValidationError("Request body must be a JSON object.")
         serializer = ChaincodeRequestBody(
             data={
+                **request.data,
                 "id": pk,
-                **request.data
             },
             context={"organization": request.user.organization})
         serializer.is_valid(raise_exception=True)
