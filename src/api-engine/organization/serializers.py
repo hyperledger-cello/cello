@@ -84,7 +84,9 @@ class OrganizationUpdateBody(OrganizationCreateBody):
     def create(self, validated_data):
         instance = self.context["organization"]
         for attr, val in validated_data.items():
-            if val:
+            if attr in self.initial_data:
+                if attr == "agent_url" and not val:
+                    val = None
                 setattr(instance, attr, val)
         instance.save()
         return instance
