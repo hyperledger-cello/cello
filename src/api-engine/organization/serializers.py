@@ -1,3 +1,6 @@
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 from rest_framework import serializers
 
 from api.common.serializers import ListResponseSerializer
@@ -46,8 +49,14 @@ class OrganizationCreateBody(serializers.Serializer):
         max_length=256, required=False, allow_blank=True
     )
 
+    def _unique_queryset(self):
+        instance = self.context.get("organization")
+        if instance is not None:
+            return Organization.objects.exclude(pk=instance.pk)
+        return Organization.objects.all()
+
     def validate_name(self, value):
-        if Organization.objects.filter(name=value).exists():
+        if self._unique_queryset().filter(name=value).exists():
             raise serializers.ValidationError(
                 "An organization with this name already exists."
             )
@@ -61,14 +70,14 @@ class OrganizationCreateBody(serializers.Serializer):
                 raise serializers.ValidationError(
                     "Invalid URL format. Must start with http:// or https://"
                 )
-            if Organization.objects.filter(agent_url=value).exists():
+            if self._unique_queryset().filter(agent_url=value).exists():
                 raise serializers.ValidationError(
                     "An organization with this agent URL already exists."
                 )
         return value
 
     def validate_msp_id(self, value):
-        if value and Organization.objects.filter(msp_id=value).exists():
+        if value and self._unique_queryset().filter(msp_id=value).exists():
             raise serializers.ValidationError(
                 "An organization with this MSP ID already exists."
             )
@@ -81,38 +90,18 @@ class OrganizationCreateBody(serializers.Serializer):
 
 
 class OrganizationUpdateBody(OrganizationCreateBody):
+    agent_url = serializers.CharField(
+        max_length=2048,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
+
     def create(self, validated_data):
         instance = self.context["organization"]
         for attr, val in validated_data.items():
-            if attr in self.initial_data:
-                if attr == "agent_url" and not val:
-                    val = None
-                setattr(instance, attr, val)
+            if attr == "agent_url" and not val:
+                val = None
+            setattr(instance, attr, val)
         instance.save()
         return instance
-
-    def validate(self, attrs):
-        instance = self.context["organization"]
-        name = attrs.get("name")
-        agent_url = attrs.get("agent_url")
-        msp_id = attrs.get("msp_id")
-
-        if name and name != instance.name:
-            if Organization.objects.exclude(pk=instance.pk).filter(name=name).exists():
-                raise serializers.ValidationError(
-                    {"name": "An organization with this name already exists."}
-                )
-
-        if agent_url and agent_url != instance.agent_url:
-            if Organization.objects.exclude(pk=instance.pk).filter(agent_url=agent_url).exists():
-                raise serializers.ValidationError(
-                    {"agent_url": "An organization with this agent URL already exists."}
-                )
-
-        if msp_id and msp_id != instance.msp_id:
-            if Organization.objects.exclude(pk=instance.pk).filter(msp_id=msp_id).exists():
-                raise serializers.ValidationError(
-                    {"msp_id": "An organization with this MSP ID already exists."}
-                )
-
-        return attrs
